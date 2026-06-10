@@ -1,0 +1,231 @@
+.navbar-container {
+  height: 64px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #f1f5f9;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  width: 100%;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.02), 0 1px 2px 0 rgba(0, 0, 0, 0.01);
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.navbar-container * {
+  box-sizing: border-box;
+}
+
+.navbar-inner {
+  max-width: 1120px;
+  width: 100%;
+  height: 100%;
+  margin: 0 auto;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.navbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.navbar-logo {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #4f46e5;
+  text-decoration: none;
+  letter-spacing: -1.25px;
+  display: flex;
+  align-items: center;
+  transition: opacity 0.2s;
+}
+
+.navbar-logo:hover {
+  opacity: 0.9;
+}
+
+.navbar-logo span {
+  color: #fbbf24;
+  margin-left: 1px;
+}
+
+.navbar-search-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+.navbar-menu {
+  display: flex;
+  align-items: center;
+  gap: 1.75rem;
+  height: 100%;
+}
+
+.navbar-item {
+  height: 100%;
+  min-width: 64px;
+  display: flex;
+  position: relative;
+}
+
+.navbar-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: #64748b;
+  font-size: 0.725rem;
+  font-weight: 600;
+  width: 100%;
+  height: 100%;
+  transition: color 0.2s ease, background-color 0.2s ease;
+  position: relative;
+}
+
+.navbar-icon {
+  width: 21px;
+  height: 21px;
+  object-fit: contain;
+  opacity: 0.5;
+  transition: all 0.2s ease;
+  margin-bottom: 4px;
+}
+
+.navbar-avatar {
+  width: 23px;
+  height: 23px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1.5px solid #e2e8f0;
+  opacity: 0.75;
+  transition: all 0.2s ease;
+  margin-bottom: 3px;
+}
+
+/* Hover States */
+.navbar-link:hover {
+  color: #0f172a;
+}
+
+.navbar-link:hover .navbar-icon {
+  opacity: 0.95;
+  transform: translateY(-1px);
+}
+
+.navbar-link:hover .navbar-avatar {
+  opacity: 0.95;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+}
+
+/* Active State */
+.navbar-link.active {
+  color: #4f46e5;
+}
+
+.navbar-link.active .navbar-icon {
+  opacity: 1;
+  filter: brightness(0) saturate(100%) invert(24%) sepia(85%) saturate(3062%)
+    keypoint(4f46e5); /* Standard styling trick or direct brightness filter overlay */
+}
+
+/* Active Icon Color Filter Match to Indigo-600 (#4f46e5) */
+.navbar-link.active .navbar-icon {
+  filter: invert(24%) sepia(85%) saturate(3062%) hue-rotate(238deg) brightness(96%) contrast(92%);
+  opacity: 1;
+}
+
+.navbar-link.active .navbar-avatar {
+  opacity: 1;
+  border-color: #4f46e5;
+}
+
+/* Bottom indicator bar */
+.navbar-link::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 10%;
+  right: 10%;
+  height: 3px;
+  background-color: #4f46e5;
+  border-top-left-radius: 4px;
+  border-top-right-radius: 4px;
+  opacity: 0;
+  transform: scaleX(0.7);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.navbar-link.active::after {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+/* Notification / Message badges */
+.navbar-badge {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  min-width: 16px;
+  height: 16px;
+  background-color: #ef4444;
+  color: #ffffff;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 0 4px;
+  box-shadow: 0 0 0 2px #ffffff;
+  z-index: 10;
+}
+
+/* Responsiveness */
+@media (max-width: 768px) {
+  .navbar-logo {
+    font-size: 1.25rem;
+  }
+  
+  .navbar-menu {
+    gap: 0.75rem;
+  }
+  
+  .navbar-item {
+    min-width: 50px;
+  }
+  
+  .navbar-link {
+    font-size: 0.65rem;
+  }
+  
+  .navbar-badge {
+    top: 8px;
+    right: 8px;
+  }
+}
+
+@media (max-width: 576px) {
+  .navbar-link span {
+    display: none; /* Hide label text on tiny screens */
+  }
+  
+  .navbar-icon {
+    margin-bottom: 0;
+  }
+  
+  .navbar-avatar {
+    margin-bottom: 0;
+  }
+  
+  .navbar-item {
+    min-width: 44px;
+  }
+}
