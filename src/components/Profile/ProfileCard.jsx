@@ -6,7 +6,7 @@ import defaultAvatar from "../../assets/default-avatar.png";
 import connectIcon from "../../assets/connectIcon.png";
 import acceptConnect from "../../assets/acceptConnect.png";
 import pendingConnect from "../../assets/pendingConnect.png";
-import SendMessageIcon from "../../assets/sendMessageIcon.png";
+import SendMessageIcon from "../../assets/SendMessageIcon.png";
 import pencil from "../../assets/pencil.png";
 import backgroundImage from "../../assets/backgroundImage.png";
 import { useSelector } from "react-redux";
