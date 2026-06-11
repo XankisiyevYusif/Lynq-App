@@ -3,7 +3,9 @@ import defaultAvatar from "../../assets/default-avatar.png";
 import { useDispatch } from "react-redux";
 import { clearUnreadForUser } from "../../store/messageSlice";
 
-const API_BASE_URL = "https://localhost:7257";
+import { API_ROOT } from "../../services/api";
+
+const API_BASE_URL = API_ROOT;
 
 const ChatItem = ({ item, onSelect, isSelected, isSearchResult }) => {
   const dispatch = useDispatch();

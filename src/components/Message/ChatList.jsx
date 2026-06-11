@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import ChatItem from "./ChatItem";
-import api from "../../services/api";
+import api, { API_ROOT } from "../../services/api";
 import * as signalR from "@microsoft/signalr";
 
 const ChatList = () => {
@@ -14,7 +14,7 @@ const ChatList = () => {
   const { username: selectedUsername } = useParams();
 
 
-  const API_BASE_URL = "https://localhost:7257";
+  const API_BASE_URL = API_ROOT;
 
   const fetchChats = async () => {
     try {

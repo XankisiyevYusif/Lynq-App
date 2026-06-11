@@ -1,13 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import * as signalR from "@microsoft/signalr";
 
-import api from "../../services/api";
+import api, { API_ROOT } from "../../services/api";
 import EditPostModal from "./EditPostModal";
 import pencil from "../../assets/pencil.png";
 import CommentWindow from "../comment/commentWindow";
 import "./Post.css";
 
-const API_BASE_URL = "https://localhost:7257";
+const API_BASE_URL = API_ROOT;
 
 const PostItem = ({
   post,

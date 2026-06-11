@@ -1,9 +1,10 @@
 import React, { useState } from "react";
+import { API_ROOT } from "../../../services/api";
 import defaultAvatar from "../../../assets/default-avatar.png";
 import backgroundImage from "../../../assets/backgroundImage.png";
 import pencil from "../../../assets/pencil.png";
 
-const API_BASE_URL = "https://localhost:7257";
+const API_BASE_URL = API_ROOT;
 
 export default function EmployerHeader({
   user,
@@ -23,6 +24,14 @@ export default function EmployerHeader({
   onDeleteBackgroundImage,
 }) {
   const [editHover, setEditHover] = useState(false);
+  const [logoutHover, setLogoutHover] = useState(false);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('accessToken');
+    window.location.href = "/";
+  };
 
   const basic = user?.basicInfo || {};
   const company = user?.companyInfo || {};
@@ -146,23 +155,39 @@ export default function EmployerHeader({
       </div>
 
       {isOwner && !readOnly && (
-        <img
-          src={pencil}
-          alt="edit"
-          style={{
-            ...styles.editIcon,
-            backgroundColor: editHover ? "rgba(0,0,0,0.06)" : "transparent",
-            transform: editHover
-              ? "translateY(-1px) scale(1.03)"
-              : "translateY(0) scale(1)",
-            boxShadow: editHover ? "0 2px 8px rgba(0,0,0,0.12)" : "none",
-            transition:
-              "background-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease",
-          }}
-          onMouseEnter={() => setEditHover(true)}
-          onMouseLeave={() => setEditHover(false)}
-          onClick={() => onEdit?.()}
-        />
+        <>
+          <button
+            type="button"
+            style={{
+              ...styles.logoutBtn,
+              backgroundColor: logoutHover ? "#d11124" : "#fff",
+              color: logoutHover ? "#fff" : "#d11124",
+              transform: logoutHover ? "translateY(-1px)" : "translateY(0)",
+            }}
+            onMouseEnter={() => setLogoutHover(true)}
+            onMouseLeave={() => setLogoutHover(false)}
+            onClick={handleLogout}
+          >
+            Log Out
+          </button>
+          <img
+            src={pencil}
+            alt="edit"
+            style={{
+              ...styles.editIcon,
+              backgroundColor: editHover ? "rgba(0,0,0,0.06)" : "transparent",
+              transform: editHover
+                ? "translateY(-1px) scale(1.03)"
+                : "translateY(0) scale(1)",
+              boxShadow: editHover ? "0 2px 8px rgba(0,0,0,0.12)" : "none",
+              transition:
+                "background-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease",
+            }}
+            onMouseEnter={() => setEditHover(true)}
+            onMouseLeave={() => setEditHover(false)}
+            onClick={() => onEdit?.()}
+          />
+        </>
       )}
 
       <div style={styles.body}>
@@ -338,6 +363,23 @@ const styles = {
     borderRadius: 10,
     cursor: "pointer",
     boxSizing: "border-box",
+    zIndex: 8,
+  },
+
+  logoutBtn: {
+    position: "absolute",
+    right: 60,
+    top: 182,
+    padding: "6px 14px",
+    borderRadius: "8px",
+    border: "1px solid #d11124",
+    backgroundColor: "#fff",
+    color: "#d11124",
+    fontWeight: 600,
+    fontSize: "14px",
+    cursor: "pointer",
+    fontFamily: font,
+    transition: "background-color 0.2s, color 0.2s, transform 0.15s ease",
     zIndex: 8,
   },
 

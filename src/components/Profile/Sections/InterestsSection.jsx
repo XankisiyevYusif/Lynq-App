@@ -1,13 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import api from "../../../services/api";
+import api, { API_ROOT } from "../../../services/api";
 import defaultAvatar from "../../../assets/default-avatar.png";
-
-const API_ROOT = (api.defaults.baseURL || "https://localhost:7257/api").replace(
-  /\/api\/?$/,
-  ""
-);
 
 export default function InterestsSection({ isOwner, showToast }) {
   const navigate = useNavigate();

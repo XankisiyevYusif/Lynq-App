@@ -9,7 +9,9 @@ import likeDeactiveIcon from "../../../assets/LikeDeactive.png";
 import commentIcon from "../../../assets/comment.png";
 import shareIcon from "../../../assets/share.png";
 
-const API_BASE_URL = "https://localhost:7257";
+import { API_ROOT } from "../../../services/api";
+
+const API_BASE_URL = API_ROOT;
 
 const ActivityPreviewCard = ({
   post,

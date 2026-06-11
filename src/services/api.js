@@ -4,6 +4,8 @@ const api = axios.create({
   baseURL: 'https://linkedinapi-xvld.onrender.com/api',
 });
 
+export const API_ROOT = (api.defaults.baseURL || '').replace(/\/api\/?$/, '');
+
 /* 🔐 request */
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
@@ -47,7 +49,7 @@ api.interceptors.response.use(
 
       try {
         const res = await axios.post(
-          'https://localhost:7257/api/auth/refresh',
+          `${API_ROOT}/api/auth/refresh`,
           { refreshToken }
         );
 

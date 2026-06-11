@@ -7,7 +7,7 @@ import HomePage from './pages/HomePage';
 import { useDispatch } from 'react-redux';
 import { useEffect,createContext } from 'react';
 import {loginSuccess,authCheckDone} from './store/userSlice';
-import api from './services/api';
+import api, { API_ROOT } from './services/api';
 import NotificationPage from './pages/NotificationPage';
 import * as signalR from '@microsoft/signalr';
 import {
@@ -83,7 +83,7 @@ useEffect(() => {
       }
 
       connection = new signalR.HubConnectionBuilder()
-        .withUrl("https://linkedinapi-xvld.onrender.com/notificationhub", {
+        .withUrl(`${API_ROOT}/notificationhub`, {
           accessTokenFactory: () => localStorage.getItem("token"),
         })
         .withAutomaticReconnect()
@@ -116,7 +116,7 @@ useEffect(() => {
       if (!token) return;
 
       connection = new signalR.HubConnectionBuilder()
-        .withUrl("https://linkedinapi-xvld.onrender.com/chathub", {
+        .withUrl(`${API_ROOT}/chathub`, {
           accessTokenFactory: () => localStorage.getItem("token"),
         })
         .withAutomaticReconnect()
@@ -155,7 +155,7 @@ useEffect(() => {
     if (!token) return;
 
     const conn = new signalR.HubConnectionBuilder()
-      .withUrl("https://linkedinapi-xvld.onrender.com/likehub", {
+      .withUrl(`${API_ROOT}/likehub`, {
         accessTokenFactory: () => token
       })
       .withAutomaticReconnect()

@@ -1,14 +1,14 @@
 import React, { useEffect, useRef, useState } from "react";
 import * as signalR from "@microsoft/signalr";
 import MessageInput from "./MessageInput";
-import api from "../../services/api";
+import api, { API_ROOT } from "../../services/api";
 import { jwtDecode } from "jwt-decode";
 import { useDispatch } from "react-redux";
 import { setActiveChat, clearUnreadForUser } from "../../store/messageSlice";
 import defaultAvatar from "../../assets/default-avatar.png";
 import { useNavigate } from "react-router-dom";
 
-const API_BASE_URL = "https://localhost:7257";
+const API_BASE_URL = API_ROOT;
 
 const ChatWindow = ({ receiver }) => {
   const [messages, setMessages] = useState([]);

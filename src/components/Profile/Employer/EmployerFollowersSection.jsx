@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../../../services/api";
+import api, { API_ROOT } from "../../../services/api";
 import defaultAvatar from "../../../assets/default-avatar.png";
 
-const API_BASE_URL = "https://localhost:7257";
+const API_BASE_URL = API_ROOT;
 
 export default function EmployerFollowersSection({ isOwner }) {
   const navigate = useNavigate();

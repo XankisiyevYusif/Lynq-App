@@ -4,13 +4,10 @@ import { useSelector } from "react-redux";
 import * as signalR from "@microsoft/signalr";
 
 import Navbar from "../components/Layout/Navbar";
-import api from "../services/api";
+import api, { API_ROOT } from "../services/api";
 import defaultAvatar from "../assets/default-avatar.png";
 
-const API_ROOT = (api.defaults.baseURL || "https://localhost:7257/api").replace(
-  /\/api\/?$/,
-  ""
-);
+// API_ROOT is imported from api.js
 
 export default function NetworkPage() {
   const navigate = useNavigate();
