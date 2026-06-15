@@ -9,6 +9,7 @@ import {
 import api from "../../services/api";
 import PersonalAccount from "../../assets/PersonalAccount.png";
 import CompanyAccount from "../../assets/CompanyAccount.png";
+import GoogleLoginButton from "./GoogleLoginButton";
 import "./Auth.css";
 
 const RegisterForm = () => {
@@ -553,6 +554,12 @@ const RegisterForm = () => {
               )}
             </button>
           </form>
+
+          <div className="auth-divider">Or continue with</div>
+
+          <div className="auth-google-btn-container">
+            <GoogleLoginButton />
+          </div>
 
           <div className="auth-footer">
             <span className="auth-footer-text">Already have an account?</span>

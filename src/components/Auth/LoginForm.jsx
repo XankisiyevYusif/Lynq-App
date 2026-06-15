@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 import { loginStart, loginSuccess, loginFailure } from "../../store/userSlice";
 import api from "../../services/api";
+import GoogleLoginButton from "./GoogleLoginButton";
 import "./Auth.css";
 
 const LoginForm = () => {
@@ -238,6 +239,12 @@ const LoginForm = () => {
               {loading ? <span className="auth-spinner"></span> : "Sign In"}
             </button>
           </form>
+
+          <div className="auth-divider">Or continue with</div>
+
+          <div className="auth-google-btn-container">
+            <GoogleLoginButton />
+          </div>
 
           <div className="auth-footer">
             <span className="auth-footer-text">New to Lynq?</span>
