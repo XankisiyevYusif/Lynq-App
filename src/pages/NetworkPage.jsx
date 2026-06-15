@@ -27,8 +27,15 @@ export default function NetworkPage() {
 
   const [followers, setFollowers] = useState([]);
 
+  const [jobseekers, setJobseekers] = useState([]);
+  const [employers, setEmployers] = useState([]);
+  const [followedCompanies, setFollowedCompanies] = useState([]);
+
   const [loading, setLoading] = useState(false);
   const [followersLoading, setFollowersLoading] = useState(false);
+  const [jobseekersLoading, setJobseekersLoading] = useState(false);
+  const [employersLoading, setEmployersLoading] = useState(false);
+  const [followedCompaniesLoading, setFollowedCompaniesLoading] = useState(false);
 
   const [removeTarget, setRemoveTarget] = useState(null);
   const [toast, setToast] = useState(null);
@@ -42,9 +49,17 @@ export default function NetworkPage() {
   };
 
   const getResponseArray = (res) => {
-    if (Array.isArray(res?.data)) return res.data;
-    if (Array.isArray(res?.data?.data)) return res.data.data;
-    if (Array.isArray(res?.data?.Data)) return res.data.Data;
+    const data = res?.data;
+    if (!data) return [];
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data.items)) return data.items;
+    if (Array.isArray(data.Items)) return data.Items;
+    if (Array.isArray(data.data)) return data.data;
+    if (Array.isArray(data.Data)) return data.Data;
+    if (data.data && Array.isArray(data.data.items)) return data.data.items;
+    if (data.data && Array.isArray(data.data.Items)) return data.data.Items;
+    if (data.Data && Array.isArray(data.Data.items)) return data.Data.items;
+    if (data.Data && Array.isArray(data.Data.Items)) return data.Data.Items;
     return [];
   };
 
@@ -79,6 +94,8 @@ export default function NetworkPage() {
       user?.CurrentPosition ||
       user?.headline ||
       user?.Headline ||
+      user?.industry ||
+      user?.Industry ||
       "Profile"
     );
   };
@@ -243,12 +260,137 @@ export default function NetworkPage() {
     }
   };
 
+  const fetchJobseekers = async () => {
+    try {
+      setJobseekersLoading(true);
+      const res = await api.get("/User/jobseekers");
+      setJobseekers(getResponseArray(res));
+    } catch (err) {
+      console.error("Fetch jobseekers failed:", err);
+      setJobseekers([]);
+    } finally {
+      setJobseekersLoading(false);
+    }
+  };
+
+  const fetchEmployers = async () => {
+    try {
+      setEmployersLoading(true);
+      const res = await api.get("/User/employers");
+      setEmployers(getResponseArray(res));
+    } catch (err) {
+      console.error("Fetch employers failed:", err);
+      setEmployers([]);
+    } finally {
+      setEmployersLoading(false);
+    }
+  };
+
+  const fetchFollowedCompanies = async () => {
+    if (currentUserIsEmployer) return;
+    try {
+      setFollowedCompaniesLoading(true);
+      const res = await api.get("/CompanyFollow/my-followed-companies");
+      setFollowedCompanies(getResponseArray(res));
+    } catch (err) {
+      console.error("Fetch followed companies failed:", err);
+      setFollowedCompanies([]);
+    } finally {
+      setFollowedCompaniesLoading(false);
+    }
+  };
+
+  const getConnectionStatusForUser = (user) => {
+    if (sameUser(user, currentUser)) return "self";
+    if (connections.some((c) => sameUser(c, user))) return "connected";
+    if (sentRequests.some((r) => sameUser(getReceiver(r), user))) return "pending_sent";
+    if (receivedRequests.some((r) => sameUser(getSender(r), user))) return "pending_received";
+    return "none";
+  };
+
+  const handleConnectUser = async (targetUser) => {
+    const username = getUsername(targetUser);
+    if (!username) return;
+
+    try {
+      await api.post(`/Connection/send/${username}`);
+      showToast("Connection request sent.", "success");
+      fetchNetworkData();
+    } catch (err) {
+      console.error("Connect action failed:", err);
+      showToast("Failed to send connection request.", "error");
+    }
+  };
+
+  const handleCancelRequestForUser = async (targetUser) => {
+    const req = sentRequests.find((r) => sameUser(getReceiver(r), targetUser));
+    const requestId = getRequestId(req);
+    if (!requestId) return;
+
+    try {
+      await api.post(`/Connection/cancel/${requestId}`);
+      showToast("Connection request cancelled.", "success");
+      fetchNetworkData();
+    } catch (err) {
+      console.error("Cancel action failed:", err);
+      showToast("Failed to cancel connection request.", "error");
+    }
+  };
+
+  const handleAcceptRequestForUser = async (targetUser) => {
+    const req = receivedRequests.find((r) => sameUser(getSender(r), targetUser));
+    const requestId = getRequestId(req);
+    if (!requestId) return;
+
+    try {
+      await api.post(`/Connection/accept/${requestId}`);
+      showToast("Connection request accepted.", "success");
+      fetchNetworkData();
+    } catch (err) {
+      console.error("Accept action failed:", err);
+      showToast("Failed to accept connection request.", "error");
+    }
+  };
+
+  const handleFollowCompany = async (company) => {
+    const username = getUsername(company);
+    if (!username) return;
+
+    try {
+      await api.post(`/CompanyFollow/follow/${username}`);
+      showToast(`Following ${getFullName(company)}`, "success");
+      fetchFollowedCompanies();
+    } catch (err) {
+      console.error("Follow company failed:", err);
+      showToast("Failed to follow company.", "error");
+    }
+  };
+
+  const handleUnfollowCompany = async (company) => {
+    const username = getUsername(company);
+    if (!username) return;
+
+    try {
+      await api.delete(`/CompanyFollow/unfollow/${username}`);
+      showToast(`Unfollowed ${getFullName(company)}`, "success");
+      fetchFollowedCompanies();
+    } catch (err) {
+      console.error("Unfollow company failed:", err);
+      showToast("Failed to unfollow company.", "error");
+    }
+  };
+
   useEffect(() => {
     if (currentUserIsEmployer) {
       fetchCompanyFollowers();
+      setActiveTab("followers");
     } else {
       fetchNetworkData();
+      fetchFollowedCompanies();
+      setActiveTab("received");
     }
+    fetchJobseekers();
+    fetchEmployers();
   }, [currentUserIsEmployer]);
 
   useEffect(() => {
@@ -491,91 +633,163 @@ export default function NetworkPage() {
   };
 
   const tabs = [
+    ...(currentUserIsEmployer
+      ? [
+          {
+            key: "followers",
+            label: "Followers",
+            count: followers.length,
+          },
+        ]
+      : [
+          {
+            key: "received",
+            label: "Received",
+            count: receivedRequests.length,
+          },
+          {
+            key: "sent",
+            label: "Sent",
+            count: sentRequests.length,
+          },
+          {
+            key: "connections",
+            label: "Connections",
+            count: connections.length,
+          },
+        ]),
     {
-      key: "received",
-      label: "Received",
-      count: receivedRequests.length,
+      key: "jobseekers",
+      label: "Seek Users",
+      count: jobseekers.length,
     },
     {
-      key: "sent",
-      label: "Sent",
-      count: sentRequests.length,
-    },
-    {
-      key: "connections",
-      label: "Connections",
-      count: connections.length,
+      key: "employers",
+      label: "Companies",
+      count: employers.length,
     },
   ];
 
-  if (currentUserIsEmployer) {
-    return (
-      <>
-        <Navbar />
+  const renderJobseekers = () => {
+    if (jobseekersLoading) return <p style={styles.emptyText}>Loading users...</p>;
 
-        <div style={styles.page}>
-          <div style={styles.employerContainer}>
-            <div style={styles.headerCard}>
-              <h2 style={styles.title}>Followers</h2>
+    if (!jobseekers.length) {
+      return <p style={styles.emptyText}>No users found.</p>;
+    }
 
-              <p style={styles.subtitle}>
-                People who follow your company page.
-              </p>
-            </div>
-
-            <div style={styles.contentCard}>
-              {followersLoading && (
-                <p style={styles.emptyText}>Loading followers...</p>
-              )}
-
-              {!followersLoading && followers.length === 0 && (
-                <p style={styles.emptyText}>No followers yet.</p>
-              )}
-
-              {!followersLoading &&
-                followers.map((follower) =>
-                  renderPersonRow({
-                    user: {
-                      id: follower.followerId || follower.FollowerId,
-                      username: follower.username || follower.Username,
-                      fullName: follower.fullName || follower.FullName,
-                      currentPosition:
-                        follower.currentPosition || follower.CurrentPosition,
-                      profileImage: follower.profileImage || follower.ProfileImage,
-                      location: follower.location || follower.Location,
-                    },
-                    meta: formatTimeAgo(follower.followedAt || follower.FollowedAt),
-                    actions: (
-                      <button
-                        style={styles.viewButton}
-                        onClick={() =>
-                          navigate(
-                            `/profile/${follower.username || follower.Username}`
-                          )
-                        }
-                      >
-                        View
-                      </button>
-                    ),
-                  })
-                )}
-            </div>
-          </div>
-        </div>
-
-        {toast && (
-          <div
-            style={{
-              ...styles.toast,
-              ...(toast.type === "error" ? styles.toastError : styles.toastSuccess),
-            }}
+    return jobseekers.map((user) => {
+      let actions = null;
+      if (currentUserIsEmployer) {
+        actions = (
+          <button
+            style={styles.viewButton}
+            onClick={() => navigate(`/profile/${getUsername(user)}`)}
           >
-            {toast.message}
-          </div>
-        )}
-      </>
-    );
-  }
+            View Profile
+          </button>
+        );
+      } else {
+        const status = getConnectionStatusForUser(user);
+        if (status === "self") {
+          actions = <span style={{ color: "#777", fontSize: 13, fontWeight: 600 }}>You</span>;
+        } else if (status === "connected") {
+          actions = (
+            <button
+              style={styles.connectedButton}
+              onClick={() => setRemoveTarget(user)}
+            >
+              Connected
+            </button>
+          );
+        } else if (status === "pending_sent") {
+          actions = (
+            <button
+              style={styles.cancelButton}
+              onClick={() => handleCancelRequestForUser(user)}
+            >
+              Pending
+            </button>
+          );
+        } else if (status === "pending_received") {
+          actions = (
+            <button
+              style={styles.acceptButton}
+              onClick={() => handleAcceptRequestForUser(user)}
+            >
+              Accept
+            </button>
+          );
+        } else {
+          actions = (
+            <button
+              style={styles.viewButton}
+              onClick={() => handleConnectUser(user)}
+            >
+              Connect
+            </button>
+          );
+        }
+      }
+
+      return renderPersonRow({
+        user,
+        meta: null,
+        actions,
+      });
+    });
+  };
+
+  const renderEmployers = () => {
+    if (employersLoading) return <p style={styles.emptyText}>Loading companies...</p>;
+
+    if (!employers.length) {
+      return <p style={styles.emptyText}>No companies found.</p>;
+    }
+
+    return employers.map((company) => {
+      let actions = null;
+      if (currentUserIsEmployer) {
+        actions = (
+          <button
+            style={styles.viewButton}
+            onClick={() => navigate(`/profile/${getUsername(company)}`)}
+          >
+            View Profile
+          </button>
+        );
+      } else {
+        const isFollowing = followedCompanies.some(
+          (c) => getUsername(c) === getUsername(company)
+        );
+
+        if (isFollowing) {
+          actions = (
+            <button
+              style={styles.connectedButton}
+              onClick={() => handleUnfollowCompany(company)}
+            >
+              Following
+            </button>
+          );
+        } else {
+          actions = (
+            <button
+              style={styles.viewButton}
+              onClick={() => handleFollowCompany(company)}
+            >
+              Follow
+            </button>
+          );
+        }
+      }
+
+      return renderPersonRow({
+        user: company,
+        meta: company.industry || company.Industry || null,
+        actions,
+      });
+    });
+  };
 
   return (
     <>
@@ -613,6 +827,9 @@ export default function NetworkPage() {
                 {activeTab === "received" && "Received requests"}
                 {activeTab === "sent" && "Sent requests"}
                 {activeTab === "connections" && "Connections"}
+                {activeTab === "followers" && "Followers"}
+                {activeTab === "jobseekers" && "Seek Users"}
+                {activeTab === "employers" && "Companies"}
               </h2>
 
               <p style={styles.subtitle}>
@@ -622,6 +839,12 @@ export default function NetworkPage() {
                   "Connection requests you have sent."}
                 {activeTab === "connections" &&
                   "People you are connected with."}
+                {activeTab === "followers" &&
+                  "People who follow your company page."}
+                {activeTab === "jobseekers" &&
+                  "Browse all professional users on Lynq."}
+                {activeTab === "employers" &&
+                  "Browse all registered company profiles."}
               </p>
             </div>
 
@@ -629,6 +852,42 @@ export default function NetworkPage() {
               {activeTab === "received" && renderReceived()}
               {activeTab === "sent" && renderSent()}
               {activeTab === "connections" && renderConnections()}
+              {activeTab === "followers" && (
+                followersLoading ? (
+                  <p style={styles.emptyText}>Loading followers...</p>
+                ) : !followers.length ? (
+                  <p style={styles.emptyText}>No followers yet.</p>
+                ) : (
+                  followers.map((follower) =>
+                    renderPersonRow({
+                      user: {
+                        id: follower.followerId || follower.FollowerId,
+                        username: follower.username || follower.Username,
+                        fullName: follower.fullName || follower.FullName,
+                        currentPosition:
+                          follower.currentPosition || follower.CurrentPosition,
+                        profileImage: follower.profileImage || follower.ProfileImage,
+                        location: follower.location || follower.Location,
+                      },
+                      meta: formatTimeAgo(follower.followedAt || follower.FollowedAt),
+                      actions: (
+                        <button
+                          style={styles.viewButton}
+                          onClick={() =>
+                            navigate(
+                              `/profile/${follower.username || follower.Username}`
+                            )
+                          }
+                        >
+                          View
+                        </button>
+                      ),
+                    })
+                  )
+                )
+              )}
+              {activeTab === "jobseekers" && renderJobseekers()}
+              {activeTab === "employers" && renderEmployers()}
             </div>
           </main>
         </div>
