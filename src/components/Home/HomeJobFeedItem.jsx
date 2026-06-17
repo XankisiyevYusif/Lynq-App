@@ -129,6 +129,9 @@ const HomeJobFeedItem = ({ job, onJobChanged, showToast }) => {
           src={getImageUrl(job.companyLogo)}
           alt={job.companyName || "Company"}
           style={styles.logo}
+          onError={(e) => {
+            e.currentTarget.src = defaultAvatar;
+          }}
         />
 
         <div style={styles.headerInfo}>

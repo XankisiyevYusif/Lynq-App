@@ -10,6 +10,7 @@ import commentIcon from "../../../assets/comment.png";
 import shareIcon from "../../../assets/share.png";
 
 import { API_ROOT } from "../../../services/api";
+import defaultAvatar from "../../../assets/default-avatar.png";
 
 const API_BASE_URL = API_ROOT;
 
@@ -89,7 +90,7 @@ const ActivityPreviewCard = ({
 
   const profileImageSrc = userPhoto
     ? `${API_BASE_URL}${userPhoto}`
-    : "https://via.placeholder.com/48";
+    : defaultAvatar;
 
   const postImageSrc = imageUrl ? `${API_BASE_URL}${imageUrl}` : null;
   const postVideoSrc = videoUrl ? `${API_BASE_URL}${videoUrl}` : null;
@@ -106,9 +107,12 @@ const ActivityPreviewCard = ({
               src={profileImageSrc}
               alt={username || "User"}
               style={{
-              ...styles.avatar,
-              borderRadius: isEmployer ? "8px" : "50%",
-            }}
+                ...styles.avatar,
+                borderRadius: isEmployer ? "8px" : "50%",
+              }}
+              onError={(e) => {
+                e.currentTarget.src = defaultAvatar;
+              }}
             />
 
             <div style={styles.authorInfo}>
@@ -305,7 +309,7 @@ const styles = {
   postImage: {
     width: "100%",
     height: "100%",
-    objectFit: "cover",
+    objectFit: "contain",
     display: "block",
   },
 

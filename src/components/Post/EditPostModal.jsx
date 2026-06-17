@@ -331,9 +331,9 @@ const styles = {
   previewMedia: {
     width: "100%",
     maxHeight: 360,
-    objectFit: "cover",
+    objectFit: "contain",
     display: "block",
-    backgroundColor: "#000",
+    backgroundColor: "#f8fafc",
   },
   removeMediaIconBtn: {
     position: "absolute",

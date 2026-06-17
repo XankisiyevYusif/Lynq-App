@@ -5,6 +5,7 @@ import api, { API_ROOT } from "../../services/api";
 import EditPostModal from "./EditPostModal";
 import pencil from "../../assets/pencil.png";
 import CommentWindow from "../comment/commentWindow";
+import defaultAvatar from "../../assets/default-avatar.png";
 import "./Post.css";
 
 const API_BASE_URL = API_ROOT;
@@ -18,8 +19,19 @@ const PostItem = ({
   showToast,
   likeConnection,
   defaultCommentsOpen = false,
+  highlighted = false,
 }) => {
   const commentCountConnectionRef = useRef(null);
+  const postRef = useRef(null);
+
+  useEffect(() => {
+    if (highlighted && postRef.current) {
+      const timer = setTimeout(() => {
+        postRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [highlighted]);
 
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [localLikeCount, setLocalLikeCount] = useState(post.likeCount || 0);
@@ -180,6 +192,37 @@ const PostItem = ({
     // Comment count is updated automatically via SignalR in ReceiveCommentCountUpdated
   };
 
+  const handleShare = async () => {
+    const shareUrl = `${window.location.origin}/profile/${username}/activity?postId=${id}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `${username || 'User'}'s Post`,
+          text: content || 'Check out this post on Lynq!',
+          url: shareUrl
+        });
+        showToast?.("Shared successfully!", "success");
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          console.error("Native share failed, falling back to copy:", err);
+          try {
+            await navigator.clipboard.writeText(shareUrl);
+            showToast?.("Link copied to clipboard!", "success");
+          } catch (clipErr) {
+            console.error("Clipboard copy failed:", clipErr);
+          }
+        }
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        showToast?.("Link copied to clipboard!", "success");
+      } catch (clipErr) {
+        console.error("Clipboard copy failed:", clipErr);
+      }
+    }
+  };
+
   const formattedDate = createdAt
     ? new Date(createdAt).toLocaleDateString("en-GB", {
         day: "numeric",
@@ -190,14 +233,14 @@ const PostItem = ({
 
   const profileImageSrc = userPhoto
     ? `${API_BASE_URL}${userPhoto}`
-    : "https://via.placeholder.com/48";
+    : defaultAvatar;
 
   const postImageSrc = imageUrl ? `${API_BASE_URL}${imageUrl}` : null;
   const postVideoSrc = videoUrl ? `${API_BASE_URL}${videoUrl}` : null;
 
   return (
     <>
-      <div className="post-card">
+      <div className={`post-card ${highlighted ? "highlighted-post" : ""}`} ref={postRef}>
         <div className="post-header">
           <div className="post-author-section">
             <img
@@ -206,6 +249,9 @@ const PostItem = ({
               className="post-avatar"
               style={{
                 borderRadius: isEmployer ? "8px" : "50%",
+              }}
+              onError={(e) => {
+                e.currentTarget.src = defaultAvatar;
               }}
             />
 
@@ -283,7 +329,7 @@ const PostItem = ({
             <span>Comment</span>
           </button>
 
-          <button type="button" className="post-footer-btn">
+          <button type="button" className="post-footer-btn" onClick={handleShare}>
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" width="18" height="18">
               <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" />
             </svg>

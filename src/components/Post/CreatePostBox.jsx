@@ -221,7 +221,8 @@ const styles = {
   previewImage: {
     width: "100%",
     maxHeight: "380px",
-    objectFit: "cover",
+    objectFit: "contain",
+    backgroundColor: "#f8fafc",
     borderRadius: "14px",
     border: "1px solid #eee",
     marginBottom: "8px",

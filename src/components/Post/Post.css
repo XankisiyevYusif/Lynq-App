@@ -95,8 +95,9 @@
 
 .post-image {
   width: 100%;
-  max-height: 440px;
-  object-fit: cover;
+  max-height: 500px;
+  object-fit: contain;
+  background-color: #f8fafc;
   border-radius: 1rem;
   margin-bottom: 14px;
   border: 1px solid #e2e8f0;
@@ -190,3 +191,21 @@
   border-top: 1px solid #f1f5f9;
   padding-top: 14px;
 }
+
+.post-card.highlighted-post {
+  border: 2px solid #0a66c2;
+  box-shadow: 0 0 12px rgba(10, 102, 194, 0.3);
+  animation: pulseHighlight 2s ease-in-out infinite alternate;
+}
+
+@keyframes pulseHighlight {
+  0% {
+    box-shadow: 0 0 4px rgba(10, 102, 194, 0.15);
+    border-color: rgba(10, 102, 194, 0.7);
+  }
+  100% {
+    box-shadow: 0 0 16px rgba(10, 102, 194, 0.5);
+    border-color: rgba(10, 102, 194, 1);
+  }
+}
+

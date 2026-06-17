@@ -542,7 +542,14 @@ export default function NetworkPage() {
 
     return (
       <div key={getUserId(user) || username || Math.random()} style={styles.personRow}>
-        <img src={getImageUrl(getProfileImage(user))} alt="" style={styles.avatar} />
+        <img
+          src={getImageUrl(getProfileImage(user))}
+          alt=""
+          style={styles.avatar}
+          onError={(e) => {
+            e.currentTarget.src = defaultAvatar;
+          }}
+        />
 
         <div
           style={styles.personInfo}

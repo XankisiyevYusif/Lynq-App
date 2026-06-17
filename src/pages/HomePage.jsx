@@ -145,6 +145,9 @@ const HomePage = ({ likeConnection }) => {
                   style={{
                     borderRadius: isCurrentEmployer ? "10px" : "50%",
                   }}
+                  onError={(e) => {
+                    e.currentTarget.src = defaultAvatar;
+                  }}
                 />
 
                 <div className="home-profile-name">{fullName}</div>
@@ -189,6 +192,9 @@ const HomePage = ({ likeConnection }) => {
                   className="home-create-avatar"
                   style={{
                     borderRadius: isCurrentEmployer ? "8px" : "50%",
+                  }}
+                  onError={(e) => {
+                    e.currentTarget.src = defaultAvatar;
                   }}
                 />
 

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useParams } from "react-router-dom";
+import { jwtDecode } from "jwt-decode";
 
 import Navbar from "../components/Layout/Navbar";
 import api from "../services/api";
@@ -11,10 +12,10 @@ const ActivityListPage = ({ likeConnection }) => {
   const { username } = useParams();
   const location = useLocation();
 
-  const isOwner = location.state?.isOwner === true;
-  const userId = location.state?.userId;
+  const [resolvedUserId, setResolvedUserId] = useState(location.state?.userId || null);
+  const [resolvedIsOwner, setResolvedIsOwner] = useState(location.state?.isOwner === true);
+  const [resolvedIsEmployer, setResolvedIsEmployer] = useState(location.state?.isEmployer === true);
   const openCommentsPostId = location.state?.openCommentsPostId;
-  const isEmployer = location.state?.isEmployer === true;
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -26,6 +27,9 @@ const ActivityListPage = ({ likeConnection }) => {
 
   const page = 1;
   const pageSize = 10;
+
+  const queryParams = new URLSearchParams(location.search);
+  const targetPostId = queryParams.get("postId");
 
   const showToast = (message, type = "success") => {
     setToast({
@@ -44,12 +48,50 @@ const ActivityListPage = ({ likeConnection }) => {
   };
 
   useEffect(() => {
-    const fetchPosts = async () => {
+    const resolveUserAndFetchPosts = async () => {
       try {
         setLoading(true);
 
-        if (!isOwner && !userId) {
-          console.error("Activity page userId is missing:", {
+        let currentUserId = resolvedUserId;
+        let currentIsOwner = resolvedIsOwner;
+        let currentIsEmployer = resolvedIsEmployer;
+
+        // Resolve user info if missing (direct URL visit fallback)
+        if (!currentUserId) {
+          const token = localStorage.getItem("token");
+          let loggedInUsername = null;
+          if (token) {
+            try {
+              const decoded = jwtDecode(token);
+              loggedInUsername = decoded?.unique_name || decoded?.username || null;
+            } catch (err) {
+              console.error("Token decode error in ActivityListPage:", err);
+            }
+          }
+
+          const isOwnerMatch = loggedInUsername?.toLowerCase() === username?.toLowerCase();
+          currentIsOwner = isOwnerMatch;
+          setResolvedIsOwner(isOwnerMatch);
+
+          let res;
+          if (isOwnerMatch) {
+            res = await api.get("/User/me");
+          } else {
+            res = await api.get(`/User/${username}`);
+          }
+
+          const userProfile = res.data;
+          if (userProfile) {
+            currentUserId = userProfile.id || userProfile.userId || userProfile.basicInfo?.id;
+            currentIsEmployer = userProfile.userType === "Employer" || userProfile.role === "Employer";
+
+            setResolvedUserId(currentUserId);
+            setResolvedIsEmployer(currentIsEmployer);
+          }
+        }
+
+        if (!currentUserId && !currentIsOwner) {
+          console.error("Activity page userId is missing and cannot be resolved:", {
             username,
             state: location.state,
           });
@@ -58,9 +100,9 @@ const ActivityListPage = ({ likeConnection }) => {
           return;
         }
 
-        const endpoint = isOwner
+        const endpoint = currentIsOwner
           ? `/Post/my?page=${page}&pageSize=${pageSize}`
-          : `/Post/user/${userId}?page=${page}&pageSize=${pageSize}`;
+          : `/Post/user/${currentUserId}?page=${page}&pageSize=${pageSize}`;
 
         console.log("Activity endpoint:", endpoint);
 
@@ -78,8 +120,8 @@ const ActivityListPage = ({ likeConnection }) => {
       }
     };
 
-    fetchPosts();
-  }, [username, isOwner, userId, location.state]);
+    resolveUserAndFetchPosts();
+  }, [username, resolvedUserId, resolvedIsOwner, resolvedIsEmployer, location.state]);
 
   const handlePostUpdated = (updatedPost) => {
     setPosts((prev) =>
@@ -117,8 +159,8 @@ const ActivityListPage = ({ likeConnection }) => {
                 <PostItem
                   key={post.id}
                   post={post}
-                  showActions={isOwner}
-                  isEmployer={isEmployer}
+                  showActions={resolvedIsOwner}
+                  isEmployer={resolvedIsEmployer}
                   showToast={showToast}
                   likeConnection={likeConnection}
                   onPostUpdated={handlePostUpdated}
@@ -126,6 +168,7 @@ const ActivityListPage = ({ likeConnection }) => {
                   defaultCommentsOpen={
                     Number(openCommentsPostId) === Number(post.id)
                   }
+                  highlighted={Number(targetPostId) === Number(post.id)}
                 />
               ))}
             </div>
