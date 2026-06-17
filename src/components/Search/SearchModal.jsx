@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import searchIcon from "../../assets/Search.png";
 import defaultAvatar from "../../assets/default-avatar.png";
 import { SearchContext } from "../../context/SearchContext";
-import { searchUsers } from "../../services/searchApi";
+import { searchUsers, getSearchHistory } from "../../services/searchApi";
 import api from "../../services/api";
 
 const API_ROOT = (api.defaults.baseURL || "").replace(/\/api\/?$/, "");
@@ -19,6 +19,27 @@ export default function SearchModal() {
 
   const [results, setResults] = useState([]);
   const [showModal, setShowModal] = useState(false);
+  const [searchHistory, setSearchHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [hoveredHistoryIdx, setHoveredHistoryIdx] = useState(null);
+
+  const fetchHistory = async () => {
+    try {
+      setLoadingHistory(true);
+      const data = await getSearchHistory();
+      setSearchHistory(data);
+    } catch (err) {
+      console.error("Failed to load search history in modal:", err);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  useEffect(() => {
+    if (showModal && query.trim().length === 0) {
+      fetchHistory();
+    }
+  }, [showModal, query]);
 
   const getImageUrl = (path) => {
     if (!path) return defaultAvatar;
@@ -98,7 +119,7 @@ export default function SearchModal() {
             }
           }}
           onFocus={() => {
-            if (location.pathname !== "/search" && query.trim()) {
+            if (location.pathname !== "/search") {
               setShowModal(true);
             }
           }}
@@ -118,7 +139,52 @@ export default function SearchModal() {
         <div style={styles.modalOverlay}>
           <div style={styles.previewList}>
             {query.trim().length === 0 ? (
-              <p style={styles.emptyText}>Start typing to search.</p>
+              <div style={styles.historyContainer}>
+                <div style={styles.historyHeader}>Recent searches</div>
+                {loadingHistory ? (
+                  <p style={styles.historySubText}>Loading history...</p>
+                ) : searchHistory.length > 0 ? (
+                  searchHistory.slice(0, 5).map((item, idx) => {
+                    const term = typeof item === 'string' ? item : (item?.query || item?.queryText || item?.keyword || item?.searchText || item?.text || item?.searchQuery || "");
+                    if (!term) return null;
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        style={{
+                          ...styles.historyItemButton,
+                          backgroundColor: hoveredHistoryIdx === idx ? "#f3f2ef" : "transparent"
+                        }}
+                        onMouseEnter={() => setHoveredHistoryIdx(idx)}
+                        onMouseLeave={() => setHoveredHistoryIdx(null)}
+                        onClick={() => {
+                          setQuery(term);
+                          setShowModal(false);
+                          navigate(`/search?query=${encodeURIComponent(term)}`);
+                        }}
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          strokeWidth="2"
+                          stroke="currentColor"
+                          style={styles.historyIcon}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+                          />
+                        </svg>
+                        <span style={styles.historyText}>{term}</span>
+                      </button>
+                    );
+                  })
+                ) : (
+                  <p style={styles.historySubText}>No recent searches.</p>
+                )}
+              </div>
             ) : results.length > 0 ? (
               results.slice(0, 4).map((user) => {
                 const isEmployer =
@@ -296,5 +362,50 @@ const styles = {
     fontSize: 14,
     fontWeight: 500,
     color: "#666",
+  },
+  historyContainer: {
+    padding: "8px 4px",
+  },
+  historyHeader: {
+    fontSize: 11,
+    fontWeight: 700,
+    color: "#666",
+    textTransform: "uppercase",
+    letterSpacing: "0.5px",
+    padding: "0 12px 8px",
+  },
+  historyItemButton: {
+    width: "100%",
+    border: "none",
+    backgroundColor: "transparent",
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+    padding: "10px 12px",
+    cursor: "pointer",
+    textAlign: "left",
+    borderRadius: 8,
+    transition: "background-color 0.2s",
+    outline: "none",
+  },
+  historyIcon: {
+    width: 16,
+    height: 16,
+    color: "#666",
+    flexShrink: 0,
+  },
+  historyText: {
+    fontSize: 14,
+    color: "#222",
+    fontWeight: 500,
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+  },
+  historySubText: {
+    fontSize: 13,
+    color: "#777",
+    padding: "8px 12px",
+    margin: 0,
   },
 };

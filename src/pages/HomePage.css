@@ -14,8 +14,8 @@
   max-width: 1120px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 280px 1fr;
-  gap: 24px;
+  grid-template-columns: 260px 1fr 290px;
+  gap: 20px;
   align-items: flex-start;
 }
 
@@ -348,6 +348,13 @@
 }
 
 /* Responsiveness */
+@media (max-width: 1200px) and (min-width: 992px) {
+  .home-layout {
+    grid-template-columns: 220px 1fr 260px;
+    gap: 16px;
+  }
+}
+
 @media (max-width: 992px) {
   .home-layout {
     grid-template-columns: 1fr;
@@ -380,3 +387,217 @@
     font-size: 0.8rem;
   }
 }
+
+/* Recommendations Card styling */
+.home-right-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: sticky;
+  top: 84px;
+}
+
+.home-recommendations-card {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 1.25rem;
+  padding: 16px 20px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03);
+  transition: all 0.3s ease;
+}
+
+.home-recommendations-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+}
+
+.home-recommendations-header {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.home-recommendations-header .info-icon {
+  color: #64748b;
+  cursor: help;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+
+.home-recommendations-header .info-icon:hover {
+  opacity: 1;
+}
+
+.home-recommendations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.home-recommendation-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.home-recommendation-avatar {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.home-recommendation-avatar:hover {
+  transform: scale(1.05);
+}
+
+.home-recommendation-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.home-recommendation-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #0f172a;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.home-recommendation-name:hover {
+  color: #4f46e5;
+  text-decoration: underline;
+}
+
+.home-recommendation-headline {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin: 2px 0 8px;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.home-recommendation-actions {
+  display: flex;
+}
+
+.home-recommendation-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 16px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #4f46e5;
+  background-color: transparent;
+  border: 1.5px solid #4f46e5;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+  font-family: inherit;
+}
+
+.home-recommendation-btn:hover {
+  background-color: #f5f3ff;
+  transform: translateY(-1px);
+}
+
+.home-recommendation-btn:active {
+  transform: translateY(0);
+}
+
+.home-recommendation-btn .plus {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.home-recommendation-btn.active {
+  color: #64748b;
+  background-color: #f1f5f9;
+  border-color: #cbd5e1;
+  cursor: not-allowed;
+}
+
+/* Skeleton Loading for Recommendations */
+.home-recommendations-card.loading {
+  pointer-events: none;
+}
+
+.home-recommendations-skeleton-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.home-recommendations-skeleton-item {
+  display: flex;
+  gap: 12px;
+}
+
+.skeleton-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: loading-skeleton 1.5s infinite;
+  flex-shrink: 0;
+}
+
+.skeleton-text-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.skeleton-line {
+  height: 12px;
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: loading-skeleton 1.5s infinite;
+  border-radius: 4px;
+}
+
+.skeleton-line.title {
+  width: 70%;
+}
+
+.skeleton-line.subtitle {
+  width: 90%;
+  height: 8px;
+}
+
+.skeleton-line.button {
+  width: 50%;
+  height: 24px;
+  border-radius: 50px;
+  margin-top: 4px;
+}
+
+@keyframes loading-skeleton {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+

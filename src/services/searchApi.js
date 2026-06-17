@@ -35,3 +35,29 @@ export const searchJobs = async (query, page = 1, pageSize = 6) => {
     throw error;
   }
 };
+
+export const getSearchHistory = async () => {
+  try {
+    const response = await api.get("/User/search-history");
+    if (Array.isArray(response.data)) return response.data;
+    if (Array.isArray(response.data?.data)) return response.data.data;
+    if (Array.isArray(response.data?.Data)) return response.data.Data;
+    return [];
+  } catch (error) {
+    console.error("Get search history error:", error);
+    throw error;
+  }
+};
+
+export const getRecommendedUsers = async () => {
+  try {
+    const response = await api.get("/User/recommended");
+    if (Array.isArray(response.data)) return response.data;
+    if (Array.isArray(response.data?.data)) return response.data.data;
+    if (Array.isArray(response.data?.Data)) return response.data.Data;
+    return [];
+  } catch (error) {
+    console.error("Get recommended users error:", error);
+    throw error;
+  }
+};

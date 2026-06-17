@@ -4,6 +4,7 @@ import { useSelector } from "react-redux";
 import Navbar from "../components/Layout/Navbar";
 import CreatePostBox from "../components/Post/CreatePostBox";
 import HomeFeed from "../components/Home/HomeFeed";
+import HomeRecommendations from "../components/Home/HomeRecommendations";
 import Toast from "../components/UI/Toast";
 
 import api from "../services/api";
@@ -254,6 +255,10 @@ const HomePage = ({ likeConnection }) => {
               showToast={showToast}
             />
           </main>
+
+          <aside className="home-right-sidebar">
+            <HomeRecommendations showToast={showToast} />
+          </aside>
         </div>
       </div>
 
