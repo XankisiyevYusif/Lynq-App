@@ -1,12 +1,8 @@
 import React, { useMemo, useState } from "react";
 import EmptySectionCard from "./EmptySectionCard";
+import ProfileIcon from "../ProfileIcon";
 
-export default function SkillsCard({
-  skills = [],
-  isOwner,
-  readOnly,
-  onEdit,
-}) {
+export default function SkillsCard({ skills = [], isOwner, readOnly, onEdit }) {
   const [showAll, setShowAll] = useState(false);
   const previewCount = 5;
 
@@ -48,13 +44,22 @@ export default function SkillsCard({
   const hasMore = normalizedSkills.length > previewCount;
 
   return (
-    <div style={styles.card}>
+    <div className="profile-section-card" style={styles.card}>
       <div style={styles.header}>
-        <h3 style={styles.title}>Skills</h3>
+        <h3 className="profile-section-title" style={styles.title}>
+          Skills
+        </h3>
 
         {!readOnly && isOwner && (
-          <button style={styles.editButton} onClick={onEdit}>
-            Edit
+          <button
+            type="button"
+            className="profile-icon-button profile-section-add-button"
+            style={styles.addButton}
+            onClick={onEdit}
+            aria-label="Add skill"
+            title="Add skill"
+          >
+            <ProfileIcon name="plus" size={19} strokeWidth={2.4} />
           </button>
         )}
       </div>
@@ -84,8 +89,8 @@ export default function SkillsCard({
 
 const styles = {
   card: {
-    backgroundColor: "#fff",
-    border: "1px solid #e0e0e0",
+    backgroundColor: "var(--app-surface)",
+    border: "1px solid var(--app-border)",
     borderRadius: 12,
     padding: 20,
   },
@@ -101,19 +106,22 @@ const styles = {
     margin: 0,
     fontSize: 20,
     fontWeight: 600,
-    color: "#1d2226",
+    color: "var(--app-text)",
     fontFamily:
       '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
   },
 
-  editButton: {
-    border: "none",
-    background: "transparent",
-    color: "#0a66c2",
-    fontWeight: 600,
-    cursor: "pointer",
-    fontSize: 14,
+  addButton: {
+    width: 34,
+    height: 34,
+    display: "grid",
+    placeItems: "center",
     padding: 0,
+    border: "1px solid var(--app-border)",
+    borderRadius: 10,
+    background: "var(--app-surface)",
+    color: "var(--app-muted)",
+    cursor: "pointer",
   },
 
   skillsWrap: {
@@ -125,8 +133,8 @@ const styles = {
   skillBadge: {
     padding: "8px 14px",
     borderRadius: 20,
-    backgroundColor: "#eef3f8",
-    color: "#1d2226",
+    backgroundColor: "var(--app-surface-2)",
+    color: "var(--app-text-soft)",
     fontSize: 14,
     fontWeight: 500,
     fontFamily:
@@ -137,7 +145,7 @@ const styles = {
     marginTop: 16,
     border: "none",
     background: "transparent",
-    color: "#0a66c2",
+    color: "var(--app-accent)",
     fontWeight: 600,
     cursor: "pointer",
     fontSize: 14,

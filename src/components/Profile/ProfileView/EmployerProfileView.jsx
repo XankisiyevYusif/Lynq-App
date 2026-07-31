@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import api from "../../../services/api";
 import Navbar from "../../Layout/Navbar";
 import EmployerHeader from "../Employer/EmployerHeader";
@@ -8,9 +9,17 @@ import EmployerAbout from "../Employer/EmployerAbout";
 import EmployerJobPosts from "../../Post/JobPosts/JobPostFeed";
 import EmployerEditModal from "../Employer/EmployerEditModal";
 import Toast from "../../UI/Toast";
-import ActivitiesCarousel from "../Sections/ActivitiesCarousel";
 import EmployerFollowButton from "../Employer/EmployerFollowButton";
 import EmployerFollowersSection from "../Employer/EmployerFollowersSection";
+import EmployerDiscovery from "../Employer/EmployerDiscovery";
+import ProfileAnalyticsCard from "../ProfileAnalyticsCard";
+import ProfileEventsSection from "../../Events/ProfileEventsSection";
+import EmployerCommunity from "../Employer/EmployerCommunity";
+import EmployerPeople from "../Employer/EmployerPeople";
+import "../ProfilePolish.css";
+import "../Employer/EmployerProfile.css";
+import { useDispatch } from "react-redux";
+import { loginSuccess } from "../../../store/userSlice";
 const EmployerProfileView = ({
   user,
   setUser,
@@ -18,14 +27,46 @@ const EmployerProfileView = ({
   readOnly,
   likeConnection,
 }) => {
+  const dispatch = useDispatch();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [employer, setEmployer] = useState(user || null);
-  const [activeTab, setActiveTab] = useState("home");
+  const requestedTab = searchParams.get("tab");
+  const normalizedRequestedTab =
+    requestedTab === "home"
+      ? "overview"
+      : requestedTab === "community"
+        ? "posts"
+        : requestedTab;
+  const [activeTab, setActiveTab] = useState(
+    ["overview", "about", "posts", "jobs", "people", "events"].includes(
+      normalizedRequestedTab,
+    )
+      ? normalizedRequestedTab
+      : "overview",
+  );
   const [showModal, setShowModal] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [activeEditSection, setActiveEditSection] = useState("company");
   const [toast, setToast] = useState(null);
   const [jobsRefreshKey, setJobsRefreshKey] = useState(0);
   const [followerCount, setFollowerCount] = useState(0);
+
+  const changeTab = (tab) => {
+    setActiveTab(tab);
+    const next = new URLSearchParams(searchParams);
+    if (tab === "overview") next.delete("tab");
+    else next.set("tab", tab);
+    if (tab !== "posts") next.delete("view");
+    setSearchParams(next, { replace: true });
+  };
+
+  const openMentions = () => {
+    setActiveTab("posts");
+    const next = new URLSearchParams(searchParams);
+    next.set("tab", "posts");
+    next.set("view", "mentions");
+    setSearchParams(next, { replace: true });
+  };
 
   const [imageMenu, setImageMenu] = useState({
     open: false,
@@ -42,6 +83,17 @@ const EmployerProfileView = ({
   const menuRef = useRef(null);
   const profileImageInputRef = useRef(null);
   const backgroundImageInputRef = useRef(null);
+
+  useEffect(() => {
+    if (isOwner) return;
+    const username =
+      user?.basicInfo?.username || user?.username || user?.userName;
+    if (!username) return;
+
+    api.post("/Analytics/track/profile-view", { username }).catch((error) => {
+      console.error("Company profile analytics tracking failed:", error);
+    });
+  }, [isOwner, user?.basicInfo?.username, user?.username, user?.userName]);
 
   const showToast = (message, type = "success") => {
     setToast({ message, type });
@@ -86,37 +138,36 @@ const EmployerProfileView = ({
   }
 
   const getResponseData = (res) => {
-  if (res?.data?.data) return res.data.data;
-  if (res?.data?.Data) return res.data.Data;
-  return res?.data;
-};
+    if (res?.data?.data) return res.data.data;
+    if (res?.data?.Data) return res.data.Data;
+    return res?.data;
+  };
 
-const fetchFollowerCount = async () => {
-  const username =
-    employer?.basicInfo?.username ||
-    employer?.username ||
-    employer?.userName;
+  const fetchFollowerCount = async () => {
+    const username =
+      employer?.basicInfo?.username || employer?.username || employer?.userName;
 
-  if (!username) return;
+    if (!username) return;
 
-  try {
-    const res = await api.get(`/CompanyFollow/followers-count/${username}`);
-    const data = getResponseData(res);
+    try {
+      const res = await api.get(`/CompanyFollow/followers-count/${username}`);
+      const data = getResponseData(res);
 
-    setFollowerCount(data?.followerCount ?? data?.FollowerCount ?? 0);
-  } catch (err) {
-    console.error("Fetch follower count failed:", err);
-  }
-};
+      setFollowerCount(data?.followerCount ?? data?.FollowerCount ?? 0);
+    } catch (err) {
+      console.error("Fetch follower count failed:", err);
+    }
+  };
 
-useEffect(() => {
-  fetchFollowerCount();
-}, [employer?.basicInfo?.username]);
+  useEffect(() => {
+    fetchFollowerCount();
+  }, [employer?.basicInfo?.username]);
 
   const refreshProfile = async () => {
     const res = await api.get("/User/me");
 
     setEmployer(res.data);
+    dispatch(loginSuccess(res.data));
 
     if (setUser) {
       setUser(res.data);
@@ -142,7 +193,7 @@ useEffect(() => {
   };
 
   const handleFollow = () => {
-    alert("Follow sistemi sonra əlavə olunacaq.");
+    alert("The follow system will be added later.");
   };
 
   const openProfileImageMenu = () => {
@@ -265,58 +316,93 @@ useEffect(() => {
         onChange={handleBackgroundImageSelected}
       />
 
-      <div style={styles.page}>
+      <div className="employer-profile-page" style={styles.page}>
         <EmployerHeader
-  user={employer}
-  isOwner={isOwner}
-  readOnly={readOnly}
-  onEdit={() => {
-    setActiveEditSection("company");
-    setIsEditOpen(true);
-  }}
-  followerCount={followerCount}
-  followButton={
-    <EmployerFollowButton
-      username={
-        employer?.basicInfo?.username ||
-        employer?.username ||
-        employer?.userName
-      }
-      isOwner={isOwner}
-      showToast={showToast}
-      onChanged={(data) => {
-        if (
-          data?.followerCount !== undefined &&
-          data?.followerCount !== null
-        ) {
-          setFollowerCount(data.followerCount);
-        } else {
-          fetchFollowerCount();
-        }
-      }}
-    />
-      }
-      imageMenu={imageMenu}
-      menuRef={menuRef}
-      onOpenProfileImageMenu={openProfileImageMenu}
-      onOpenBackgroundImageMenu={openBackgroundImageMenu}
-      onUploadProfileImage={handleUploadProfileImage}
-      onUploadBackgroundImage={handleUploadBackgroundImage}
-      onDeleteProfileImage={handleDeleteProfileImage}
-      onDeleteBackgroundImage={handleDeleteBackgroundImage}
-    />
-
-        <EmployerTabs activeTab={activeTab} onChange={setActiveTab} />
-
-        {activeTab === "home" && (
-          <>
-            <EmployerHome
-              user={employer}
-              onOpenAbout={() => setActiveTab("about")}
+          user={employer}
+          isOwner={isOwner}
+          readOnly={readOnly}
+          showToast={showToast}
+          onEdit={() => {
+            setActiveEditSection("company");
+            setIsEditOpen(true);
+          }}
+          followerCount={followerCount}
+          followButton={
+            <EmployerFollowButton
+              username={
+                employer?.basicInfo?.username ||
+                employer?.username ||
+                employer?.userName
+              }
+              isOwner={isOwner}
+              showToast={showToast}
+              onChanged={(data) => {
+                if (
+                  data?.followerCount !== undefined &&
+                  data?.followerCount !== null
+                ) {
+                  setFollowerCount(data.followerCount);
+                } else {
+                  fetchFollowerCount();
+                }
+              }}
             />
-        
-            <EmployerFollowersSection isOwner={isOwner} />
-          </>
+          }
+          imageMenu={imageMenu}
+          menuRef={menuRef}
+          onOpenProfileImageMenu={openProfileImageMenu}
+          onOpenBackgroundImageMenu={openBackgroundImageMenu}
+          onUploadProfileImage={handleUploadProfileImage}
+          onUploadBackgroundImage={handleUploadBackgroundImage}
+          onDeleteProfileImage={handleDeleteProfileImage}
+          onDeleteBackgroundImage={handleDeleteBackgroundImage}
+        />
+
+        <EmployerTabs activeTab={activeTab} onChange={changeTab} />
+
+        {activeTab === "overview" && (
+          <div className="company-profile-overview-shell">
+            {isOwner && (
+              <div className="company-profile-private-analytics">
+                <ProfileAnalyticsCard />
+              </div>
+            )}
+
+            <div className="company-profile-overview-grid">
+              <main className="company-profile-overview-main">
+                <EmployerHome
+                  user={employer}
+                  onOpenAbout={() => changeTab("about")}
+                  onOpenMentions={openMentions}
+                />
+
+                <ProfileEventsSection
+                  username={
+                    employer?.basicInfo?.username ||
+                    employer?.basicInfo?.userName ||
+                    employer?.username ||
+                    employer?.userName ||
+                    employer?.Username ||
+                    employer?.UserName
+                  }
+                  isOwner={isOwner}
+                  showToast={showToast}
+                />
+              </main>
+
+              <aside className="company-profile-overview-aside">
+                <EmployerDiscovery
+                  username={
+                    employer?.basicInfo?.username ||
+                    employer?.username ||
+                    employer?.userName
+                  }
+                />
+
+                <EmployerFollowersSection isOwner={isOwner} />
+              </aside>
+            </div>
+          </div>
         )}
 
         {activeTab === "about" && (
@@ -328,97 +414,65 @@ useEffect(() => {
           />
         )}
 
-
         {activeTab === "posts" && (
-          <div style={styles.postsWrapper}>
-            <ActivitiesCarousel
-             posts={employer?.activitiesPreview?.recentPosts || []}
-             username={employer?.basicInfo?.username}
-             isOwner={isOwner}
-             isEmployer={true}
-             showToast={showToast}
-             likeConnection={likeConnection}
-              userId={
-                employer?.id ||
-                employer?.basicInfo?.userId ||
-                employer?.basicInfo?.id
+          <div className="company-profile-tab-content" style={styles.postsWrapper}>
+            <EmployerCommunity
+              username={
+                employer?.basicInfo?.username ||
+                employer?.basicInfo?.userName ||
+                employer?.username ||
+                employer?.userName ||
+                employer?.Username ||
+                employer?.UserName
               }
-              onPostCreated={(createdPost) => {
-                setEmployer((prev) => {
-                  const prevActivitiesPreview = prev?.activitiesPreview || {};
-                  const prevPreview = prevActivitiesPreview.recentPosts || [];
-                
-                  const next = {
-                    ...prev,
-                    activitiesPreview: {
-                      ...prevActivitiesPreview,
-                      postsCount: (prevActivitiesPreview.postsCount || 0) + 1,
-                      recentPosts: [createdPost, ...prevPreview].slice(0, 5),
-                    },
-                  };
-                
-                  setUser?.(next);
-                  return next;
-                });
-              
-                showToast("Post paylaşıldı.", "success");
-              }}
-              onPostUpdated={(updatedPost) => {
-                setEmployer((prev) => {
-                  const prevActivitiesPreview = prev?.activitiesPreview || {};
-                  const prevPreview = prevActivitiesPreview.recentPosts || [];
-                
-                  const next = {
-                    ...prev,
-                    activitiesPreview: {
-                      ...prevActivitiesPreview,
-                      recentPosts: prevPreview.map((post) =>
-                        post.id === updatedPost.id
-                          ? { ...post, ...updatedPost }
-                          : post
-                      ),
-                    },
-                  };
-                
-                  setUser?.(next);
-                  return next;
-                });
-              }}
-              onPostDeleted={(deletedPostId) => {
-                setEmployer((prev) => {
-                  const prevActivitiesPreview = prev?.activitiesPreview || {};
-                  const prevPreview = prevActivitiesPreview.recentPosts || [];
-                
-                  const next = {
-                    ...prev,
-                    activitiesPreview: {
-                      ...prevActivitiesPreview,
-                      postsCount: Math.max(
-                        (prevActivitiesPreview.postsCount || 0) - 1,
-                        0
-                      ),
-                      recentPosts: prevPreview.filter(
-                        (post) => post.id !== deletedPostId
-                      ),
-                    },
-                  };
-                
-                  setUser?.(next);
-                  return next;
-                });
-              }}
+              isOwner={isOwner}
+              showToast={showToast}
+              likeConnection={likeConnection}
+              defaultType={
+                searchParams.get("view") === "mentions"
+                  ? "mentions"
+                  : "official"
+              }
             />
           </div>
         )}
 
-      
+        {activeTab === "people" && (
+          <div className="company-profile-tab-content" style={styles.postsWrapper}>
+            <EmployerPeople
+              username={
+                employer?.basicInfo?.username ||
+                employer?.basicInfo?.userName ||
+                employer?.username ||
+                employer?.userName
+              }
+            />
+          </div>
+        )}
+
         {activeTab === "jobs" && (
-          <div style={styles.jobsWrapper}>
+          <div className="company-profile-tab-content" style={styles.jobsWrapper}>
             <EmployerJobPosts
               key={jobsRefreshKey}
               username={employer?.basicInfo?.username}
               isOwner={isOwner}
               onJobCreated={() => setJobsRefreshKey((prev) => prev + 1)}
+            />
+          </div>
+        )}
+
+        {activeTab === "events" && (
+          <div className="company-profile-tab-content">
+            <ProfileEventsSection
+              username={
+                employer?.basicInfo?.username ||
+                employer?.basicInfo?.userName ||
+                employer?.username ||
+                employer?.userName
+              }
+              isOwner={isOwner}
+              showToast={showToast}
+              showEmptyState
             />
           </div>
         )}
@@ -518,25 +572,25 @@ export default EmployerProfileView;
 const styles = {
   page: {
     minHeight: "100vh",
-    backgroundColor: "#f3f2ef",
-    padding: "28px 0 60px",
+    backgroundColor: "var(--app-bg)",
+    padding: "32px 20px 72px",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
-    gap: "12px",
+    gap: "16px",
   },
 
   contentCard: {
     width: "804px",
-    backgroundColor: "#fff",
-    border: "1px solid #ddd",
+    backgroundColor: "var(--app-surface)",
+    border: "1px solid var(--app-border)",
     borderRadius: "10px",
     padding: "20px",
     boxSizing: "border-box",
   },
 
   jobsWrapper: {
-    width: "820px",
+    width: "100%",
     display: "flex",
     flexDirection: "column",
     gap: "14px",
@@ -548,7 +602,7 @@ const styles = {
   },
 
   muted: {
-    color: "#666",
+    color: "var(--app-muted)",
   },
 
   modalOverlay: {
@@ -562,7 +616,7 @@ const styles = {
   },
 
   modalContent: {
-    backgroundColor: "white",
+    backgroundColor: "var(--app-surface)",
     padding: 22,
     borderRadius: 12,
     width: "430px",
@@ -584,7 +638,7 @@ const styles = {
     marginBottom: 12,
     padding: "9px 10px",
     borderRadius: 8,
-    border: "1px solid #ccc",
+    border: "1px solid var(--app-border)",
     fontSize: 14,
     fontFamily: "inherit",
   },
@@ -597,9 +651,9 @@ const styles = {
   },
 
   cancelButton: {
-    backgroundColor: "#eee",
+    backgroundColor: "var(--app-surface-2)",
     border: "none",
-    color: "#333",
+    color: "var(--app-text)",
     borderRadius: 8,
     padding: "8px 14px",
     cursor: "pointer",
@@ -615,8 +669,8 @@ const styles = {
     fontWeight: 600,
   },
   postsWrapper: {
-  width: "820px",
-  maxWidth: "820px",
-  boxSizing: "border-box",
-},
+    width: "820px",
+    maxWidth: "820px",
+    boxSizing: "border-box",
+  },
 };

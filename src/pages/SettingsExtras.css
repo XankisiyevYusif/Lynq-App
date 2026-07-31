@@ -1,0 +1,124 @@
+.security-card > p {
+  color: var(--app-muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.security-card label {
+  display: block;
+  margin: 20px 0 14px;
+}
+
+.security-card label span {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--app-text-soft);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.security-card input {
+  width: 100%;
+  padding: 11px;
+  border: 1px solid var(--app-border);
+  border-radius: 9px;
+  outline: 0;
+  background: var(--app-surface-2);
+  color: var(--app-text);
+  font: inherit;
+}
+
+.security-card input:focus {
+  border-color: var(--app-accent);
+  box-shadow: 0 0 0 3px var(--app-accent-soft);
+}
+
+.security-status {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.security-status h2 {
+  margin: 0 0 5px;
+}
+
+.security-status p {
+  max-width: 520px;
+  margin: 0;
+  color: var(--app-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.security-status > span {
+  flex: 0 0 auto;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: var(--app-surface-2);
+  color: var(--app-muted);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.security-status > span.is-on {
+  background: rgba(22, 163, 74, 0.12);
+  color: #15803d;
+}
+
+.security-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.security-actions button {
+  min-width: 124px;
+  padding: 10px 14px;
+  border: 1px solid var(--app-accent);
+  border-radius: 9px;
+  background: var(--app-accent);
+  color: #fff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.security-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.settings-message {
+  display: block;
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 9px;
+  font-size: 12px;
+}
+
+.settings-message.is-success {
+  background: rgba(22, 163, 74, 0.11);
+  color: #15803d;
+}
+
+.settings-message.is-error {
+  background: rgba(220, 38, 38, 0.1);
+  color: #b91c1c;
+}
+
+html[data-theme="dark"] .security-status > span.is-on,
+html[data-theme="dark"] .settings-message.is-success {
+  color: #86efac;
+}
+
+html[data-theme="dark"] .settings-message.is-error {
+  color: #fca5a5;
+}
+
+@media (max-width: 560px) {
+  .security-status {
+    flex-direction: column;
+  }
+}

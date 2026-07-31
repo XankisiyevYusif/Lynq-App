@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import api from "../../../../services/api";
 import Toast from "../../../UI/Toast";
+import ProfileLookupInput from "../../../UI/ProfileLookupInput";
+import OrganizationLookupInput from "../../../UI/OrganizationLookupInput";
 
 export default function ExperienceForm({ user, setUser, onClose }) {
   const months = useMemo(
@@ -19,7 +21,7 @@ export default function ExperienceForm({ user, setUser, onClose }) {
       { value: "11", label: "November" },
       { value: "12", label: "December" },
     ],
-    []
+    [],
   );
 
   const years = useMemo(() => {
@@ -36,6 +38,7 @@ export default function ExperienceForm({ user, setUser, onClose }) {
   const [title, setTitle] = useState("");
   const [employmentType, setEmploymentType] = useState("");
   const [companyName, setCompanyName] = useState("");
+  const [companyId, setCompanyId] = useState(null);
   const [isCurrent, setIsCurrent] = useState(false);
 
   const [startMonth, setStartMonth] = useState("");
@@ -86,6 +89,7 @@ export default function ExperienceForm({ user, setUser, onClose }) {
     setTitle("");
     setEmploymentType("");
     setCompanyName("");
+    setCompanyId(null);
     setIsCurrent(false);
     setStartMonth("");
     setStartYear("");
@@ -165,81 +169,82 @@ export default function ExperienceForm({ user, setUser, onClose }) {
   };
 
   const handleSave = async () => {
-  if (isLoading) return;
+    if (isLoading) return;
 
-  if (!validateForm()) {
-    showToast("Please fill in the required fields.", "error");
-    return;
-  }
+    if (!validateForm()) {
+      showToast("Please fill in the required fields.", "error");
+      return;
+    }
 
-  const payload = {
-    title: title.trim(),
-    employmentType: employmentType || null,
-    companyName: companyName.trim(),
-    isCurrent,
-    startMonth: startMonth ? Number(startMonth) : null,
-    startYear: startYear ? Number(startYear) : null,
-    endMonth: isCurrent ? null : endMonth ? Number(endMonth) : null,
-    endYear: isCurrent ? null : endYear ? Number(endYear) : null,
-    location: location.trim() ? location.trim() : null,
-    locationType: locationType || null,
-    description: description.trim() ? description.trim() : null,
+    const payload = {
+      title: title.trim(),
+      employmentType: employmentType || null,
+      companyName: companyName.trim(),
+      companyId,
+      isCurrent,
+      startMonth: startMonth ? Number(startMonth) : null,
+      startYear: startYear ? Number(startYear) : null,
+      endMonth: isCurrent ? null : endMonth ? Number(endMonth) : null,
+      endYear: isCurrent ? null : endYear ? Number(endYear) : null,
+      location: location.trim() ? location.trim() : null,
+      locationType: locationType || null,
+      description: description.trim() ? description.trim() : null,
+    };
+
+    try {
+      setIsLoading(true);
+
+      const response = await api.post("/user/experience", payload);
+      const result = response.data;
+      const createdExperience = result?.data;
+
+      if (createdExperience) {
+        setUser((prev) => ({
+          ...prev,
+          experiences: [...(prev?.experiences || []), createdExperience],
+        }));
+      } else {
+        setUser((prev) => ({
+          ...prev,
+          experiences: [
+            ...(prev?.experiences || []),
+            {
+              id: Date.now(),
+              title: payload.title,
+              employmentType: payload.employmentType,
+              companyName: payload.companyName,
+              isCurrent: payload.isCurrent,
+              startMonth: payload.startMonth,
+              startYear: payload.startYear,
+              endMonth: payload.endMonth,
+              endYear: payload.endYear,
+              location: payload.location,
+              locationType: payload.locationType,
+              description: payload.description,
+            },
+          ],
+        }));
+      }
+
+      showToast("Experience added successfully.", "success");
+      resetForm();
+
+      if (onClose) {
+        setTimeout(() => {
+          onClose();
+        }, 700);
+      }
+    } catch (error) {
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.response?.data?.Message ||
+        "Failed to add experience.";
+
+      showToast(errorMessage, "error");
+    } finally {
+      setIsLoading(false);
+    }
   };
-
-  try {
-    setIsLoading(true);
-
-    const response = await api.post("/user/experience", payload);
-    const result = response.data;
-    const createdExperience = result?.data;
-
-    if (createdExperience) {
-      setUser((prev) => ({
-        ...prev,
-        experiences: [...(prev?.experiences || []), createdExperience],
-      }));
-    } else {
-      setUser((prev) => ({
-        ...prev,
-        experiences: [
-          ...(prev?.experiences || []),
-          {
-            id: Date.now(),
-            title: payload.title,
-            employmentType: payload.employmentType,
-            companyName: payload.companyName,
-            isCurrent: payload.isCurrent,
-            startMonth: payload.startMonth,
-            startYear: payload.startYear,
-            endMonth: payload.endMonth,
-            endYear: payload.endYear,
-            location: payload.location,
-            locationType: payload.locationType,
-            description: payload.description,
-          },
-        ],
-      }));
-    }
-
-    showToast("Experience added successfully.", "success");
-    resetForm();
-
-    if (onClose) {
-      setTimeout(() => {
-        onClose();
-      }, 700);
-    }
-  } catch (error) {
-    const errorMessage =
-      error?.response?.data?.message ||
-      error?.response?.data?.Message ||
-      "Failed to add experience.";
-
-    showToast(errorMessage, "error");
-  } finally {
-    setIsLoading(false);
-  }
-};
 
   return (
     <div style={styles.root}>
@@ -256,15 +261,16 @@ export default function ExperienceForm({ user, setUser, onClose }) {
 
       <div style={styles.field}>
         <label style={styles.label}>Title*</label>
-        <input
-          style={{
+        <ProfileLookupInput
+          type="Position"
+          inputStyle={{
             ...styles.input,
             ...(errors.title ? styles.inputError : {}),
           }}
           placeholder="Example: Backend Developer"
           value={title}
-          onChange={(e) => {
-            setTitle(e.target.value);
+          onChange={(value) => {
+            setTitle(value);
             if (errors.title) {
               setErrors((prev) => ({ ...prev, title: "" }));
             }
@@ -305,19 +311,18 @@ export default function ExperienceForm({ user, setUser, onClose }) {
 
       <div style={styles.field}>
         <label style={styles.label}>Company or organization*</label>
-        <input
-          style={{
-            ...styles.input,
-            ...(errors.companyName ? styles.inputError : {}),
-          }}
+        <OrganizationLookupInput
+          inputStyle={styles.input}
+          errorStyle={errors.companyName ? styles.inputError : {}}
           placeholder="Example: Microsoft"
           value={companyName}
-          onChange={(e) => {
-            setCompanyName(e.target.value);
+          onChange={(value) => {
+            setCompanyName(value);
             if (errors.companyName) {
               setErrors((prev) => ({ ...prev, companyName: "" }));
             }
           }}
+          onSelect={(organization) => setCompanyId(organization?.id || null)}
         />
         {errors.companyName && (
           <div style={styles.errorText}>{errors.companyName}</div>
@@ -463,11 +468,12 @@ export default function ExperienceForm({ user, setUser, onClose }) {
 
       <div style={styles.field}>
         <label style={styles.label}>Location</label>
-        <input
-          style={styles.input}
+        <ProfileLookupInput
+          type="Location"
+          inputStyle={styles.input}
           placeholder="Example: Baku, Azerbaijan"
           value={location}
-          onChange={(e) => setLocation(e.target.value)}
+          onChange={setLocation}
         />
       </div>
 
@@ -537,7 +543,7 @@ const styles = {
     fontSize: 20,
     fontWeight: 700,
     marginBottom: 20,
-    color: "#191919",
+    color: "var(--app-text)",
   },
 
   field: {
@@ -549,44 +555,44 @@ const styles = {
     marginBottom: 8,
     fontSize: 14,
     fontWeight: 600,
-    color: "#444",
+    color: "var(--app-text-soft)",
   },
 
   input: {
     width: "100%",
     height: 44,
     borderRadius: 8,
-    border: "1px solid #d0d0d0",
+    border: "1px solid var(--app-border)",
     padding: "0 12px",
     fontSize: 14,
     boxSizing: "border-box",
     outline: "none",
-    backgroundColor: "#fff",
+    backgroundColor: "var(--app-surface)",
   },
 
   select: {
     width: "100%",
     height: 44,
     borderRadius: 8,
-    border: "1px solid #d0d0d0",
+    border: "1px solid var(--app-border)",
     padding: "0 12px",
     fontSize: 14,
     boxSizing: "border-box",
     outline: "none",
-    backgroundColor: "#fff",
+    backgroundColor: "var(--app-surface)",
   },
 
   textarea: {
     width: "100%",
     minHeight: 120,
     borderRadius: 8,
-    border: "1px solid #d0d0d0",
+    border: "1px solid var(--app-border)",
     padding: "12px",
     fontSize: 14,
     boxSizing: "border-box",
     outline: "none",
     resize: "vertical",
-    backgroundColor: "#fff",
+    backgroundColor: "var(--app-surface)",
   },
 
   row: {
@@ -605,7 +611,7 @@ const styles = {
     gap: 10,
     marginBottom: 18,
     fontSize: 14,
-    color: "#333",
+    color: "var(--app-text)",
   },
 
   checkbox: {
@@ -618,7 +624,7 @@ const styles = {
     marginTop: 6,
     textAlign: "right",
     fontSize: 12,
-    color: "#777",
+    color: "var(--app-muted)",
   },
 
   actions: {

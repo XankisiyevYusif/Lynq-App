@@ -62,7 +62,7 @@ const styles = {
   modal: {
     width: "100%",
     maxWidth: "420px",
-    background: "#fff",
+    background: "var(--app-surface)",
     borderRadius: "12px",
     padding: "16px",
     boxShadow: "0 20px 40px rgba(0,0,0,0.2)",
@@ -78,7 +78,7 @@ const styles = {
     resize: "none",
     padding: "10px",
     borderRadius: "8px",
-    border: "1px solid #e5e7eb",
+    border: "1px solid var(--app-border)",
     fontSize: "14px",
     outline: "none",
   },
@@ -93,7 +93,7 @@ const styles = {
     border: "none",
     fontSize: "14px",
     cursor: "pointer",
-    color: "#6b7280",
+    color: "var(--app-muted)",
   },
   save: {
     background: "#0a66c2",

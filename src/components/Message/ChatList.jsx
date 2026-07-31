@@ -13,16 +13,13 @@ const ChatList = () => {
   const navigate = useNavigate();
   const { username: selectedUsername } = useParams();
 
-
   const API_BASE_URL = API_ROOT;
 
   const fetchChats = async () => {
     try {
       const res = await api.get("/chat/user-chats");
 
-      const data = Array.isArray(res.data)
-        ? res.data
-        : res.data?.data || [];
+      const data = Array.isArray(res.data) ? res.data : res.data?.data || [];
 
       setConversations(data);
     } catch (err) {
@@ -32,35 +29,38 @@ const ChatList = () => {
   };
 
   useEffect(() => {
-  const token = localStorage.getItem("token");
+    const token = localStorage.getItem("token");
 
-  if (!token) return;
+    if (!token) return;
 
-  const connection = new signalR.HubConnectionBuilder()
-    .withUrl(`${API_BASE_URL}/chathub`, {
-      accessTokenFactory: () => localStorage.getItem("token"),
-    })
-    .withAutomaticReconnect()
-    .build();
+    const connection = new signalR.HubConnectionBuilder()
+      .withUrl(`${API_BASE_URL}/chathub`, {
+        accessTokenFactory: () => localStorage.getItem("token"),
+      })
+      .withAutomaticReconnect()
+      .build();
 
-  connection.on("ReceiveMessage", () => {
-    fetchChats();
-  });
+    connection.on("ReceiveMessage", () => {
+      fetchChats();
+    });
 
-  connection.on("ReceiveOwnMessage", () => {
-    fetchChats();
-  });
+    connection.on("ReceiveOwnMessage", () => {
+      fetchChats();
+    });
 
-  connection
-    .start()
-    .then(() => console.log("ChatList ChatHub connected"))
-    .catch((err) => console.error("ChatList ChatHub error:", err));
+    connection.on("MessageDeleted", () => {
+      fetchChats();
+    });
 
-  return () => {
-    connection.stop();
-  };
-}, []);
+    connection
+      .start()
+      .then(() => console.log("ChatList ChatHub connected"))
+      .catch((err) => console.error("ChatList ChatHub error:", err));
 
+    return () => {
+      connection.stop();
+    };
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -77,9 +77,7 @@ const ChatList = () => {
       try {
         const res = await api.get("/chat/user-chats");
 
-        const data = Array.isArray(res.data)
-          ? res.data
-          : res.data?.data || [];
+        const data = Array.isArray(res.data) ? res.data : res.data?.data || [];
 
         setConversations(data);
       } catch (err) {
@@ -100,12 +98,10 @@ const ChatList = () => {
 
       try {
         const res = await api.get(
-          `/user/users?query=${encodeURIComponent(debouncedSearch)}`
+          `/user/users?query=${encodeURIComponent(debouncedSearch)}`,
         );
 
-        const data = Array.isArray(res.data)
-          ? res.data
-          : res.data?.data || [];
+        const data = Array.isArray(res.data) ? res.data : res.data?.data || [];
 
         setSearchUsers(data);
       } catch (err) {
@@ -121,9 +117,7 @@ const ChatList = () => {
   const displayList = isSearching ? searchUsers : conversations;
 
   const handleSelect = (item) => {
-    const targetUsername = isSearching
-      ? item.username
-      : item.username;
+    const targetUsername = isSearching ? item.username : item.username;
 
     if (!targetUsername) return;
 
@@ -131,18 +125,19 @@ const ChatList = () => {
   };
 
   return (
-    <div style={styles.container}>
-      <div style={styles.searchWrapper}>
+    <div className="chat-list" style={styles.container}>
+      <div className="chat-list-search" style={styles.searchWrapper}>
         <input
           type="text"
           placeholder="Search messages"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           style={styles.input}
+          className="chat-list-input"
         />
       </div>
 
-      <div style={styles.list}>
+      <div className="chat-list-items" style={styles.list}>
         {displayList.length > 0 ? (
           displayList.map((item, index) => {
             const targetUsername = item.username;
@@ -184,7 +179,7 @@ const styles = {
     position: "sticky",
     top: 0,
     zIndex: 2,
-    backgroundColor: "#f8fafc",
+    backgroundColor: "var(--app-surface-2)",
     padding: "12px",
   },
 
@@ -192,7 +187,7 @@ const styles = {
     width: "100%",
     padding: "14px 16px",
     borderRadius: "12px",
-    border: "1px solid #e5e7eb",
+    border: "1px solid var(--app-border)",
     fontSize: "14px",
     outline: "none",
     boxSizing: "border-box",
@@ -208,7 +203,7 @@ const styles = {
   },
 
   noUsers: {
-    color: "#9ca3af",
+    color: "var(--app-muted)",
     textAlign: "center",
     marginTop: "24px",
     fontStyle: "italic",

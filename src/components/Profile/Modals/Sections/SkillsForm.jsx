@@ -1,14 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import api from "../../../../services/api";
 import Toast from "../../../UI/Toast";
-import pencil from "../../../../assets/pencil.png";
+import ProfileLookupInput from "../../../UI/ProfileLookupInput";
+import ProfileIcon from "../../ProfileIcon";
 
-export default function SkillsForm({
-  user,
-  setUser,
-  onClose,
-  onEditSkill,
-}) {
+export default function SkillsForm({ user, setUser, onClose, onEditSkill }) {
   const [skillInput, setSkillInput] = useState("");
   const [pendingSkills, setPendingSkills] = useState([]);
   const [errors, setErrors] = useState({});
@@ -65,7 +61,10 @@ export default function SkillsForm({
       .filter(Boolean);
   };
 
-  const getUniqueSkillsFromInput = (value, currentPendingSkills = pendingSkills) => {
+  const getUniqueSkillsFromInput = (
+    value,
+    currentPendingSkills = pendingSkills,
+  ) => {
     const parsedSkills = normalizeInputToSkills(value);
     const pendingLower = currentPendingSkills.map((x) => x.toLowerCase());
     const seen = new Set();
@@ -190,20 +189,22 @@ export default function SkillsForm({
       <div style={styles.field}>
         <label style={styles.label}>Skill*</label>
 
-        <input
-          style={{
+        <ProfileLookupInput
+          type="Skill"
+          inputStyle={{
             ...styles.input,
             ...(errors.skill ? styles.inputError : null),
           }}
           placeholder="Example: React, ASP.NET Core, SQL"
           value={skillInput}
-          onChange={(e) => {
-            setSkillInput(e.target.value);
+          onChange={(value) => {
+            setSkillInput(value);
             if (errors.skill) {
               setErrors((prev) => ({ ...prev, skill: "" }));
             }
           }}
           onKeyDown={handleInputKeyDown}
+          customLabel="Add"
         />
 
         {errors.skill && <div style={styles.errorText}>{errors.skill}</div>}
@@ -259,19 +260,22 @@ export default function SkillsForm({
                 <div key={`${skillName}-${index}`} style={styles.currentItem}>
                   <div style={styles.currentItemText}>{skillName}</div>
 
-                <button
-                      type="button"
-                      style={styles.iconBtn}
-                      onClick={() => onEditSkill?.(skill)}
-                      onMouseEnter={(e) =>
-                        (e.currentTarget.style.backgroundColor = "rgba(0,0,0,0.06)")
-                      }
-                      onMouseLeave={(e) =>
-                        (e.currentTarget.style.backgroundColor = "transparent")
-                      }
-                    >
-                      <img src={pencil} alt="edit" style={styles.iconImg} />
-                </button>
+                  <button
+                    type="button"
+                    className="profile-icon-button"
+                    style={styles.iconBtn}
+                    onClick={() => onEditSkill?.(skill)}
+                    aria-label={`Edit ${skillName}`}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.backgroundColor =
+                        "rgba(0,0,0,0.06)")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.backgroundColor = "transparent")
+                    }
+                  >
+                    <ProfileIcon name="edit" size={17} />
+                  </button>
                 </div>
               );
             })}
@@ -317,7 +321,7 @@ const styles = {
 
   helper: {
     fontSize: 12,
-    color: "#777",
+    color: "var(--app-muted)",
     marginBottom: 20,
   },
 
@@ -357,7 +361,7 @@ const styles = {
   inputHelper: {
     marginTop: 8,
     fontSize: 12,
-    color: "#666",
+    color: "var(--app-muted)",
   },
 
   addRow: {
@@ -367,7 +371,7 @@ const styles = {
   },
 
   secondaryBtn: {
-    background: "#fff",
+    background: "var(--app-surface)",
     color: "#0a66c2",
     border: "1px solid #0a66c2",
     borderRadius: 20,
@@ -385,7 +389,7 @@ const styles = {
     fontSize: 14,
     fontWeight: 700,
     marginBottom: 10,
-    color: "#1d2226",
+    color: "var(--app-text)",
   },
 
   skillsWrap: {
@@ -398,8 +402,8 @@ const styles = {
     display: "inline-flex",
     alignItems: "center",
     gap: 8,
-    background: "#eef3f8",
-    color: "#1d2226",
+    background: "var(--app-surface-2)",
+    color: "var(--app-text)",
     padding: "8px 12px",
     borderRadius: 20,
     fontSize: 13,
@@ -411,7 +415,7 @@ const styles = {
     background: "transparent",
     cursor: "pointer",
     fontSize: 13,
-    color: "#666",
+    color: "var(--app-muted)",
     padding: 0,
     lineHeight: 1,
   },
@@ -426,15 +430,15 @@ const styles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
-    border: "1px solid #e0e0e0",
+    border: "1px solid var(--app-border)",
     borderRadius: 10,
     padding: "10px 12px",
-    backgroundColor: "#fff",
+    backgroundColor: "var(--app-surface)",
   },
 
   currentItemText: {
     fontSize: 14,
-    color: "#1d2226",
+    color: "var(--app-text)",
     fontWeight: 500,
   },
 
@@ -448,7 +452,7 @@ const styles = {
   },
 
   emptyText: {
-    color: "#666",
+    color: "var(--app-muted)",
     fontSize: 14,
   },
 
@@ -473,21 +477,14 @@ const styles = {
     cursor: "not-allowed",
   },
 
-iconBtn: {
-  border: "none",
-  background: "transparent",
-  cursor: "pointer",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  padding: 6,
-  borderRadius: 50,
-},
-
-iconImg: {
-  width: 16,
-  height: 16,
-  objectFit: "contain",
-},
-  
+  iconBtn: {
+    border: "none",
+    background: "transparent",
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 6,
+    borderRadius: 50,
+  },
 };

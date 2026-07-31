@@ -3,10 +3,8 @@ import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
 
 import defaultAvatar from "../../assets/default-avatar.png";
-import saveIcon from "../../assets/save.png";
-import saveActiveIcon from "../../assets/saveactive.png";
-
-const API_ROOT = (api.defaults.baseURL || "").replace(/\/api\/?$/, "");
+import { resolveMediaUrl } from "../../utils/mediaUrl";
+import ProfileIcon from "../Profile/ProfileIcon";
 
 const HomeJobFeedItem = ({ job, onJobChanged, showToast }) => {
   const navigate = useNavigate();
@@ -16,11 +14,7 @@ const HomeJobFeedItem = ({ job, onJobChanged, showToast }) => {
 
   if (!job) return null;
 
-  const getImageUrl = (path) => {
-    if (!path) return defaultAvatar;
-    if (path.startsWith("http://") || path.startsWith("https://")) return path;
-    return `${API_ROOT}/${path.replace(/^\/+/, "")}`;
-  };
+  const getImageUrl = (path) => resolveMediaUrl(path, defaultAvatar);
 
   const formatDate = (dateValue) => {
     if (!dateValue) return "";
@@ -44,11 +38,8 @@ const HomeJobFeedItem = ({ job, onJobChanged, showToast }) => {
   };
 
   const handleOpenJob = () => {
-    navigate("/jobs", {
-      state: {
-        query: job.title || "",
-        selectedJobId: job.id,
-      },
+    navigate(`/jobs/${encodeURIComponent(job.id)}`, {
+      state: { jobPreview: job },
     });
   };
 
@@ -113,7 +104,7 @@ const HomeJobFeedItem = ({ job, onJobChanged, showToast }) => {
         err.response?.data?.message ||
           err.response?.data?.Message ||
           "Could not apply for this job.",
-        "error"
+        "error",
       );
     } finally {
       setApplying(false);
@@ -122,7 +113,11 @@ const HomeJobFeedItem = ({ job, onJobChanged, showToast }) => {
 
   return (
     <div style={styles.card} onClick={handleOpenJob}>
-      <div style={styles.topLabel}>Job recommendation</div>
+      <div style={styles.topLabel}>
+        {job.isFromFollowedCompany && job.hasProfileMatch
+          ? "Recommended from a company you follow"
+          : "Job recommendation"}
+      </div>
 
       <div style={styles.header}>
         <img
@@ -156,10 +151,11 @@ const HomeJobFeedItem = ({ job, onJobChanged, showToast }) => {
           disabled={saving}
           title={job.isSaved ? "Saved" : "Save"}
         >
-          <img
-            src={job.isSaved ? saveActiveIcon : saveIcon}
-            alt={job.isSaved ? "Saved" : "Save"}
-            style={styles.saveIcon}
+          <ProfileIcon
+            name="bookmark"
+            size={22}
+            filled={job.isSaved}
+            className="jobs-save-icon"
           />
         </button>
       </div>
@@ -212,8 +208,8 @@ const HomeJobFeedItem = ({ job, onJobChanged, showToast }) => {
 
 const styles = {
   card: {
-    backgroundColor: "#fff",
-    border: "1px solid #e0e0e0",
+    backgroundColor: "var(--app-surface)",
+    border: "1px solid var(--app-border)",
     borderRadius: "16px",
     padding: "16px",
     boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
@@ -224,7 +220,7 @@ const styles = {
 
   topLabel: {
     fontSize: "13px",
-    color: "#666",
+    color: "var(--app-muted)",
     marginBottom: "12px",
     fontWeight: 600,
   },
@@ -240,7 +236,7 @@ const styles = {
     height: "52px",
     borderRadius: "8px",
     objectFit: "cover",
-    border: "1px solid #ddd",
+    border: "1px solid var(--app-border)",
     flexShrink: 0,
   },
 
@@ -259,13 +255,13 @@ const styles = {
 
   companyLine: {
     fontSize: "14px",
-    color: "#222",
+    color: "var(--app-text)",
     marginBottom: "3px",
   },
 
   metaLine: {
     fontSize: "13px",
-    color: "#666",
+    color: "var(--app-muted)",
   },
 
   saveButton: {
@@ -289,8 +285,8 @@ const styles = {
   },
 
   badge: {
-    backgroundColor: "#eef3f8",
-    color: "#333",
+    backgroundColor: "var(--app-surface-2)",
+    color: "var(--app-text)",
     borderRadius: "999px",
     padding: "6px 10px",
     fontSize: "12px",
@@ -308,7 +304,7 @@ const styles = {
 
   description: {
     fontSize: "14px",
-    color: "#333",
+    color: "var(--app-text)",
     lineHeight: 1.5,
     marginTop: "14px",
     marginBottom: 0,
@@ -355,7 +351,7 @@ const styles = {
 
   viewButton: {
     border: "1px solid #0a66c2",
-    backgroundColor: "#fff",
+    backgroundColor: "var(--app-surface)",
     color: "#0a66c2",
     borderRadius: "999px",
     padding: "9px 18px",

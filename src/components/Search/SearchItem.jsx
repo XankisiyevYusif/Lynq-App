@@ -1,11 +1,10 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import defaultAvatar from "../../assets/default-avatar.png";
-import bioavatar from "../../assets/bio.png";
-import { current } from "@reduxjs/toolkit";
 import api from "../../services/api";
 import { useState } from "react";
 import { RefreshContext } from "../../context/RefreshContext";
+import { resolveMediaUrl } from "../../utils/mediaUrl";
 
 const SearchItem = ({ user }) => {
   const navigate = useNavigate();
@@ -13,16 +12,11 @@ const SearchItem = ({ user }) => {
   const { refreshData, setRefreshData } = React.useContext(RefreshContext);
   const [isFollowing, setIsFollowing] = useState(user.isFollowing);
   const handleClick = () => {
-    debugger;
     navigate(`/profile/${user.username}`);
   };
 
- 
-  console.log("User in SearchItem:", user);
-  
-    const handleFollow = async () => {
+  const handleFollow = async () => {
     if (!user) return;
-    debugger;
     if (user.isFollowing) {
       setShowUnfollowModal(true);
     } else {
@@ -33,14 +27,13 @@ const SearchItem = ({ user }) => {
           setIsFollowing(true);
 
           await api.post(`/FollowRequest/send/${user.username}`);
-          alert('Follow request sent!');
+          alert("Follow request sent!");
         }
       } catch (err) {
-        console.error('Follow error:', err);
+        console.error("Follow error:", err);
       }
     }
   };
-  
 
   const confirmUnfollow = async () => {
     try {
@@ -49,21 +42,23 @@ const SearchItem = ({ user }) => {
       setRefreshData(!refreshData);
       setIsFollowing(false);
     } catch (err) {
-      console.error('Failed to unfollow user:', err);
+      console.error("Failed to unfollow user:", err);
     }
   };
- 
 
   return (
     <div style={styles.container}>
       <div style={styles.itemContainer}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <img
-            src={user.profileImage || defaultAvatar}
+            src={resolveMediaUrl(user.profileImage, defaultAvatar)}
             alt=""
             style={styles.avatar}
+            onError={(e) => {
+              e.currentTarget.src = defaultAvatar;
+            }}
           />
-          <div style={styles.textContainer}  onClick={handleClick}>
+          <div style={styles.textContainer} onClick={handleClick}>
             <span style={styles.name}>{user.username}</span>
             <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
               <img src={bioavatar} alt="" style={styles.bioAvatar} />
@@ -71,19 +66,38 @@ const SearchItem = ({ user }) => {
             </div>
           </div>
         </div>
-       <button style={ isFollowing ? styles.unfollowButton: styles.button } onClick={handleFollow}>{isFollowing ? "Unfollow": "Follow"}</button>
+        <button
+          style={isFollowing ? styles.unfollowButton : styles.button}
+          onClick={handleFollow}
+        >
+          {isFollowing ? "Unfollow" : "Follow"}
+        </button>
 
-      {showUnfollowModal && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.modal}>
-           <p>Do you want to unfollow this user?</p>
-            <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-            <button style={styles.cancelButton} onClick={() => setShowUnfollowModal(false)}>Cancel</button>
-            <button style={styles.confirmButton} onClick={confirmUnfollow}>Unfollow</button>
+        {showUnfollowModal && (
+          <div style={styles.modalOverlay}>
+            <div style={styles.modal}>
+              <p>Do you want to unfollow this user?</p>
+              <div
+                style={{
+                  marginTop: "20px",
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  gap: "10px",
+                }}
+              >
+                <button
+                  style={styles.cancelButton}
+                  onClick={() => setShowUnfollowModal(false)}
+                >
+                  Cancel
+                </button>
+                <button style={styles.confirmButton} onClick={confirmUnfollow}>
+                  Unfollow
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
       </div>
     </div>
   );
@@ -99,7 +113,7 @@ const styles = {
     display: "flex",
     padding: "10px",
     cursor: "pointer",
-    borderBottom: "1px solid #eee",
+    borderBottom: "1px solid var(--app-border)",
     gap: 10,
     justifyContent: "space-between",
   },
@@ -115,68 +129,70 @@ const styles = {
   },
   bio: {
     fontSize: 14,
-    color: "#474747ff",
+    color: "var(--app-text-soft)",
   },
   bioAvatar: {
     width: 20,
   },
 
   button: {
-  backgroundColor: "#0073b1",
-  color: "white",
-  borderRadius: 10,
-  width: "80px",    
-  height: 30,
-  border: "none",
-  marginTop: 10,
-  cursor: "pointer",  
+    backgroundColor: "#0073b1",
+    color: "white",
+    borderRadius: 10,
+    width: "80px",
+    height: 30,
+    border: "none",
+    marginTop: 10,
+    cursor: "pointer",
   },
 
   unfollowButton: {
-    backgroundColor: "#ffffffff",
-    color: "black",
+    backgroundColor: "var(--app-surface)",
+    color: "var(--app-text)",
     borderRadius: 10,
-    width: "80px",    
+    width: "80px",
     height: 30,
-    border: "solid 2px #464646ff",
+    border: "solid 2px var(--app-border)",
     marginTop: 10,
-    cursor: "pointer",  
-
+    cursor: "pointer",
   },
 
   modalOverlay: {
-    position: 'fixed',
-    top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 999
+    position: "fixed",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 999,
   },
   modal: {
-    backgroundColor: '#fff',
-    padding: '25px',
-    borderRadius: '12px',
-    width: '300px',
-    textAlign: 'center',
-    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)'
+    backgroundColor: "var(--app-surface)",
+    padding: "25px",
+    borderRadius: "12px",
+    width: "300px",
+    textAlign: "center",
+    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
   },
   cancelButton: {
-    padding: '8px 12px',
-    backgroundColor: '#ddd',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer'
+    padding: "8px 12px",
+    backgroundColor: "var(--app-surface-2)",
+    color: "var(--app-text)",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer",
   },
   confirmButton: {
-    padding: '8px 12px',
-    backgroundColor: '#007bff',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer'
-  }
-}
- 
+    padding: "8px 12px",
+    backgroundColor: "#007bff",
+    color: "#fff",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer",
+  },
+};
 
 export default SearchItem;

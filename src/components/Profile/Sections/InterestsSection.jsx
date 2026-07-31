@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import api, { API_ROOT } from "../../../services/api";
+import api from "../../../services/api";
 import defaultAvatar from "../../../assets/default-avatar.png";
+import { resolveMediaUrl } from "../../../utils/mediaUrl";
 
 export default function InterestsSection({ isOwner, showToast }) {
   const navigate = useNavigate();
@@ -18,11 +19,7 @@ export default function InterestsSection({ isOwner, showToast }) {
     return [];
   };
 
-  const getImageUrl = (path) => {
-    if (!path) return defaultAvatar;
-    if (path.startsWith("http://") || path.startsWith("https://")) return path;
-    return `${API_ROOT}/${path.replace(/^\/+/, "")}`;
-  };
+  const getImageUrl = (path) => resolveMediaUrl(path, defaultAvatar);
 
   const getUsername = (company) => {
     return company?.username || company?.Username;
@@ -89,7 +86,7 @@ export default function InterestsSection({ isOwner, showToast }) {
       await api.delete(`/CompanyFollow/unfollow/${username}`);
 
       setCompanies((prev) =>
-        prev.filter((company) => getUsername(company) !== username)
+        prev.filter((company) => getUsername(company) !== username),
       );
 
       setConfirmCompany(null);
@@ -104,9 +101,11 @@ export default function InterestsSection({ isOwner, showToast }) {
 
   return (
     <>
-      <div style={styles.card}>
+      <div className="profile-section-card" style={styles.card}>
         <div style={styles.header}>
-          <h2 style={styles.title}>Interests</h2>
+          <h2 className="profile-section-title" style={styles.title}>
+            Interests
+          </h2>
           <p style={styles.subText}>Companies you follow</p>
         </div>
 
@@ -193,8 +192,8 @@ export default function InterestsSection({ isOwner, showToast }) {
 const styles = {
   card: {
     width: "100%",
-    backgroundColor: "#fff",
-    border: "1px solid #ddd",
+    backgroundColor: "var(--app-surface)",
+    border: "1px solid var(--app-border)",
     borderRadius: 12,
     padding: 20,
     boxSizing: "border-box",
@@ -208,12 +207,12 @@ const styles = {
     margin: 0,
     fontSize: 22,
     fontWeight: 700,
-    color: "#222",
+    color: "var(--app-text)",
   },
 
   subText: {
     margin: "5px 0 0",
-    color: "#666",
+    color: "var(--app-muted)",
     fontSize: 14,
   },
 
@@ -222,7 +221,7 @@ const styles = {
     alignItems: "center",
     gap: 12,
     padding: "13px 0",
-    borderTop: "1px solid #eee",
+    borderTop: "1px solid var(--app-border)",
   },
 
   logo: {
@@ -230,7 +229,7 @@ const styles = {
     height: 56,
     borderRadius: 10,
     objectFit: "cover",
-    backgroundColor: "#eef3f8",
+    backgroundColor: "var(--app-surface-2)",
   },
 
   companyInfo: {
@@ -243,19 +242,19 @@ const styles = {
     margin: "0 0 4px",
     fontSize: 16,
     fontWeight: 700,
-    color: "#111",
+    color: "var(--app-text)",
   },
 
   industry: {
     margin: "0 0 3px",
     fontSize: 14,
-    color: "#444",
+    color: "var(--app-text-soft)",
   },
 
   location: {
     margin: 0,
     fontSize: 13,
-    color: "#777",
+    color: "var(--app-muted)",
   },
 
   followingButton: {
@@ -270,7 +269,7 @@ const styles = {
 
   info: {
     margin: "8px 0 0",
-    color: "#666",
+    color: "var(--app-muted)",
     fontSize: 14,
   },
 
@@ -288,7 +287,7 @@ const styles = {
   modal: {
     width: "100%",
     maxWidth: 420,
-    backgroundColor: "#fff",
+    backgroundColor: "var(--app-surface)",
     borderRadius: 12,
     padding: 22,
     boxShadow: "0 12px 34px rgba(0,0,0,0.22)",
@@ -298,13 +297,13 @@ const styles = {
     margin: "0 0 10px",
     fontSize: 20,
     fontWeight: 700,
-    color: "#111",
+    color: "var(--app-text)",
   },
 
   modalText: {
     margin: "0 0 20px",
     fontSize: 14,
-    color: "#555",
+    color: "var(--app-text-soft)",
     lineHeight: 1.5,
   },
 
@@ -315,9 +314,9 @@ const styles = {
   },
 
   cancelButton: {
-    border: "1px solid #ccc",
-    backgroundColor: "#fff",
-    color: "#333",
+    border: "1px solid var(--app-border)",
+    backgroundColor: "var(--app-surface)",
+    color: "var(--app-text)",
     borderRadius: 999,
     padding: "8px 16px",
     fontWeight: 700,

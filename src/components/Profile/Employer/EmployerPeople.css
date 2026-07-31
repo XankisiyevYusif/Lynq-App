@@ -1,0 +1,16 @@
+.company-people-section { width:100%; max-width:100%; box-sizing:border-box; padding:21px; border:1px solid var(--app-border); border-radius:16px; background:var(--app-surface); box-shadow:var(--app-shadow); }
+.company-people-section header>span { color:var(--app-accent); font-size:.68rem; font-weight:800; letter-spacing:.09em; text-transform:uppercase; }
+.company-people-section h2 { margin:5px 0 3px; color:var(--app-text); font-size:1.24rem; }
+.company-people-section header p,.company-people-section footer { margin:0; color:var(--app-muted); font-size:.76rem; }
+.company-people-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:17px; }
+.company-people-grid button { display:flex; gap:11px; min-width:0; padding:13px; border:1px solid var(--app-border); border-radius:13px; background:var(--app-surface-2); color:var(--app-text); font:inherit; text-align:left; cursor:pointer; transition:150ms ease; }
+.company-people-grid button:hover { border-color:var(--app-accent); transform:translateY(-1px); }
+.company-people-grid img { width:48px; height:48px; flex:0 0 auto; border-radius:50%; object-fit:cover; }
+.company-people-grid span { min-width:0; }
+.company-people-grid strong,.company-people-grid small,.company-people-grid em { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.company-people-grid strong { font-size:.84rem; }
+.company-people-grid small { margin-top:4px; color:var(--app-text-soft); font-size:.71rem; }
+.company-people-grid em { margin-top:5px; color:var(--app-accent); font-size:.64rem; font-style:normal; }
+.company-people-section footer { margin-top:15px; text-align:center; }
+.company-people-state { margin-top:16px; padding:28px; border:1px dashed var(--app-border); border-radius:13px; color:var(--app-muted); text-align:center; }
+@media(max-width:620px){.company-people-grid{grid-template-columns:1fr}}

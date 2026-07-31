@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import api from "../../services/api";
 import CreatePostBox from "./CreatePostBox";
 import PostItem from "./PostItem";
- 
 
 const PostFeed = ({
   isOwner = false,
@@ -25,13 +24,13 @@ const PostFeed = ({
       let response;
 
       if (isOwner) {
-          response = await api.get("/Post/my?page=1&pageSize=10");
-        } else if (userId) {
-          response = await api.get(`/Post/user/${userId}?page=1&pageSize=10`);
-        } else {
-          setPosts([]);
-          setLoading(false);
-          return;
+        response = await api.get("/Post/my?page=1&pageSize=10");
+      } else if (userId) {
+        response = await api.get(`/Post/user/${userId}?page=1&pageSize=10`);
+      } else {
+        setPosts([]);
+        setLoading(false);
+        return;
       }
 
       const fetchedPosts = response.data?.data || response.data || [];
@@ -55,7 +54,7 @@ const PostFeed = ({
 
   const handlePostUpdated = (updatedPost) => {
     setPosts((prev) =>
-      prev.map((item) => (item.id === updatedPost.id ? updatedPost : item))
+      prev.map((item) => (item.id === updatedPost.id ? updatedPost : item)),
     );
   };
 
@@ -82,15 +81,15 @@ const PostFeed = ({
       ) : (
         <div style={styles.list}>
           {visiblePosts.map((post) => (
-          <PostItem
-            key={post.id}
-            post={post}
-            showActions={isOwner}
-            onPostUpdated={handlePostUpdated}
-            onPostDeleted={handlePostDeleted}
-            likeConnection={likeConnection}
-            showToast={showToast}
-          />
+            <PostItem
+              key={post.id}
+              post={post}
+              showActions={isOwner}
+              onPostUpdated={handlePostUpdated}
+              onPostDeleted={handlePostDeleted}
+              likeConnection={likeConnection}
+              showToast={showToast}
+            />
           ))}
         </div>
       )}
@@ -106,8 +105,9 @@ const styles = {
     fontSize: "20px",
     fontWeight: "700",
     marginBottom: "16px",
-    color: "#222",
-    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+    color: "var(--app-text)",
+    fontFamily:
+      "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
   },
   list: {
     display: "flex",
@@ -115,24 +115,26 @@ const styles = {
     gap: "16px",
   },
   message: {
-    backgroundColor: "#fff",
-    border: "1px solid #e0e0e0",
+    backgroundColor: "var(--app-surface)",
+    border: "1px solid var(--app-border)",
     borderRadius: "16px",
     padding: "20px",
     textAlign: "center",
-    color: "#666",
+    color: "var(--app-muted)",
     fontSize: "15px",
-    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+    fontFamily:
+      "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
   },
   error: {
-    backgroundColor: "#fff",
+    backgroundColor: "var(--app-surface)",
     border: "1px solid #f3c2c2",
     borderRadius: "16px",
     padding: "20px",
     textAlign: "center",
     color: "#d93025",
     fontSize: "15px",
-    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+    fontFamily:
+      "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
   },
 };
 

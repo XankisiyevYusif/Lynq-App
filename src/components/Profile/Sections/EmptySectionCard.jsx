@@ -1,4 +1,5 @@
 import React from "react";
+import ProfileIcon from "../ProfileIcon";
 
 export default function EmptySectionCard({
   title,
@@ -11,17 +12,26 @@ export default function EmptySectionCard({
 }) {
   return (
     <div
+      className="profile-section-card"
       style={{
         ...styles.card,
         ...(faded ? styles.fadedCard : {}),
       }}
     >
       <div style={styles.topRow}>
-        <h3 style={styles.title}>{title}</h3>
+        <h3 className="profile-section-title" style={styles.title}>
+          {title}
+        </h3>
 
         {isDismissible && (
-          <button style={styles.closeButton} onClick={onDismiss}>
-            ×
+          <button
+            type="button"
+            className="profile-icon-button"
+            style={styles.closeButton}
+            onClick={onDismiss}
+            aria-label={`Dismiss ${title}`}
+          >
+            <ProfileIcon name="close" size={18} />
           </button>
         )}
       </div>
@@ -37,8 +47,8 @@ export default function EmptySectionCard({
 
 const styles = {
   card: {
-    backgroundColor: "#fff",
-    border: "1px solid #e0e0e0",
+    backgroundColor: "var(--app-surface)",
+    border: "1px solid var(--app-border)",
     borderRadius: 12,
     padding: 20,
   },
@@ -55,7 +65,7 @@ const styles = {
     margin: 0,
     fontSize: 20,
     fontWeight: 600,
-    color: "#1d2226",
+    color: "var(--app-text)",
     fontFamily:
       '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
   },
@@ -64,15 +74,18 @@ const styles = {
     background: "transparent",
     fontSize: 22,
     lineHeight: 1,
-    color: "#666",
+    color: "var(--app-muted)",
     cursor: "pointer",
-    padding: 0,
+    padding: 7,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
   },
   description: {
     margin: "8px 0 16px",
     fontSize: 14,
     lineHeight: "20px",
-    color: "rgba(0,0,0,0.75)",
+    color: "var(--app-text-soft)",
     fontFamily:
       '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
   },
@@ -80,7 +93,7 @@ const styles = {
     padding: "10px 16px",
     borderRadius: 20,
     border: "1px solid #0a66c2",
-    backgroundColor: "#fff",
+    backgroundColor: "var(--app-surface)",
     color: "#0a66c2",
     fontWeight: 600,
     cursor: "pointer",

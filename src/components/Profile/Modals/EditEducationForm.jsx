@@ -1,12 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import api from "../../../services/api";
 import Toast from "../../UI/Toast";
+import OrganizationLookupInput from "../../UI/OrganizationLookupInput";
 
-export default function EditEducationForm({
-  education,
-  setUser,
-  onClose,
-}) {
+export default function EditEducationForm({ education, setUser, onClose }) {
   const months = useMemo(
     () => [
       { value: "", label: "Month" },
@@ -23,7 +20,7 @@ export default function EditEducationForm({
       { value: "11", label: "November" },
       { value: "12", label: "December" },
     ],
-    []
+    [],
   );
 
   const years = useMemo(() => {
@@ -36,19 +33,22 @@ export default function EditEducationForm({
   }, []);
 
   const [school, setSchool] = useState(education?.school || "");
+  const [institutionCompanyId, setInstitutionCompanyId] = useState(
+    education?.institutionCompanyId || null,
+  );
   const [degree, setDegree] = useState(education?.degree || "");
   const [field, setField] = useState(education?.field || "");
   const [startMonth, setStartMonth] = useState(
-    education?.startMonth ? String(education.startMonth) : ""
+    education?.startMonth ? String(education.startMonth) : "",
   );
   const [startYear, setStartYear] = useState(
-    education?.startYear ? String(education.startYear) : ""
+    education?.startYear ? String(education.startYear) : "",
   );
   const [endMonth, setEndMonth] = useState(
-    education?.endMonth ? String(education.endMonth) : ""
+    education?.endMonth ? String(education.endMonth) : "",
   );
   const [endYear, setEndYear] = useState(
-    education?.endYear ? String(education.endYear) : ""
+    education?.endYear ? String(education.endYear) : "",
   );
   const [description, setDescription] = useState(education?.note || "");
 
@@ -115,6 +115,7 @@ export default function EditEducationForm({
 
     const payload = {
       school: school.trim(),
+      institutionCompanyId,
       degree: degree.trim(),
       field: field.trim(),
       startMonth: Number(startMonth),
@@ -127,14 +128,17 @@ export default function EditEducationForm({
     try {
       setIsLoading(true);
 
-      const response = await api.put(`/User/education/${education.id}`, payload);
+      const response = await api.put(
+        `/User/education/${education.id}`,
+        payload,
+      );
       const updatedEducation = response?.data?.data;
 
       if (updatedEducation) {
         setUser((prev) => ({
           ...prev,
           educations: (prev?.educations || []).map((item) =>
-            item.id === education.id ? updatedEducation : item
+            item.id === education.id ? updatedEducation : item,
           ),
         }));
       }
@@ -167,7 +171,7 @@ export default function EditEducationForm({
       setUser((prev) => ({
         ...prev,
         educations: (prev?.educations || []).filter(
-          (item) => item.id !== education.id
+          (item) => item.id !== education.id,
         ),
       }));
 
@@ -208,10 +212,15 @@ export default function EditEducationForm({
 
       <div style={styles.field}>
         <label style={styles.label}>School*</label>
-        <input
-          style={{ ...styles.input, ...(errors.school ? styles.inputError : null) }}
+        <OrganizationLookupInput
+          purpose="education"
+          inputStyle={styles.input}
+          errorStyle={errors.school ? styles.inputError : null}
           value={school}
-          onChange={(e) => setSchool(e.target.value)}
+          onChange={setSchool}
+          onSelect={(organization) =>
+            setInstitutionCompanyId(organization?.id || null)
+          }
         />
         {errors.school && <div style={styles.errorText}>{errors.school}</div>}
       </div>
@@ -219,7 +228,10 @@ export default function EditEducationForm({
       <div style={styles.field}>
         <label style={styles.label}>Degree*</label>
         <input
-          style={{ ...styles.input, ...(errors.degree ? styles.inputError : null) }}
+          style={{
+            ...styles.input,
+            ...(errors.degree ? styles.inputError : null),
+          }}
           value={degree}
           onChange={(e) => setDegree(e.target.value)}
         />
@@ -229,7 +241,10 @@ export default function EditEducationForm({
       <div style={styles.field}>
         <label style={styles.label}>Field of study*</label>
         <input
-          style={{ ...styles.input, ...(errors.field ? styles.inputError : null) }}
+          style={{
+            ...styles.input,
+            ...(errors.field ? styles.inputError : null),
+          }}
           value={field}
           onChange={(e) => setField(e.target.value)}
         />
@@ -243,7 +258,10 @@ export default function EditEducationForm({
           <div>
             <div style={styles.subLabel}>Month*</div>
             <select
-              style={{ ...styles.select, ...(errors.startMonth ? styles.inputError : null) }}
+              style={{
+                ...styles.select,
+                ...(errors.startMonth ? styles.inputError : null),
+              }}
               value={startMonth}
               onChange={(e) => setStartMonth(e.target.value)}
             >
@@ -261,7 +279,10 @@ export default function EditEducationForm({
           <div>
             <div style={styles.subLabel}>Year*</div>
             <select
-              style={{ ...styles.select, ...(errors.startYear ? styles.inputError : null) }}
+              style={{
+                ...styles.select,
+                ...(errors.startYear ? styles.inputError : null),
+              }}
               value={startYear}
               onChange={(e) => setStartYear(e.target.value)}
             >
@@ -285,7 +306,10 @@ export default function EditEducationForm({
           <div>
             <div style={styles.subLabel}>Month*</div>
             <select
-              style={{ ...styles.select, ...(errors.endMonth ? styles.inputError : null) }}
+              style={{
+                ...styles.select,
+                ...(errors.endMonth ? styles.inputError : null),
+              }}
               value={endMonth}
               onChange={(e) => setEndMonth(e.target.value)}
             >
@@ -303,7 +327,10 @@ export default function EditEducationForm({
           <div>
             <div style={styles.subLabel}>Year*</div>
             <select
-              style={{ ...styles.select, ...(errors.endYear ? styles.inputError : null) }}
+              style={{
+                ...styles.select,
+                ...(errors.endYear ? styles.inputError : null),
+              }}
               value={endYear}
               onChange={(e) => setEndYear(e.target.value)}
             >
@@ -354,7 +381,10 @@ export default function EditEducationForm({
 
           <button
             type="button"
-            style={{ ...styles.saveBtn, ...(isLoading ? styles.disabledBtn : null) }}
+            style={{
+              ...styles.saveBtn,
+              ...(isLoading ? styles.disabledBtn : null),
+            }}
             onClick={handleUpdate}
             disabled={isLoading || isDeleteLoading}
           >
@@ -416,18 +446,18 @@ const styles = {
 
   emptyText: {
     fontSize: 14,
-    color: "#666",
+    color: "var(--app-muted)",
   },
 
   title: {
     fontSize: 22,
     fontWeight: 700,
-    color: "#191919",
+    color: "var(--app-text)",
   },
 
   helper: {
     fontSize: 13,
-    color: "rgba(0,0,0,0.6)",
+    color: "var(--app-muted)",
     marginTop: -6,
   },
 
@@ -440,46 +470,46 @@ const styles = {
   label: {
     fontSize: 14,
     fontWeight: 600,
-    color: "#191919",
+    color: "var(--app-text)",
   },
 
   subLabel: {
     fontSize: 13,
     fontWeight: 500,
-    color: "rgba(0,0,0,0.7)",
+    color: "var(--app-text-soft)",
     marginBottom: 6,
   },
 
   input: {
     height: 44,
     borderRadius: 10,
-    border: "1px solid #cfd8dc",
+    border: "1px solid var(--app-border)",
     padding: "0 14px",
     fontSize: 14,
     outline: "none",
-    background: "#fff",
+    background: "var(--app-surface)",
   },
 
   select: {
     width: "100%",
     height: 44,
     borderRadius: 10,
-    border: "1px solid #cfd8dc",
+    border: "1px solid var(--app-border)",
     padding: "0 14px",
     fontSize: 14,
     outline: "none",
-    background: "#fff",
+    background: "var(--app-surface)",
   },
 
   textarea: {
     borderRadius: 10,
-    border: "1px solid #cfd8dc",
+    border: "1px solid var(--app-border)",
     padding: "12px 14px",
     fontSize: 14,
     outline: "none",
     resize: "vertical",
     minHeight: 110,
-    background: "#fff",
+    background: "var(--app-surface)",
     fontFamily: "inherit",
   },
 
@@ -503,9 +533,9 @@ const styles = {
   },
 
   cancelBtn: {
-    border: "1px solid #cfd8dc",
-    background: "#fff",
-    color: "#191919",
+    border: "1px solid var(--app-border)",
+    background: "var(--app-surface)",
+    color: "var(--app-text)",
     borderRadius: 999,
     padding: "10px 18px",
     fontSize: 14,
@@ -526,7 +556,7 @@ const styles = {
 
   deleteBtn: {
     border: "1px solid #d32f2f",
-    background: "#fff",
+    background: "var(--app-surface)",
     color: "#d32f2f",
     borderRadius: 999,
     padding: "10px 18px",
@@ -575,7 +605,7 @@ const styles = {
   confirmModal: {
     width: "100%",
     maxWidth: 420,
-    background: "#fff",
+    background: "var(--app-surface)",
     borderRadius: 16,
     padding: 20,
     boxShadow: "0 12px 40px rgba(0,0,0,0.2)",
@@ -584,13 +614,13 @@ const styles = {
   confirmTitle: {
     fontSize: 20,
     fontWeight: 700,
-    color: "#191919",
+    color: "var(--app-text)",
     marginBottom: 10,
   },
 
   confirmText: {
     fontSize: 14,
-    color: "rgba(0,0,0,0.7)",
+    color: "var(--app-text-soft)",
     lineHeight: "22px",
     marginBottom: 18,
   },

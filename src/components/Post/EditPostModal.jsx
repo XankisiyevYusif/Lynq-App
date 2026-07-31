@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import api from "../../services/api";
 import ConfirmDeleteModal from "./ConfirmDeleteModal";
- 
-
-const API_BASE_URL = "https://linkedinapi-xvld.onrender.com";
+import { resolveMediaUrl } from "../../utils/mediaUrl";
+import MentionTagTextarea from "./MentionTagTextarea";
 
 export default function EditPostModal({
   isOpen,
@@ -20,6 +19,8 @@ export default function EditPostModal({
   const [deleting, setDeleting] = useState(false);
   const [showRemoveMediaConfirm, setShowRemoveMediaConfirm] = useState(false);
   const [showDeletePostConfirm, setShowDeletePostConfirm] = useState(false);
+  const [mentionedCompany, setMentionedCompany] = useState(null);
+  const [clearCompanyMention, setClearCompanyMention] = useState(false);
 
   useEffect(() => {
     if (!isOpen || !post) return;
@@ -29,6 +30,16 @@ export default function EditPostModal({
     setRemoveMedia(false);
     setShowRemoveMediaConfirm(false);
     setShowDeletePostConfirm(false);
+    setMentionedCompany(
+      post.mentionedCompanyId
+        ? {
+            id: post.mentionedCompanyId,
+            username: post.mentionedCompanyUsername,
+            name: post.mentionedCompanyName,
+          }
+        : null,
+    );
+    setClearCompanyMention(false);
   }, [isOpen, post]);
 
   useEffect(() => {
@@ -48,8 +59,8 @@ export default function EditPostModal({
     if (file) return URL.createObjectURL(file);
     if (removeMedia) return null;
 
-    if (post.imageUrl) return `${API_BASE_URL}${post.imageUrl}`;
-    if (post.videoUrl) return `${API_BASE_URL}${post.videoUrl}`;
+    if (post.imageUrl) return resolveMediaUrl(post.imageUrl);
+    if (post.videoUrl) return resolveMediaUrl(post.videoUrl);
     return null;
   }, [file, removeMedia, post]);
 
@@ -90,6 +101,14 @@ export default function EditPostModal({
       const formData = new FormData();
       formData.append("Content", content ?? "");
       formData.append("DeleteMedia", removeMedia ? "true" : "false");
+      formData.append(
+        "ClearCompanyMention",
+        clearCompanyMention ? "true" : "false",
+      );
+
+      if (mentionedCompany?.id) {
+        formData.append("MentionedCompanyId", mentionedCompany.id);
+      }
 
       if (file) {
         formData.append("File", file);
@@ -115,7 +134,6 @@ export default function EditPostModal({
   };
 
   const handleDeletePost = async () => {
-    debugger;
     try {
       setDeleting(true);
 
@@ -139,14 +157,52 @@ export default function EditPostModal({
         <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
           <div style={styles.header}>
             <h3 style={styles.title}>Edit post</h3>
-            <button style={styles.closeBtn} onClick={onClose} aria-label="Close">
+            <button
+              style={styles.closeBtn}
+              onClick={onClose}
+              aria-label="Close"
+            >
               ✕
             </button>
           </div>
 
-          <textarea
+          <MentionTagTextarea
             value={content}
-            onChange={(e) => setContent(e.target.value)}
+            onChange={(nextContent) => {
+              setContent(nextContent);
+              if (
+                mentionedCompany?.username &&
+                !nextContent
+                  .toLowerCase()
+                  .includes(`@${mentionedCompany.username.toLowerCase()}`)
+              ) {
+                setMentionedCompany(null);
+                setClearCompanyMention(true);
+              }
+            }}
+            onSuggestionSelected={(item, symbol) => {
+              if (symbol !== "@") return;
+              const userType =
+                item?.userType || item?.UserType || item?.role || item?.Role;
+              const companyId = item?.companyId || item?.CompanyId;
+
+              if (userType === "Employer" && companyId) {
+                setMentionedCompany({
+                  id: companyId,
+                  username:
+                    item?.username ||
+                    item?.Username ||
+                    item?.userName ||
+                    item?.UserName,
+                  name:
+                    item?.companyName ||
+                    item?.CompanyName ||
+                    item?.fullName ||
+                    item?.FullName,
+                });
+                setClearCompanyMention(false);
+              }
+            }}
             rows={5}
             placeholder="Write something..."
             style={styles.textarea}
@@ -170,7 +226,11 @@ export default function EditPostModal({
                     Your browser does not support the video tag.
                   </video>
                 ) : (
-                  <img src={previewUrl} alt="Preview" style={styles.previewMedia} />
+                  <img
+                    src={previewUrl}
+                    alt="Preview"
+                    style={styles.previewMedia}
+                  />
                 )}
 
                 <div style={styles.previewActions}>
@@ -271,7 +331,7 @@ export default function EditPostModal({
 }
 
 const styles = {
-   overlay: {
+  overlay: {
     position: "fixed",
     inset: 0,
     background: "rgba(0,0,0,0.45)",
@@ -283,7 +343,7 @@ const styles = {
   modal: {
     width: "100%",
     maxWidth: 620,
-    background: "#fff",
+    background: "var(--app-surface)",
     borderRadius: 16,
     padding: 20,
     boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
@@ -298,14 +358,14 @@ const styles = {
     margin: 0,
     fontSize: 22,
     fontWeight: 700,
-    color: "#111827",
+    color: "var(--app-text)",
   },
   closeBtn: {
     border: "none",
     background: "transparent",
     fontSize: 22,
     cursor: "pointer",
-    color: "#444",
+    color: "var(--app-text-soft)",
   },
   textarea: {
     width: "100%",
@@ -323,17 +383,17 @@ const styles = {
   },
   previewWrap: {
     position: "relative",
-    border: "1px solid #e5e7eb",
+    border: "1px solid var(--app-border)",
     borderRadius: 14,
     overflow: "hidden",
-    backgroundColor: "#fff",
+    backgroundColor: "var(--app-surface)",
   },
   previewMedia: {
     width: "100%",
     maxHeight: 360,
     objectFit: "contain",
     display: "block",
-    backgroundColor: "#f8fafc",
+    backgroundColor: "var(--app-surface-2)",
   },
   removeMediaIconBtn: {
     position: "absolute",
@@ -362,7 +422,7 @@ const styles = {
   note: {
     padding: 12,
     fontSize: 13,
-    color: "#6b7280",
+    color: "var(--app-muted)",
     borderTop: "1px solid #f1f5f9",
   },
   noMediaBox: {
@@ -376,7 +436,7 @@ const styles = {
   },
   noMediaText: {
     fontSize: 14,
-    color: "#666",
+    color: "var(--app-muted)",
   },
   footer: {
     display: "flex",
@@ -402,8 +462,8 @@ const styles = {
     fontSize: 14,
   },
   cancelBtn: {
-    background: "#fff",
-    color: "#111827",
+    background: "var(--app-surface)",
+    color: "var(--app-text)",
     border: "1px solid #d1d5db",
     borderRadius: 999,
     padding: "10px 18px",
@@ -412,8 +472,8 @@ const styles = {
     fontSize: 14,
   },
   secondaryBtn: {
-    background: "#fff",
-    color: "#111827",
+    background: "var(--app-surface)",
+    color: "var(--app-text)",
     border: "1px solid #d1d5db",
     borderRadius: 999,
     padding: "10px 14px",
@@ -422,7 +482,7 @@ const styles = {
     fontSize: 14,
   },
   deletePostBtn: {
-    background: "#fff",
+    background: "var(--app-surface)",
     color: "#d11124",
     border: "1px solid #f3b4bb",
     borderRadius: 999,

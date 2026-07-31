@@ -3,16 +3,10 @@ import { createPortal } from "react-dom";
 
 import EditPostModal from "../../Post/EditPostModal";
 
-import pencil from "../../../assets/pencil.png";
-import likeActiveIcon from "../../../assets/LikeActive.png";
-import likeDeactiveIcon from "../../../assets/LikeDeactive.png";
-import commentIcon from "../../../assets/comment.png";
-import shareIcon from "../../../assets/share.png";
-
-import { API_ROOT } from "../../../services/api";
 import defaultAvatar from "../../../assets/default-avatar.png";
-
-const API_BASE_URL = API_ROOT;
+import { resolveMediaUrl } from "../../../utils/mediaUrl";
+import ProfileIcon from "../ProfileIcon";
+import RichPostContent from "../../Post/RichPostContent";
 
 const ActivityPreviewCard = ({
   post,
@@ -47,7 +41,7 @@ const ActivityPreviewCard = ({
 
   const handleLike = async () => {
     if (!likeConnection) {
-      showToast?.("Like connection hazır deyil.", "error");
+      showToast?.("The like connection is not ready.", "error");
       return;
     }
 
@@ -76,7 +70,7 @@ const ActivityPreviewCard = ({
       setIsLiked(previousLiked);
       setLocalLikeCount(previousCount);
 
-      showToast?.("Like əməliyyatı uğursuz oldu.", "error");
+      showToast?.("The like action failed.", "error");
     }
   };
 
@@ -88,19 +82,16 @@ const ActivityPreviewCard = ({
       })
     : "";
 
-  const profileImageSrc = userPhoto
-    ? `${API_BASE_URL}${userPhoto}`
-    : defaultAvatar;
-
-  const postImageSrc = imageUrl ? `${API_BASE_URL}${imageUrl}` : null;
-  const postVideoSrc = videoUrl ? `${API_BASE_URL}${videoUrl}` : null;
+  const profileImageSrc = resolveMediaUrl(userPhoto, defaultAvatar);
+  const postImageSrc = resolveMediaUrl(imageUrl) || null;
+  const postVideoSrc = resolveMediaUrl(videoUrl) || null;
 
   const shortContent =
     content?.length > 120 ? `${content.slice(0, 120)}...` : content;
 
   return (
     <>
-      <div style={styles.card}>
+      <div className="activity-preview-card" style={styles.card}>
         <div style={styles.header}>
           <div style={styles.authorSection}>
             <img
@@ -116,8 +107,8 @@ const ActivityPreviewCard = ({
             />
 
             <div style={styles.authorInfo}>
-              <div style={styles.authorName}>{username || "Unknown User"}</div>
-              <div style={styles.authorMeta}>
+              <div className="activity-preview-author" style={styles.authorName}>{username || "Unknown User"}</div>
+              <div className="activity-preview-meta" style={styles.authorMeta}>
                 {role || "Member"}
                 {formattedDate ? ` • ${formattedDate}` : ""}
               </div>
@@ -127,32 +118,38 @@ const ActivityPreviewCard = ({
           {showActions && (
             <button
               type="button"
+              className="profile-icon-button"
               style={styles.pencilButton}
               onClick={() => setIsEditOpen(true)}
+              aria-label="Edit post"
             >
-              <img src={pencil} alt="Edit post" style={styles.pencilIcon} />
+              <ProfileIcon name="edit" size={18} />
             </button>
           )}
         </div>
 
-        <div style={styles.contentArea}>
-          {shortContent && <div style={styles.content}>{shortContent}</div>}
+        <div className="activity-preview-content" style={styles.contentArea}>
+          {shortContent && (
+            <RichPostContent content={shortContent} style={styles.content} />
+          )}
 
-          <div style={styles.mediaBox}>
-            {postImageSrc && (
-              <img src={postImageSrc} alt="Post" style={styles.postImage} />
-            )}
+          {(postImageSrc || postVideoSrc) && (
+            <div className="activity-preview-media" style={styles.mediaBox}>
+              {postImageSrc && (
+                <img src={postImageSrc} alt="Post" style={styles.postImage} />
+              )}
 
-            {postVideoSrc && (
-              <video controls style={styles.postVideo}>
-                <source src={postVideoSrc} />
-                Your browser does not support the video tag.
-              </video>
-            )}
-          </div>
+              {postVideoSrc && (
+                <video controls style={styles.postVideo}>
+                  <source src={postVideoSrc} />
+                  Your browser does not support the video tag.
+                </video>
+              )}
+            </div>
+          )}
         </div>
 
-        <div style={styles.stats}>
+        <div className="activity-preview-stats" style={styles.stats}>
           <span>{localLikeCount || 0} likes</span>
 
           <button
@@ -169,14 +166,13 @@ const ActivityPreviewCard = ({
           <button
             type="button"
             className="post-footer-button"
-            style={styles.footerButton}
+            style={{
+              ...styles.footerButton,
+              color: isLiked ? "#e11d48" : "var(--app-text-soft)",
+            }}
             onClick={handleLike}
           >
-            <img
-              src={isLiked ? likeActiveIcon : likeDeactiveIcon}
-              alt={isLiked ? "Liked" : "Like"}
-              style={styles.footerIcon}
-            />
+            <ProfileIcon name="heart" size={18} filled={isLiked} />
             <span>{isLiked ? "Liked" : "Like"}</span>
           </button>
 
@@ -186,7 +182,7 @@ const ActivityPreviewCard = ({
             style={styles.footerButton}
             onClick={() => onOpenComments?.(id)}
           >
-            <img src={commentIcon} alt="Comment" style={styles.footerIcon} />
+            <ProfileIcon name="comment" size={18} />
             <span>Comment</span>
           </button>
 
@@ -195,7 +191,7 @@ const ActivityPreviewCard = ({
             className="post-footer-button"
             style={styles.footerButton}
           >
-            <img src={shareIcon} alt="Share" style={styles.footerIcon} />
+            <ProfileIcon name="share" size={18} />
             <span>Share</span>
           </button>
         </div>
@@ -214,7 +210,7 @@ const ActivityPreviewCard = ({
                 ...updatedPost,
                 id: post.id,
               });
-            
+
               setIsEditOpen(false);
             }}
             onDeleted={(deletedPostId) => {
@@ -222,7 +218,7 @@ const ActivityPreviewCard = ({
               setIsEditOpen(false);
             }}
           />,
-          document.body
+          document.body,
         )}
     </>
   );
@@ -230,11 +226,12 @@ const ActivityPreviewCard = ({
 
 const styles = {
   card: {
-    backgroundColor: "#fff",
-    border: "1px solid #e0e0e0",
+    width: "100%",
+    backgroundColor: "var(--app-surface)",
+    border: "1px solid var(--app-border)",
     borderRadius: 16,
-    padding: 16,
-    height: 620,
+    padding: 14,
+    minHeight: 0,
     display: "flex",
     flexDirection: "column",
     boxSizing: "border-box",
@@ -245,7 +242,7 @@ const styles = {
     justifyContent: "space-between",
     alignItems: "flex-start",
     gap: 12,
-    marginBottom: 14,
+    marginBottom: 10,
   },
 
   authorSection: {
@@ -260,23 +257,23 @@ const styles = {
   },
 
   avatar: {
-    width: 48,
-    height: 48,
+    width: 42,
+    height: 42,
     borderRadius: "50%",
     objectFit: "cover",
-    border: "1px solid #ddd",
+    border: "1px solid var(--app-border)",
     flexShrink: 0,
   },
 
   authorName: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 600,
-    color: "#222",
+    color: "var(--app-text)",
   },
 
   authorMeta: {
     fontSize: 13,
-    color: "#666",
+    color: "var(--app-muted)",
     marginTop: 2,
   },
 
@@ -288,9 +285,9 @@ const styles = {
   },
 
   content: {
-    fontSize: 15,
+    fontSize: 14,
     lineHeight: 1.5,
-    color: "#222",
+    color: "var(--app-text-soft)",
     marginBottom: 12,
     minHeight: 48,
     maxHeight: 48,
@@ -298,12 +295,11 @@ const styles = {
   },
 
   mediaBox: {
-    flex: 1,
-    minHeight: 0,
-    borderRadius: 14,
+    height: 190,
+    borderRadius: 12,
     overflow: "hidden",
-    backgroundColor: "#f7f7f7",
-    border: "1px solid #eee",
+    backgroundColor: "var(--app-surface-2)",
+    border: "1px solid var(--app-border)",
   },
 
   postImage: {
@@ -325,10 +321,10 @@ const styles = {
     display: "flex",
     justifyContent: "space-between",
     fontSize: 13,
-    color: "#666",
+    color: "var(--app-muted)",
     paddingTop: 12,
     paddingBottom: 12,
-    borderBottom: "1px solid #eee",
+    borderBottom: "1px solid var(--app-border)",
   },
 
   commentCountButton: {
@@ -337,7 +333,7 @@ const styles = {
     padding: 0,
     margin: 0,
     fontSize: 13,
-    color: "#666",
+    color: "var(--app-muted)",
     cursor: "pointer",
   },
 
@@ -357,7 +353,7 @@ const styles = {
     cursor: "pointer",
     fontSize: "14px",
     fontWeight: "600",
-    color: "#444",
+    color: "var(--app-text-soft)",
     fontFamily:
       "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
     display: "flex",
@@ -365,12 +361,6 @@ const styles = {
     justifyContent: "center",
     gap: "7px",
     transition: "background-color 0.2s ease, opacity 0.2s ease",
-  },
-
-  footerIcon: {
-    width: 18,
-    height: 18,
-    objectFit: "contain",
   },
 
   pencilButton: {
@@ -381,12 +371,7 @@ const styles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-  },
-
-  pencilIcon: {
-    width: 18,
-    height: 18,
-    objectFit: "contain",
+    color: "var(--app-muted)",
   },
 };
 

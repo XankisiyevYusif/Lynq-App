@@ -4,22 +4,25 @@ import useEmblaCarousel from "embla-carousel-react";
 
 import ActivityPreviewCard from "./ActivityPreviewCard";
 import CreatePostBox from "../../Post/CreatePostBox";
+import ProfileIcon from "../ProfileIcon";
 
 const ActivitiesCarousel = ({
   posts = [],
   username,
   isOwner,
-  isEmployer=false,
+  isEmployer = false,
   onPostCreated,
   onPostUpdated,
   onPostDeleted,
   showToast,
   likeConnection,
   userId,
+  postsCount,
 }) => {
   const navigate = useNavigate();
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [activeFilter, setActiveFilter] = useState("posts");
 
   const [emblaRef, emblaApi] = useEmblaCarousel({
     align: "start",
@@ -39,7 +42,27 @@ const ActivitiesCarousel = ({
     };
   }, [isCreateOpen]);
 
-  const previewPosts = posts.slice(0, 5);
+  const filteredPosts = posts.filter((post) => {
+    if (activeFilter === "comments") {
+      return Number(post.commentCount || 0) > 0;
+    }
+
+    if (activeFilter === "images") {
+      return !!post.imageUrl;
+    }
+
+    return true;
+  });
+
+  const previewPosts = filteredPosts.slice(0, 5);
+  const totalPosts = Number.isFinite(Number(postsCount))
+    ? Number(postsCount)
+    : posts.length;
+
+  useEffect(() => {
+    emblaApi?.reInit();
+    emblaApi?.scrollTo(0, true);
+  }, [activeFilter, previewPosts.length, emblaApi]);
 
   const scrollPrev = () => {
     if (emblaApi) emblaApi.scrollPrev();
@@ -51,7 +74,7 @@ const ActivitiesCarousel = ({
 
   const goToAllActivity = () => {
     if (!username) {
-      showToast?.("Username tapılmadı.", "error");
+      showToast?.("Username was not found.", "error");
       return;
     }
 
@@ -66,7 +89,7 @@ const ActivitiesCarousel = ({
 
   const handleOpenPostComments = (postId) => {
     if (!username) {
-      showToast?.("Username tapılmadı.", "error");
+      showToast?.("Username was not found.", "error");
       return;
     }
 
@@ -81,45 +104,82 @@ const ActivitiesCarousel = ({
   };
 
   return (
-    <div style={styles.card}>
+    <div className="profile-section-card activity-carousel-section" style={styles.card}>
       <div style={styles.topRow}>
-        <div>
-          <div style={styles.header}>Fəaliyyət</div>
-          <div style={styles.subText}>{posts.length} paylaşım</div>
+        <div style={styles.headingGroup}>
+          <div>
+            <div className="profile-section-title" style={styles.header}>
+              Activity
+            </div>
+            <div style={styles.subText}>{totalPosts} posts</div>
+          </div>
         </div>
 
         <div style={styles.actionsRight}>
           {isOwner && (
             <button
               type="button"
+              className="profile-create-post-button"
               style={styles.addPostButton}
               onClick={() => setIsCreateOpen(true)}
             >
+              <ProfileIcon name="compose" size={17} />
               Create a post
             </button>
           )}
 
           {previewPosts.length > 1 && (
             <div style={styles.arrows}>
-              <button type="button" style={styles.arrowBtn} onClick={scrollPrev}>
-                ←
+              <button
+                type="button"
+                className="profile-icon-button"
+                style={styles.arrowBtn}
+                onClick={scrollPrev}
+                aria-label="Previous activity"
+              >
+                <ProfileIcon name="chevronLeft" size={20} />
               </button>
 
-              <button type="button" style={styles.arrowBtn} onClick={scrollNext}>
-                →
+              <button
+                type="button"
+                className="profile-icon-button"
+                style={styles.arrowBtn}
+                onClick={scrollNext}
+                aria-label="Next activity"
+              >
+                <ProfileIcon name="chevronRight" size={20} />
               </button>
             </div>
           )}
         </div>
       </div>
 
+      <div className="activity-filter-tabs" role="tablist" aria-label="Activity filters">
+        {[
+          ["posts", "Posts"],
+          ["comments", "Comments"],
+          ["images", "Images"],
+        ].map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            role="tab"
+            aria-selected={activeFilter === value}
+            className={activeFilter === value ? "is-active" : ""}
+            onClick={() => setActiveFilter(value)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       {previewPosts.length === 0 ? (
-        <div style={styles.empty}>Hələ paylaşım yoxdur.</div>
+        <div style={styles.empty}>No {activeFilter} activity yet.</div>
       ) : (
-        <div style={styles.viewport} ref={emblaRef}>
-          <div style={styles.container}>
+        <div className="activity-carousel-viewport" style={styles.viewport} ref={emblaRef}>
+          <div className="activity-carousel-track" style={styles.container}>
             {previewPosts.map((post) => (
-              <div key={post.id} style={styles.slide}>
+              <div key={post.id} className="activity-carousel-slide" style={styles.slide}>
                 <ActivityPreviewCard
                   post={post}
                   showActions={isOwner}
@@ -137,9 +197,15 @@ const ActivitiesCarousel = ({
       )}
 
       {posts.length > 0 && (
-        <div style={styles.footer} onClick={goToAllActivity}>
-          Tümünü gör →
-        </div>
+        <button
+          type="button"
+          className="profile-view-all-button"
+          style={styles.footer}
+          onClick={goToAllActivity}
+        >
+          <span>View all activity</span>
+          <ProfileIcon name="arrowRight" size={18} />
+        </button>
       )}
 
       {isCreateOpen && (
@@ -162,27 +228,33 @@ const ActivitiesCarousel = ({
 
 const styles = {
   card: {
-    backgroundColor: "#fff",
-    border: "1px solid #e0e0e0",
+    backgroundColor: "var(--app-surface)",
+    border: "1px solid var(--app-border)",
     borderRadius: 16,
-    padding: 20,
+    padding: 18,
   },
 
   topRow: {
     display: "flex",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 10,
+  },
+
+  headingGroup: {
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
   },
 
   header: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 700,
     marginBottom: 6,
   },
 
   subText: {
     fontSize: 14,
-    color: "#666",
+    color: "var(--app-muted)",
   },
 
   actionsRight: {
@@ -193,14 +265,17 @@ const styles = {
   },
 
   addPostButton: {
-    border: "1px solid #0a66c2",
-    backgroundColor: "#fff",
-    color: "#0a66c2",
+    border: "1px solid var(--app-accent)",
+    backgroundColor: "var(--app-surface)",
+    color: "var(--app-accent)",
     padding: "8px 14px",
     borderRadius: "999px",
     cursor: "pointer",
     fontWeight: 600,
     fontSize: 14,
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 7,
   },
 
   arrows: {
@@ -212,40 +287,50 @@ const styles = {
     width: 36,
     height: 36,
     borderRadius: "50%",
-    border: "1px solid #d0d0d0",
-    backgroundColor: "#fff",
+    border: "1px solid var(--app-border)",
+    backgroundColor: "var(--app-surface)",
     cursor: "pointer",
     fontSize: 18,
     fontWeight: 700,
+    color: "var(--app-muted)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   viewport: {
     overflow: "hidden",
+    margin: "0 -5px",
   },
 
   container: {
     display: "flex",
-    gap: 16,
   },
 
   slide: {
-    flex: "0 0 85%",
     minWidth: 0,
+    padding: "0 5px",
   },
 
   footer: {
+    width: "100%",
     marginTop: 18,
-    textAlign: "center",
-    fontSize: 16,
-    fontWeight: 600,
-    color: "#444",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    border: "none",
+    background: "transparent",
+    fontSize: 14,
+    fontWeight: 700,
+    color: "var(--app-accent)",
     cursor: "pointer",
-    borderTop: "1px solid #eee",
+    borderTop: "1px solid var(--app-border)",
     paddingTop: 14,
   },
 
   empty: {
-    color: "#666",
+    color: "var(--app-muted)",
     fontSize: 14,
   },
 

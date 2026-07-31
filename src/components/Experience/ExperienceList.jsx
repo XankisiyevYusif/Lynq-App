@@ -12,36 +12,33 @@ export default function ExperienceList() {
   const [editingExp, setEditingExp] = useState(null);
   const [deletingExp, setDeletingExp] = useState(null);
 
- const fetchExperiences = async () => {
-      setLoading(true);
-      try {
-        const result = await experienceService.getAllExperiences();
-        if (result.success) {
-          setExperiences(result.experiences);
-        } else {
-          setError(result.message || "Failed to fetch experiences");
-        }
-      } catch (err) {
-        setError("Failed to fetch experiences");
-      } finally {
-        setLoading(false);
+  const fetchExperiences = async () => {
+    setLoading(true);
+    try {
+      const result = await experienceService.getAllExperiences();
+      if (result.success) {
+        setExperiences(result.experiences);
+      } else {
+        setError(result.message || "Failed to fetch experiences");
       }
-    };
+    } catch (err) {
+      setError("Failed to fetch experiences");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    useEffect(()=> {
-      fetchExperiences()
-    },[isAdding])
-
+  useEffect(() => {
+    fetchExperiences();
+  }, [isAdding]);
 
   const handleUpdateExperience = (updatedExp) => {
     setExperiences((prev) =>
-      prev.map((exp) => (exp.id === updatedExp.id ? updatedExp : exp))
+      prev.map((exp) => (exp.id === updatedExp.id ? updatedExp : exp)),
     );
     setEditingExp(null);
   };
-console.log(experiences)
   const handleDeleteExperience = async (id) => {
-    debugger;
     const result = await experienceService.deleteExperience(id);
     if (result.success) {
       setExperiences((prev) => prev.filter((exp) => exp.id !== id));
@@ -55,7 +52,7 @@ console.log(experiences)
     <div style={styles.mainContainer}>
       <div style={styles.header}>
         <p style={styles.title}>Experiences</p>
-        <button style={styles.addBtn} onClick={()=> setIsAdding(true)}>
+        <button style={styles.addBtn} onClick={() => setIsAdding(true)}>
           + Add
         </button>
       </div>
@@ -77,9 +74,7 @@ console.log(experiences)
       {isAdding && (
         <div style={modalStyles.overlay}>
           <div style={modalStyles.modal}>
-            <AddExperienceForm
-              onClose={() => setIsAdding(false)}
-            />
+            <AddExperienceForm onClose={() => setIsAdding(false)} />
           </div>
         </div>
       )}
@@ -101,19 +96,19 @@ console.log(experiences)
       {deletingExp && (
         <div style={modalStyles.overlay}>
           <div style={modalStyles.confirmModal}>
-            <p>“{deletingExp.title}” təcrübəsini silmək istədiyinizə əminsiniz?</p>
+            <p>Are you sure you want to delete “{deletingExp.title}”?</p>
             <div style={modalStyles.confirmButtons}>
               <button
                 style={{ ...styles.addBtn, backgroundColor: "#dc3545" }}
                 onClick={() => handleDeleteExperience(deletingExp.id)}
               >
-                Bəli, sil
+                Yes, delete
               </button>
               <button
                 style={{ ...styles.addBtn, backgroundColor: "#6c757d" }}
                 onClick={() => setDeletingExp(null)}
               >
-                Ləğv et
+                Cancel
               </button>
             </div>
           </div>
@@ -128,7 +123,7 @@ console.log(experiences)
 const styles = {
   mainContainer: {
     width: "668px",
-    backgroundColor: "#fff",
+    backgroundColor: "var(--app-surface)",
     borderRadius: "12px",
     padding: "16px",
     boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
@@ -169,7 +164,7 @@ const modalStyles = {
     zIndex: 1000,
   },
   modal: {
-    backgroundColor: "#fff",
+    backgroundColor: "var(--app-surface)",
     padding: "20px",
     borderRadius: "12px",
     boxShadow: "0 10px 25px rgba(0,0,0,0.2)",
@@ -178,7 +173,7 @@ const modalStyles = {
     overflowY: "auto",
   },
   confirmModal: {
-    backgroundColor: "#fff",
+    backgroundColor: "var(--app-surface)",
     padding: "20px",
     borderRadius: "12px",
     boxShadow: "0 10px 25px rgba(0,0,0,0.2)",

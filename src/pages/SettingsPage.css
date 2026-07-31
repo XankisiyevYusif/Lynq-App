@@ -1,0 +1,210 @@
+.settings-page {
+  display: grid;
+  grid-template-columns: 230px minmax(0, 720px);
+  justify-content: center;
+  gap: 20px;
+  min-height: calc(100vh - 66px);
+  padding: 30px 20px;
+  background: var(--app-bg);
+  color: var(--app-text);
+  font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.settings-sidebar,
+.settings-main > header,
+.settings-card {
+  border: 1px solid var(--app-border);
+  border-radius: 16px;
+  background: var(--app-surface);
+  box-shadow: var(--app-shadow);
+}
+
+.settings-sidebar {
+  align-self: start;
+  padding: 18px 12px;
+}
+
+.settings-sidebar > span {
+  display: block;
+  padding: 0 10px 14px;
+  font-size: 20px;
+  font-weight: 750;
+}
+
+.settings-sidebar button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 9px;
+  padding: 11px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--app-muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.settings-sidebar button.is-active {
+  background: var(--app-accent-soft);
+  color: var(--app-accent);
+}
+
+.settings-main {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.settings-main > header {
+  padding: 22px 24px;
+}
+
+.settings-main header > span {
+  color: var(--app-accent);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.settings-main h1 {
+  margin: 4px 0;
+  color: var(--app-text);
+  font-size: 24px;
+}
+
+.settings-main header p {
+  margin: 0;
+  color: var(--app-muted);
+  font-size: 13px;
+}
+
+.settings-card {
+  padding: 22px;
+}
+
+.settings-card h2 {
+  margin: 0 0 15px;
+  font-size: 17px;
+}
+
+.theme-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.theme-options > button {
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr) 24px;
+  align-items: center;
+  gap: 14px;
+  padding: 13px;
+  border: 1px solid var(--app-border);
+  border-radius: 13px;
+  background: var(--app-surface);
+  color: var(--app-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.theme-options > button.is-selected {
+  border-color: var(--app-accent);
+  background: var(--app-accent-soft);
+}
+
+.theme-options > button > span:nth-child(2) {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.theme-options strong {
+  font-size: 13px;
+}
+
+.theme-options small {
+  color: var(--app-muted);
+  font-size: 11px;
+}
+
+.theme-options b {
+  color: var(--app-accent);
+  font-size: 17px;
+}
+
+.theme-preview {
+  display: grid;
+  height: 44px;
+  grid-template-columns: 18px 1fr;
+  grid-template-rows: 9px 1fr;
+  gap: 4px;
+  padding: 6px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: var(--app-surface-2);
+}
+
+.theme-preview i {
+  border-radius: 3px;
+  background: #cbd5e1;
+}
+
+.theme-preview i:first-child {
+  grid-column: 1/-1;
+}
+
+.theme-preview i:nth-child(2) {
+  background: var(--app-border);
+}
+
+.theme-preview.dark {
+  border-color: var(--app-text);
+  background: #0f172a;
+}
+
+.theme-preview.dark i {
+  background: #334155;
+}
+
+.theme-preview.dark i:nth-child(2) {
+  background: #1e293b;
+}
+
+.theme-preview.system {
+  background: linear-gradient(90deg, #f8fafc 50%, #0f172a 50%);
+}
+
+@media (max-width: 720px) {
+  .settings-page {
+    grid-template-columns: 1fr;
+    padding: 18px 12px;
+  }
+
+  .settings-sidebar {
+    display: flex;
+    overflow: auto;
+    align-items: center;
+    gap: 6px;
+    padding: 9px;
+  }
+
+  .settings-sidebar > span {
+    display: none;
+  }
+
+  .settings-sidebar button {
+    width: auto;
+    flex: 0 0 auto;
+    padding: 10px 12px;
+  }
+
+  .settings-main > header,
+  .settings-card {
+    padding: 18px;
+  }
+}

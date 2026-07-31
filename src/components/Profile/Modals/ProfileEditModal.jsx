@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import EducationForm from "./Sections/EducationForm";
 import EditEducationForm from "./EditEducationForm";
 import BasicInfoForm from "./Sections/BasicInfoForm";
+import AboutForm from "./Sections/AboutForm";
 import ContactInfoForm from "./Sections/ContactForm";
 import ExperienceForm from "./Sections/ExperienceForm";
 import EditExperienceForm from "./EditExperienceForm";
@@ -37,6 +38,7 @@ export default function ProfileEditModal({
 
   const items = [
     { key: "basic", label: "Basic information" },
+    { key: "about", label: "About" },
     { key: "contact", label: "Contact information" },
     { key: "experience", label: "Experience" },
     { key: "education", label: "Education" },
@@ -44,21 +46,21 @@ export default function ProfileEditModal({
   ];
 
   const goToSkills = () => {
-  onChangeSection?.("skills");
-};
+    onChangeSection?.("skills");
+  };
 
   return (
-    <div style={s.overlay} onMouseDown={onClose}>
-      <div style={s.modal} onMouseDown={(e) => e.stopPropagation()}>
-        <div style={s.header}>
+    <div className="profile-edit-backdrop" style={s.overlay} onMouseDown={onClose}>
+      <div className="profile-edit-shell" style={s.modal} onMouseDown={(e) => e.stopPropagation()}>
+        <div className="profile-edit-header" style={s.header}>
           <div style={s.title}>
             {activeSection === "experience-edit"
               ? "Edit experience"
               : activeSection === "education-edit"
-              ? "Edit education"
-              : activeSection === "skill-edit"
-              ? "Edit skill"
-              : "Edit profile"}
+                ? "Edit education"
+                : activeSection === "skill-edit"
+                  ? "Edit skill"
+                  : "Edit profile"}
           </div>
 
           <button style={s.closeBtn} onClick={onClose}>
@@ -67,10 +69,13 @@ export default function ProfileEditModal({
         </div>
 
         <div style={s.content}>
-          <div style={s.left}>
+          <div className="profile-edit-sidebar" style={s.left}>
             {items.map((item) => (
               <button
                 key={item.key}
+                className={`profile-edit-nav-item ${
+                  activeSection === item.key ? "is-active" : ""
+                }`}
                 onClick={() => onChangeSection?.(item.key)}
                 style={{
                   ...s.menuItem,
@@ -82,9 +87,13 @@ export default function ProfileEditModal({
             ))}
           </div>
 
-          <div style={s.right}>
+          <div className="profile-edit-content" style={s.right}>
             {activeSection === "basic" && (
               <BasicInfoForm user={user} setUser={setUser} />
+            )}
+
+            {activeSection === "about" && (
+              <AboutForm user={user} setUser={setUser} onClose={onClose} />
             )}
 
             {activeSection === "contact" && (
@@ -152,7 +161,7 @@ const s = {
   modal: {
     width: "100%",
     maxWidth: 900,
-    background: "#fff",
+    background: "var(--app-surface)",
     borderRadius: 14,
     boxShadow: "0 12px 40px rgba(0,0,0,0.22)",
     overflow: "hidden",
@@ -163,11 +172,12 @@ const s = {
     justifyContent: "space-between",
     alignItems: "center",
     padding: "14px 16px",
-    borderBottom: "1px solid rgba(0,0,0,0.08)",
+    borderBottom: "1px solid var(--app-border)",
   },
   title: {
     fontSize: 16,
     fontWeight: 700,
+    color: "var(--app-text)",
   },
   closeBtn: {
     border: "none",
@@ -176,6 +186,7 @@ const s = {
     fontSize: 18,
     padding: 6,
     borderRadius: 10,
+    color: "var(--app-text)",
   },
   content: {
     display: "grid",
@@ -183,9 +194,9 @@ const s = {
     minHeight: 420,
   },
   left: {
-    borderRight: "1px solid rgba(0,0,0,0.08)",
+    borderRight: "1px solid var(--app-border)",
     padding: 12,
-    background: "rgba(0,0,0,0.015)",
+    background: "var(--app-surface-2)",
   },
   menuItem: {
     width: "100%",
@@ -197,6 +208,7 @@ const s = {
     cursor: "pointer",
     fontSize: 13,
     marginBottom: 8,
+    color: "var(--app-text-soft)",
   },
   menuActive: {
     background: "rgba(0,115,177,0.08)",
@@ -208,5 +220,6 @@ const s = {
     padding: 16,
     maxHeight: "calc(85vh - 56px)",
     overflowY: "auto",
+    color: "var(--app-text)",
   },
 };

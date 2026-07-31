@@ -1,5 +1,6 @@
 import { useState } from "react";
 import api from "../../../services/api";
+import ProfileLookupInput from "../../UI/ProfileLookupInput";
 
 export default function EmployerCompanyInfoForm({
   user,
@@ -14,11 +15,13 @@ export default function EmployerCompanyInfoForm({
   const [username, setUsername] = useState(basic.username || "");
   const [tagline, setTagline] = useState(company.tagline || "");
   const [industry, setIndustry] = useState(company.industry || "");
-  const [location, setLocation] = useState(company.location || basic.location || "");
+  const [location, setLocation] = useState(
+    company.location || basic.location || "",
+  );
   const [bio, setBio] = useState(company.bio || user?.about?.bio || "");
   const [companySize, setCompanySize] = useState(company.companySize || "");
   const [foundedYear, setFoundedYear] = useState(
-    company.foundedYear ? String(company.foundedYear) : ""
+    company.foundedYear ? String(company.foundedYear) : "",
   );
 
   const [error, setError] = useState("");
@@ -64,7 +67,9 @@ export default function EmployerCompanyInfoForm({
 
       const usernameRegex = /^[a-zA-Z0-9._]+$/;
       if (!usernameRegex.test(usernameValue)) {
-        setError("Username can only contain letters, numbers, dots and underscores.");
+        setError(
+          "Username can only contain letters, numbers, dots and underscores.",
+        );
         return;
       }
 
@@ -150,7 +155,7 @@ export default function EmployerCompanyInfoForm({
 
       showToast?.(
         result?.message || "Company information updated successfully.",
-        "success"
+        "success",
       );
 
       onClose?.();
@@ -179,7 +184,12 @@ export default function EmployerCompanyInfoForm({
       {error && <div style={styles.error}>{error}</div>}
 
       <Field label="Company name*" value={name} setValue={setName} max={150} />
-      <Field label="Username*" value={username} setValue={setUsername} max={30} />
+      <Field
+        label="Username*"
+        value={username}
+        setValue={setUsername}
+        max={30}
+      />
       <Field
         label="Tagline"
         value={tagline}
@@ -187,7 +197,21 @@ export default function EmployerCompanyInfoForm({
         max={120}
         placeholder="Short company headline"
       />
-      <Field label="Industry" value={industry} setValue={setIndustry} max={100} />
+      <div style={styles.field}>
+        <label style={styles.label}>Industry</label>
+        <ProfileLookupInput
+          type="Industry"
+          value={industry}
+          onChange={setIndustry}
+          allowCustom={false}
+          maxLength={100}
+          inputStyle={styles.input}
+          placeholder="Search and select an industry"
+        />
+        <div style={styles.lookupHint}>
+          Select an industry from the official list.
+        </div>
+      </div>
       <Field
         label="Headquarters"
         value={location}
@@ -249,16 +273,23 @@ function Field({ label, value, setValue, max, placeholder }) {
           onChange={(e) => setValue(e.target.value)}
           placeholder={placeholder}
         />
-        <span style={styles.counter}>{value.length}/{max}</span>
+        <span style={styles.counter}>
+          {value.length}/{max}
+        </span>
       </div>
     </div>
   );
 }
 
 const styles = {
+  lookupHint: {
+    marginTop: 5,
+    color: "var(--app-muted)",
+    fontSize: 12,
+  },
   helper: {
     fontSize: 12,
-    color: "#777",
+    color: "var(--app-muted)",
     marginBottom: 8,
   },
   title: {
@@ -274,7 +305,7 @@ const styles = {
     fontWeight: 500,
     marginBottom: 6,
     display: "block",
-    color: "#333",
+    color: "var(--app-text)",
   },
   inputWrapper: {
     position: "relative",
@@ -294,7 +325,7 @@ const styles = {
     top: "50%",
     transform: "translateY(-50%)",
     fontSize: 11,
-    color: "#777",
+    color: "var(--app-muted)",
   },
   textarea: {
     width: "100%",
@@ -310,7 +341,7 @@ const styles = {
   textareaCounter: {
     textAlign: "right",
     fontSize: 11,
-    color: "#777",
+    color: "var(--app-muted)",
     marginTop: 4,
   },
   actions: {
@@ -321,8 +352,8 @@ const styles = {
   },
   cancelBtn: {
     border: "1px solid #999",
-    backgroundColor: "#fff",
-    color: "#555",
+    backgroundColor: "var(--app-surface)",
+    color: "var(--app-text-soft)",
     padding: "8px 16px",
     borderRadius: 18,
     cursor: "pointer",

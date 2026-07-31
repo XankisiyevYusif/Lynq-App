@@ -6,8 +6,8 @@ export default function CommentInput({ onSend }) {
   const handleSend = () => {
     if (!text.trim()) return;
 
-    onSend(text);      // ⬅️ SignalR burdan çağırılır
-    setText("");       // ⬅️ input təmizlənir
+    onSend(text); // ⬅️ SignalR burdan çağırılır
+    setText(""); // ⬅️ input təmizlənir
   };
 
   return (
@@ -35,7 +35,7 @@ const styles = {
     display: "flex",
     alignItems: "center",
     padding: "10px",
-    borderTop: "1px solid #eee",
+    borderTop: "1px solid var(--app-border)",
     gap: "10px",
   },
   input: {
@@ -43,7 +43,7 @@ const styles = {
     padding: "10px 14px",
     fontSize: "14px",
     borderRadius: "20px",
-    border: "1px solid #ccc",
+    border: "1px solid var(--app-border)",
     outline: "none",
   },
   button: {

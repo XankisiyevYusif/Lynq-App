@@ -140,12 +140,13 @@ const EmployerFollowButton = ({
       </button>
 
       {isConfirmOpen && (
-        <div style={styles.overlay} onClick={() => setIsConfirmOpen(false)}>
-          <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+        <div className="employer-follow-overlay" style={styles.overlay} onClick={() => setIsConfirmOpen(false)}>
+          <div className="employer-follow-modal" style={styles.modal} onClick={(e) => e.stopPropagation()}>
             <h3 style={styles.modalTitle}>Unfollow company?</h3>
 
             <p style={styles.modalText}>
-              You will stop following this company. You can follow it again later.
+              You will stop following this company. You can follow it again
+              later.
             </p>
 
             <div style={styles.modalActions}>
@@ -210,7 +211,7 @@ const styles = {
   modal: {
     width: "100%",
     maxWidth: 420,
-    backgroundColor: "#fff",
+    backgroundColor: "var(--app-surface)",
     borderRadius: 12,
     padding: 22,
     boxShadow: "0 12px 34px rgba(0,0,0,0.22)",
@@ -220,14 +221,14 @@ const styles = {
     margin: "0 0 10px",
     fontSize: 20,
     fontWeight: 700,
-    color: "#111",
+    color: "var(--app-text)",
   },
 
   modalText: {
     margin: "0 0 20px",
     fontSize: 14,
     lineHeight: 1.5,
-    color: "#555",
+    color: "var(--app-text-soft)",
   },
 
   modalActions: {
@@ -237,9 +238,9 @@ const styles = {
   },
 
   cancelButton: {
-    border: "1px solid #ccc",
-    backgroundColor: "#fff",
-    color: "#333",
+    border: "1px solid var(--app-border)",
+    backgroundColor: "var(--app-surface)",
+    color: "var(--app-text)",
     borderRadius: 999,
     padding: "8px 16px",
     fontWeight: 700,

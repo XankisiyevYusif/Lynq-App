@@ -25,21 +25,25 @@ const MyProfilePage = ({ likeConnection }) => {
     return <LoadingSpinner text="Loading your profile..." />;
   }
 
-const isEmployer =
-  user?.userType === "Employer" ||
-  user?.role === "Employer";
+  const isEmployer =
+    user?.userType === "Employer" ||
+    user?.UserType === "Employer" ||
+    Number(user?.userType ?? user?.UserType) === 2 ||
+    user?.role === "Employer" ||
+    user?.Role === "Employer" ||
+    !!(user?.companyInfo || user?.CompanyInfo);
 
-if (isEmployer) {
-  return (
-    <EmployerProfileView
-      user={user}
-      setUser={setUser}
-      isOwner={true}
-      readOnly={false}
-      likeConnection={likeConnection}
-    />
-  );
-}
+  if (isEmployer) {
+    return (
+      <EmployerProfileView
+        user={user}
+        setUser={setUser}
+        isOwner={true}
+        readOnly={false}
+        likeConnection={likeConnection}
+      />
+    );
+  }
   return (
     <ProfileView
       user={user}

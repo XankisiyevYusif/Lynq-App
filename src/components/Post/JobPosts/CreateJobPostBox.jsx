@@ -14,6 +14,8 @@ export default function CreateJobPostBox({ onCreated, compact = false }) {
     workplaceType: "On-site",
     employmentType: "Full-time",
     applyUrl: "",
+    requiredSkills: "",
+    minimumExperienceYears: "0",
     expiresAt: "",
   });
 
@@ -41,6 +43,8 @@ export default function CreateJobPostBox({ onCreated, compact = false }) {
       workplaceType: "On-site",
       employmentType: "Full-time",
       applyUrl: "",
+      requiredSkills: "",
+      minimumExperienceYears: "0",
       expiresAt: "",
     });
   };
@@ -94,6 +98,13 @@ export default function CreateJobPostBox({ onCreated, compact = false }) {
         workplaceType: formData.workplaceType,
         employmentType: formData.employmentType,
         applyUrl: formData.applyUrl.trim() || null,
+        requiredSkills: formData.requiredSkills
+          .split(",")
+          .map((skill) => skill.trim())
+          .filter(Boolean),
+        minimumExperienceYears: Number(
+          formData.minimumExperienceYears || 0,
+        ),
         expiresAt: formData.expiresAt
           ? new Date(formData.expiresAt).toISOString()
           : null,
@@ -114,7 +125,7 @@ export default function CreateJobPostBox({ onCreated, compact = false }) {
         err.response?.data?.message ||
           err.response?.data?.Message ||
           "Failed to create job post.",
-        "error"
+        "error",
       );
     } finally {
       setLoading(false);
@@ -215,6 +226,36 @@ export default function CreateJobPostBox({ onCreated, compact = false }) {
                 style={styles.input}
               />
 
+              <div style={styles.row}>
+                <div style={styles.col}>
+                  <label style={styles.label}>Required skills</label>
+                  <input
+                    name="requiredSkills"
+                    value={formData.requiredSkills}
+                    onChange={handleChange}
+                    placeholder="React, .NET, SQL"
+                    style={styles.input}
+                  />
+                </div>
+
+                <div style={styles.col}>
+                  <label style={styles.label}>Minimum experience</label>
+                  <select
+                    name="minimumExperienceYears"
+                    value={formData.minimumExperienceYears}
+                    onChange={handleChange}
+                    style={styles.input}
+                  >
+                    <option value="0">No minimum</option>
+                    <option value="1">1+ years</option>
+                    <option value="2">2+ years</option>
+                    <option value="3">3+ years</option>
+                    <option value="5">5+ years</option>
+                    <option value="8">8+ years</option>
+                  </select>
+                </div>
+              </div>
+
               <label style={styles.label}>Expires at</label>
               <input
                 type="date"
@@ -242,7 +283,11 @@ export default function CreateJobPostBox({ onCreated, compact = false }) {
                   Cancel
                 </button>
 
-                <button type="submit" style={styles.submitButton} disabled={loading}>
+                <button
+                  type="submit"
+                  style={styles.submitButton}
+                  disabled={loading}
+                >
                   {loading ? "Posting..." : "Post job"}
                 </button>
               </div>
@@ -256,8 +301,8 @@ export default function CreateJobPostBox({ onCreated, compact = false }) {
 
 const styles = {
   createBox: {
-    backgroundColor: "#fff",
-    border: "1px solid #ddd",
+    backgroundColor: "var(--app-surface)",
+    border: "1px solid var(--app-border)",
     borderRadius: 12,
     padding: 16,
     boxShadow: "0 4px 16px rgba(0,0,0,0.04)",
@@ -265,10 +310,10 @@ const styles = {
 
   createButton: {
     width: "100%",
-    border: "1px solid #0a66c2",
-    backgroundColor: "#0a66c2",
+    border: "1px solid var(--app-accent)",
+    backgroundColor: "var(--app-accent)",
     color: "#fff",
-    borderRadius: 22,
+    borderRadius: 10,
     padding: "10px 16px",
     fontSize: 15,
     fontWeight: 700,
@@ -283,10 +328,10 @@ const styles = {
   },
 
   compactCreateButton: {
-    border: "1px solid #0a66c2",
-    backgroundColor: "#0a66c2",
+    border: "1px solid var(--app-accent)",
+    backgroundColor: "var(--app-accent)",
     color: "#fff",
-    borderRadius: 20,
+    borderRadius: 10,
     padding: "8px 16px",
     fontSize: 14,
     fontWeight: 700,
@@ -308,14 +353,14 @@ const styles = {
     width: 560,
     maxHeight: "88vh",
     overflowY: "auto",
-    backgroundColor: "#fff",
+    backgroundColor: "var(--app-surface)",
     borderRadius: 14,
     boxShadow: "0 16px 40px rgba(0,0,0,0.25)",
   },
 
   modalHeader: {
     padding: "18px 22px",
-    borderBottom: "1px solid #eee",
+    borderBottom: "1px solid var(--app-border)",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
@@ -332,7 +377,7 @@ const styles = {
     backgroundColor: "transparent",
     fontSize: 28,
     cursor: "pointer",
-    color: "#555",
+    color: "var(--app-muted)",
   },
 
   form: {
@@ -344,12 +389,14 @@ const styles = {
   label: {
     fontSize: 13,
     fontWeight: 600,
-    color: "#444",
+    color: "var(--app-text-soft)",
     marginBottom: 6,
   },
 
   input: {
-    border: "1px solid #c9c9c9",
+    border: "1px solid var(--app-border)",
+    backgroundColor: "var(--app-surface-2)",
+    color: "var(--app-text)",
     borderRadius: 8,
     padding: "10px 12px",
     fontSize: 14,
@@ -358,7 +405,9 @@ const styles = {
   },
 
   textarea: {
-    border: "1px solid #c9c9c9",
+    border: "1px solid var(--app-border)",
+    backgroundColor: "var(--app-surface-2)",
+    color: "var(--app-text)",
     borderRadius: 8,
     padding: "10px 12px",
     fontSize: 14,
@@ -386,9 +435,9 @@ const styles = {
   },
 
   cancelButton: {
-    border: "1px solid #ccc",
-    backgroundColor: "#fff",
-    color: "#333",
+    border: "1px solid var(--app-border)",
+    backgroundColor: "var(--app-surface)",
+    color: "var(--app-text)",
     borderRadius: 20,
     padding: "9px 16px",
     fontWeight: 600,
@@ -396,10 +445,10 @@ const styles = {
   },
 
   submitButton: {
-    border: "1px solid #0a66c2",
-    backgroundColor: "#0a66c2",
+    border: "1px solid var(--app-accent)",
+    backgroundColor: "var(--app-accent)",
     color: "#fff",
-    borderRadius: 20,
+    borderRadius: 10,
     padding: "9px 18px",
     fontWeight: 700,
     cursor: "pointer",

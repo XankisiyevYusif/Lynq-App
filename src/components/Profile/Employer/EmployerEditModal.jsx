@@ -39,9 +39,9 @@ export default function EmployerEditModal({
   ];
 
   return (
-    <div style={s.overlay} onMouseDown={onClose}>
-      <div style={s.modal} onMouseDown={(e) => e.stopPropagation()}>
-        <div style={s.header}>
+    <div className="employer-edit-overlay" style={s.overlay} onMouseDown={onClose}>
+      <div className="employer-edit-modal" style={s.modal} onMouseDown={(e) => e.stopPropagation()}>
+        <div className="employer-edit-header" style={s.header}>
           <div style={s.title}>Edit company profile</div>
 
           <button style={s.closeBtn} onClick={onClose}>
@@ -50,9 +50,10 @@ export default function EmployerEditModal({
         </div>
 
         <div style={s.content}>
-          <div style={s.left}>
+          <div className="employer-edit-sidebar" style={s.left}>
             {items.map((item) => (
               <button
+                className={`employer-edit-tab ${activeSection === item.key ? "is-active" : ""}`}
                 key={item.key}
                 onClick={() => onChangeSection?.(item.key)}
                 style={{
@@ -104,7 +105,7 @@ const s = {
   modal: {
     width: "100%",
     maxWidth: 900,
-    background: "#fff",
+    background: "var(--app-surface)",
     borderRadius: 14,
     boxShadow: "0 12px 40px rgba(0,0,0,0.22)",
     overflow: "hidden",
