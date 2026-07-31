@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import api, { API_ROOT } from "../../../services/api";
+import api from "../../../services/api";
 import defaultAvatar from "../../../assets/default-avatar.png";
-
-const API_BASE_URL = API_ROOT;
+import { resolveMediaUrl } from "../../../utils/mediaUrl";
 
 export default function EmployerFollowersSection({ isOwner }) {
   const navigate = useNavigate();
@@ -18,11 +17,7 @@ export default function EmployerFollowersSection({ isOwner }) {
     return [];
   };
 
-  const getImageUrl = (path) => {
-    if (!path) return defaultAvatar;
-    if (path.startsWith("http://") || path.startsWith("https://")) return path;
-    return `${API_BASE_URL}/${path.replace(/^\/+/, "")}`;
-  };
+  const getImageUrl = (path) => resolveMediaUrl(path, defaultAvatar);
 
   const fetchFollowers = async () => {
     if (!isOwner) return;
@@ -46,16 +41,14 @@ export default function EmployerFollowersSection({ isOwner }) {
   if (!isOwner) return null;
 
   return (
-    <div style={styles.card}>
+    <div className="employer-followers-card" style={styles.card}>
       <div style={styles.headerRow}>
         <div>
-          <h2 style={styles.title}>Followers</h2>
-          <p style={styles.subText}>
-            People who follow your company page.
-          </p>
+          <h2 className="employer-followers-title" style={styles.title}>Followers</h2>
+          <p className="employer-followers-subtitle" style={styles.subText}>People who follow your company page.</p>
         </div>
 
-        <span style={styles.count}>{followers.length}</span>
+        <span className="employer-followers-count" style={styles.count}>{followers.length}</span>
       </div>
 
       {loading && <p style={styles.info}>Loading followers...</p>}
@@ -66,7 +59,11 @@ export default function EmployerFollowersSection({ isOwner }) {
 
       {!loading &&
         followers.slice(0, 6).map((follower) => (
-          <div key={follower.followerId || follower.username} style={styles.item}>
+          <div
+            key={follower.followerId || follower.username}
+            className="employer-follower-row"
+            style={styles.item}
+          >
             <img
               src={getImageUrl(follower.profileImage)}
               alt=""
@@ -77,21 +74,22 @@ export default function EmployerFollowersSection({ isOwner }) {
               style={styles.infoBox}
               onClick={() => navigate(`/profile/${follower.username}`)}
             >
-              <h3 style={styles.name}>
+              <h3 className="employer-follower-name" style={styles.name}>
                 {follower.fullName || follower.username}
               </h3>
 
-              <p style={styles.headline}>
+              <p className="employer-follower-headline" style={styles.headline}>
                 {follower.currentPosition || "Profile"}
               </p>
 
               {follower.location && (
-                <p style={styles.location}>{follower.location}</p>
+                <p className="employer-follower-location" style={styles.location}>{follower.location}</p>
               )}
             </div>
 
             <button
               type="button"
+              className="employer-follower-view"
               style={styles.viewButton}
               onClick={() => navigate(`/profile/${follower.username}`)}
             >
@@ -107,8 +105,8 @@ const styles = {
   card: {
     width: "100%",
     maxWidth: 820,
-    backgroundColor: "#fff",
-    border: "1px solid #ddd",
+    backgroundColor: "var(--app-surface)",
+    border: "1px solid var(--app-border)",
     borderRadius: 12,
     padding: 20,
     boxSizing: "border-box",
@@ -126,20 +124,20 @@ const styles = {
     margin: 0,
     fontSize: 20,
     fontWeight: 700,
-    color: "#222",
+    color: "var(--app-text)",
   },
 
   subText: {
     margin: "5px 0 0",
     fontSize: 14,
-    color: "#666",
+    color: "var(--app-muted)",
   },
 
   count: {
     minWidth: 34,
     height: 34,
     borderRadius: "50%",
-    backgroundColor: "#eef3f8",
+    backgroundColor: "var(--app-surface-2)",
     color: "#0a66c2",
     display: "flex",
     alignItems: "center",
@@ -152,7 +150,7 @@ const styles = {
     alignItems: "center",
     gap: 12,
     padding: "12px 0",
-    borderTop: "1px solid #eee",
+    borderTop: "1px solid var(--app-border)",
   },
 
   avatar: {
@@ -160,7 +158,7 @@ const styles = {
     height: 52,
     borderRadius: "50%",
     objectFit: "cover",
-    backgroundColor: "#eef3f8",
+    backgroundColor: "var(--app-surface-2)",
   },
 
   infoBox: {
@@ -173,24 +171,24 @@ const styles = {
     margin: "0 0 4px",
     fontSize: 16,
     fontWeight: 700,
-    color: "#111",
+    color: "var(--app-text)",
   },
 
   headline: {
     margin: "0 0 3px",
     fontSize: 14,
-    color: "#444",
+    color: "var(--app-text-soft)",
   },
 
   location: {
     margin: 0,
     fontSize: 13,
-    color: "#777",
+    color: "var(--app-muted)",
   },
 
   viewButton: {
     border: "1px solid #0a66c2",
-    backgroundColor: "#fff",
+    backgroundColor: "var(--app-surface)",
     color: "#0a66c2",
     borderRadius: 999,
     padding: "7px 15px",
@@ -200,7 +198,7 @@ const styles = {
 
   info: {
     margin: "12px 0 0",
-    color: "#666",
+    color: "var(--app-muted)",
     fontSize: 14,
   },
 };

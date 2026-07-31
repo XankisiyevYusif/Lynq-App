@@ -3,6 +3,8 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import api from "../../services/api";
 import Navbar from "../../components/Layout/Navbar";
 import LoadingSpinner from "../../components/UI/LoadingSpinner";
+import { resolveMediaUrl } from "../../utils/mediaUrl";
+import ProfileIcon from "../../components/Profile/ProfileIcon";
 
 const monthNames = {
   1: "Jan",
@@ -77,7 +79,9 @@ export default function ExperienceListPage() {
   }
 
   if (!user) {
-    return <div style={{ textAlign: "center", marginTop: 40 }}>User not found.</div>;
+    return (
+      <div style={{ textAlign: "center", marginTop: 40 }}>User not found.</div>
+    );
   }
 
   return (
@@ -104,7 +108,15 @@ export default function ExperienceListPage() {
                   <div style={styles.item}>
                     <div style={styles.left}>
                       <div style={styles.logoBox}>
-                        {(exp.companyName || "E").charAt(0).toUpperCase()}
+                        {exp.companyLogoUrl ? (
+                          <img
+                            src={resolveMediaUrl(exp.companyLogoUrl)}
+                            alt={`${exp.companyName || "Company"} logo`}
+                            style={styles.organizationLogo}
+                          />
+                        ) : (
+                          (exp.companyName || "E").charAt(0).toUpperCase()
+                        )}
                       </div>
 
                       <div style={styles.info}>
@@ -116,7 +128,11 @@ export default function ExperienceListPage() {
 
                           {isOwner && (
                             <button type="button" style={styles.iconButton}>
-                              <img src={pencil} alt="edit" style={styles.icon} />
+                              <ProfileIcon
+                                name="edit"
+                                size={18}
+                                className="profile-list-edit-icon"
+                              />
                             </button>
                           )}
                         </div>
@@ -136,7 +152,9 @@ export default function ExperienceListPage() {
                         )}
 
                         {exp.description && (
-                          <div style={styles.description}>{exp.description}</div>
+                          <div style={styles.description}>
+                            {exp.description}
+                          </div>
                         )}
                       </div>
                     </div>
@@ -157,7 +175,7 @@ export default function ExperienceListPage() {
 
 const styles = {
   page: {
-    backgroundColor: "#f3f2ef",
+    backgroundColor: "var(--app-bg)",
     minHeight: "100vh",
     padding: "24px 0",
   },
@@ -180,8 +198,8 @@ const styles = {
   },
 
   card: {
-    backgroundColor: "#fff",
-    border: "1px solid #e0e0e0",
+    backgroundColor: "var(--app-surface)",
+    border: "1px solid var(--app-border)",
     borderRadius: "12px",
     padding: "24px",
   },
@@ -190,12 +208,12 @@ const styles = {
     margin: "0 0 20px 0",
     fontSize: "24px",
     fontWeight: 700,
-    color: "#191919",
+    color: "var(--app-text)",
   },
 
   emptyText: {
     fontSize: "15px",
-    color: "rgba(0,0,0,0.6)",
+    color: "var(--app-muted)",
   },
 
   item: {
@@ -212,7 +230,7 @@ const styles = {
     width: "52px",
     height: "52px",
     borderRadius: "10px",
-    backgroundColor: "#eef3f8",
+    backgroundColor: "var(--app-surface-2)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -220,6 +238,13 @@ const styles = {
     fontSize: "18px",
     color: "#428DFF",
     flexShrink: 0,
+  },
+
+  organizationLogo: {
+    width: "100%",
+    height: "100%",
+    borderRadius: "10px",
+    objectFit: "cover",
   },
 
   info: {
@@ -237,19 +262,19 @@ const styles = {
   position: {
     fontSize: "16px",
     fontWeight: 600,
-    color: "#191919",
+    color: "var(--app-text)",
     marginBottom: "2px",
   },
 
   company: {
     fontSize: "15px",
-    color: "#191919",
+    color: "var(--app-text)",
     marginBottom: "4px",
   },
 
   meta: {
     fontSize: "14px",
-    color: "rgba(0,0,0,0.6)",
+    color: "var(--app-muted)",
     marginBottom: "4px",
   },
 
@@ -257,7 +282,7 @@ const styles = {
     marginTop: "8px",
     fontSize: "14px",
     lineHeight: "22px",
-    color: "#191919",
+    color: "var(--app-text)",
     whiteSpace: "pre-wrap",
   },
 

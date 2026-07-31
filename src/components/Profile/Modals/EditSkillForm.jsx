@@ -1,13 +1,9 @@
 import React, { useEffect, useState } from "react";
 import api from "../../../services/api";
 import Toast from "../../UI/Toast";
-import pencil from "../../../assets/pencil.png";
+import ProfileIcon from "../ProfileIcon";
 
-export default function EditSkillForm({
-  skill,
-  setUser,
-  onClose,
-}) {
+export default function EditSkillForm({ skill, setUser, onClose }) {
   const [name, setName] = useState(skill?.name || "");
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
@@ -82,7 +78,7 @@ export default function EditSkillForm({
         setUser((prev) => ({
           ...prev,
           skills: (prev?.skills || []).map((item) =>
-            item.id === skill.id ? updatedSkill : item
+            item.id === skill.id ? updatedSkill : item,
           ),
         }));
       }
@@ -151,8 +147,9 @@ export default function EditSkillForm({
 
       <div style={styles.headerRow}>
         <div style={styles.title}>Edit skill</div>
-        <button style={styles.backBtn} onClick={onClose}>
-          ← Back
+        <button type="button" style={styles.backBtn} onClick={onClose}>
+          <ProfileIcon name="arrowLeft" size={17} />
+          Back
         </button>
       </div>
 
@@ -204,10 +201,7 @@ export default function EditSkillForm({
           style={styles.confirmOverlay}
           onClick={() => setShowDeleteModal(false)}
         >
-          <div
-            style={styles.confirmModal}
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div style={styles.confirmModal} onClick={(e) => e.stopPropagation()}>
             <div style={styles.confirmTitle}>Delete skill?</div>
             <div style={styles.confirmText}>
               Are you sure you want to delete this skill?
@@ -265,6 +259,9 @@ const styles = {
     fontWeight: 600,
     fontSize: 14,
     padding: 0,
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 5,
   },
 
   title: {
@@ -275,7 +272,7 @@ const styles = {
 
   helper: {
     fontSize: 12,
-    color: "#777",
+    color: "var(--app-muted)",
     marginBottom: 20,
   },
 
@@ -346,7 +343,7 @@ const styles = {
   },
 
   emptyText: {
-    color: "#666",
+    color: "var(--app-muted)",
     fontSize: 14,
   },
 
@@ -363,7 +360,7 @@ const styles = {
   confirmModal: {
     width: "100%",
     maxWidth: 380,
-    backgroundColor: "#fff",
+    backgroundColor: "var(--app-surface)",
     borderRadius: 16,
     padding: 20,
     boxShadow: "0 12px 32px rgba(0,0,0,0.18)",
@@ -372,13 +369,13 @@ const styles = {
   confirmTitle: {
     fontSize: 20,
     fontWeight: 700,
-    color: "#111",
+    color: "var(--app-text)",
     marginBottom: 8,
   },
 
   confirmText: {
     fontSize: 14,
-    color: "#555",
+    color: "var(--app-text-soft)",
     marginBottom: 20,
     lineHeight: 1.5,
   },
@@ -392,8 +389,8 @@ const styles = {
   cancelButton: {
     padding: "10px 16px",
     borderRadius: 10,
-    border: "1px solid #ddd",
-    backgroundColor: "#fff",
+    border: "1px solid var(--app-border)",
+    backgroundColor: "var(--app-surface)",
     cursor: "pointer",
     fontWeight: 600,
   },

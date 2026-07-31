@@ -1,25 +1,33 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
-import api, { API_ROOT } from "../../services/api";
+import api from "../../services/api";
 import { getRecommendedUsers } from "../../services/searchApi";
 import defaultAvatar from "../../assets/default-avatar.png";
+import { resolveMediaUrl } from "../../utils/mediaUrl";
 
 export default function HomeRecommendations({ showToast }) {
   const navigate = useNavigate();
+
   const currentUser = useSelector((state) => state.user.user);
-  const currentUsername = currentUser?.username || currentUser?.basicInfo?.username || "";
+
+  const currentUsername =
+    currentUser?.username ||
+    currentUser?.Username ||
+    currentUser?.basicInfo?.username ||
+    currentUser?.basicInfo?.Username ||
+    "";
 
   const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [processingIds, setProcessingIds] = useState({}); // { [username]: 'loading' | 'following' | 'pending' | null }
+
+  // { [username]: "loading" | "following" | "pending" }
+  const [processingIds, setProcessingIds] = useState({});
 
   const getUsername = (user) => {
-    return user?.username || user?.Username || user?.userName || user?.UserName || "";
-  };
-
-  const getUserId = (user) => {
-    return user?.id || user?.Id || user?.userId || user?.UserId || null;
+    return (
+      user?.username || user?.Username || user?.userName || user?.UserName || ""
+    );
   };
 
   const getFullName = (user) => {
@@ -30,6 +38,19 @@ export default function HomeRecommendations({ showToast }) {
       user?.Name ||
       getUsername(user) ||
       "User"
+    );
+  };
+
+  const isEmployerUser = (user) => {
+    return (
+      user?.userType === "Employer" ||
+      user?.UserType === "Employer" ||
+      user?.role === "Employer" ||
+      user?.Role === "Employer" ||
+      !!user?.companyInfo ||
+      !!user?.CompanyInfo ||
+      !!user?.company ||
+      !!user?.Company
     );
   };
 
@@ -57,14 +78,28 @@ export default function HomeRecommendations({ showToast }) {
     );
   };
 
-  const isEmployerUser = (user) => {
+  // API bəzən birbaşa array, bəzən pagination object qaytara bilər.
+  const normalizeRecommendedList = (result) => {
+    const payload = result?.data ?? result?.Data ?? result;
+
+    if (Array.isArray(payload)) {
+      return payload;
+    }
+
     return (
-      user?.userType === "Employer" ||
-      user?.UserType === "Employer" ||
-      user?.role === "Employer" ||
-      user?.Role === "Employer" ||
-      !!user?.companyInfo ||
-      !!user?.company
+      payload?.items || payload?.Items || payload?.data || payload?.Data || []
+    );
+  };
+
+  const getResponseList = (response) => {
+    const payload = response?.data ?? response?.Data ?? response;
+
+    if (Array.isArray(payload)) {
+      return payload;
+    }
+
+    return (
+      payload?.items || payload?.Items || payload?.data || payload?.Data || []
     );
   };
 
@@ -72,144 +107,105 @@ export default function HomeRecommendations({ showToast }) {
     try {
       setLoading(true);
 
-      // Fetch active network and followed companies to exclude them
-      const [connectionsRes, sentRes, receivedRes, followedCompaniesRes] = await Promise.all([
+      // Mövcud connection və request-ləri alırıq ki,
+      // onlar recommendation siyahısında görünməsin.
+      const [
+        connectionsRes,
+        sentRequestsRes,
+        receivedRequestsRes,
+        followedCompaniesRes,
+        recommendedRes,
+      ] = await Promise.all([
         api.get("/Connection/my-connections").catch(() => ({ data: [] })),
         api.get("/Connection/sent").catch(() => ({ data: [] })),
         api.get("/Connection/received").catch(() => ({ data: [] })),
-        api.get("/CompanyFollow/my-followed-companies").catch(() => ({ data: [] }))
+        api
+          .get("/CompanyFollow/my-followed-companies")
+          .catch(() => ({ data: [] })),
+        getRecommendedUsers().catch(() => []),
       ]);
 
-      const getResList = (res) => {
-        if (!res) return [];
-        const resData = res.data;
-        if (!resData) return [];
-        if (Array.isArray(resData)) return resData;
-        if (Array.isArray(resData.items)) return resData.items;
-        if (Array.isArray(resData.Items)) return resData.Items;
-        if (Array.isArray(resData.data)) return resData.data;
-        if (Array.isArray(resData.Data)) return resData.Data;
-        return [];
-      };
-
-      const connectionsList = getResList(connectionsRes);
-      const sentList = getResList(sentRes);
-      const receivedList = getResList(receivedRes);
-      const followedList = getResList(followedCompaniesRes);
+      const connectionsList = getResponseList(connectionsRes);
+      const sentRequestsList = getResponseList(sentRequestsRes);
+      const receivedRequestsList = getResponseList(receivedRequestsRes);
+      const followedCompaniesList = getResponseList(followedCompaniesRes);
 
       const excludedUsernames = new Set();
-      
-      // Exclude current user from recommendations
+
+      // Özümüz recommendation olaraq görünməyək.
       if (currentUsername) {
         excludedUsernames.add(currentUsername.toLowerCase());
       }
-      
-      // Exclude already connected users
-      connectionsList.forEach((c) => {
-        const uname = getUsername(c);
-        if (uname) excludedUsernames.add(uname.toLowerCase());
-      });
-      
-      // Exclude sent connection requests
-      sentList.forEach((r) => {
-        const receiver = r?.receiver || r?.Receiver || r;
-        const uname = getUsername(receiver);
-        if (uname) excludedUsernames.add(uname.toLowerCase());
-      });
-      
-      // Exclude received connection requests
-      receivedList.forEach((r) => {
-        const sender = r?.sender || r?.Sender || r;
-        const uname = getUsername(sender);
-        if (uname) excludedUsernames.add(uname.toLowerCase());
-      });
-      
-      // Exclude already followed companies
-      followedList.forEach((c) => {
-        const uname = getUsername(c);
-        if (uname) excludedUsernames.add(uname.toLowerCase());
-      });
 
-      // Fetch recommended users/companies from API
-      let data = await getRecommendedUsers();
-      
-      if (!data || data.length === 0) {
-        console.log("Recommendations from API empty, trying jobseekers and employers...");
-        const [jobseekersRes, employersRes] = await Promise.all([
-          api.get("/User/jobseekers").catch(() => ({ data: [] })),
-          api.get("/User/employers").catch(() => ({ data: [] }))
-        ]);
+      // Əvvəldən connection olanlar görünməsin.
+      connectionsList.forEach((connection) => {
+        const username = getUsername(connection);
 
-        const jobseekersList = getResList(jobseekersRes);
-        const employersList = getResList(employersRes);
-        data = [...jobseekersList, ...employersList];
-      }
-
-      // If still empty, use mock connections as a robust visual fallback
-      if (!data || data.length === 0) {
-        console.log("Combined list empty, using mock recommendations.");
-        data = [
-          {
-            username: "tahir_aliyev",
-            fullName: "Tahir Aliyev",
-            currentPosition: "Graphic Designer",
-            role: "JobSeeker",
-            profileImage: ""
-          },
-          {
-            username: "test_company_3060",
-            fullName: "test_company_3060",
-            currentPosition: "Employer",
-            role: "Employer",
-            profileImage: ""
-          },
-          {
-            username: "yusifo",
-            fullName: "YusifO",
-            currentPosition: "JobSeeker",
-            role: "JobSeeker",
-            profileImage: ""
-          }
-        ];
-      }
-
-      // Filter out all excluded usernames
-      const filtered = data.filter((u) => {
-        const uname = getUsername(u);
-        if (!uname) return false;
-        return !excludedUsernames.has(uname.toLowerCase());
-      });
-
-      setRecommendations(filtered);
-    } catch (err) {
-      console.error("Failed to load recommended users:", err);
-      // Hardcoded fallback if everything fails
-      const fallbackList = [
-        {
-          username: "tahir_aliyev",
-          fullName: "Tahir Aliyev",
-          currentPosition: "Graphic Designer",
-          role: "JobSeeker",
-          profileImage: ""
-        },
-        {
-          username: "test_company_3060",
-          fullName: "test_company_3060",
-          currentPosition: "Employer",
-          role: "Employer",
-          profileImage: ""
-        },
-        {
-          username: "yusifo",
-          fullName: "YusifO",
-          currentPosition: "JobSeeker",
-          role: "JobSeeker",
-          profileImage: ""
+        if (username) {
+          excludedUsernames.add(username.toLowerCase());
         }
-      ];
+      });
 
-      const currentUnameLower = currentUsername ? currentUsername.toLowerCase() : "";
-      setRecommendations(fallbackList.filter(u => u.username.toLowerCase() !== currentUnameLower));
+      // Göndərilmiş connection request olanlar görünməsin.
+      sentRequestsList.forEach((request) => {
+        const receiver =
+          request?.receiver ||
+          request?.Receiver ||
+          request?.user ||
+          request?.User ||
+          request;
+
+        const username = getUsername(receiver);
+
+        if (username) {
+          excludedUsernames.add(username.toLowerCase());
+        }
+      });
+
+      // Gələn connection request olanlar görünməsin.
+      receivedRequestsList.forEach((request) => {
+        const sender =
+          request?.sender ||
+          request?.Sender ||
+          request?.user ||
+          request?.User ||
+          request;
+
+        const username = getUsername(sender);
+
+        if (username) {
+          excludedUsernames.add(username.toLowerCase());
+        }
+      });
+
+      // Follow etdiyimiz şirkətlər görünməsin.
+      followedCompaniesList.forEach((company) => {
+        const username = getUsername(company);
+
+        if (username) {
+          excludedUsernames.add(username.toLowerCase());
+        }
+      });
+
+      // Yalnız backend-in qaytardığı real recommendation-lar.
+      const recommendationList = normalizeRecommendedList(recommendedRes);
+
+      const filteredRecommendations = recommendationList.filter((user) => {
+        const username = getUsername(user);
+
+        if (!username) {
+          return false;
+        }
+
+        return !excludedUsernames.has(username.toLowerCase());
+      });
+
+      setRecommendations(filteredRecommendations);
+    } catch (error) {
+      console.error("Failed to load recommendations:", error);
+
+      // Xəta olarsa fake user göstərmirik.
+      setRecommendations([]);
     } finally {
       setLoading(false);
     }
@@ -219,44 +215,48 @@ export default function HomeRecommendations({ showToast }) {
     fetchRecommendations();
   }, [currentUsername]);
 
-  const getImageUrl = (path) => {
-    if (!path) return defaultAvatar;
-    if (path.startsWith("http://") || path.startsWith("https://")) return path;
-    return `${API_ROOT}/${path.replace(/^\/+/, "")}`;
-  };
+  const getImageUrl = (path) => resolveMediaUrl(path, defaultAvatar);
 
   const handleAction = async (user) => {
     const username = getUsername(user);
-    if (!username) return;
+
+    if (!username) {
+      return;
+    }
 
     const isEmployer = isEmployerUser(user);
 
-    setProcessingIds((prev) => ({
-      ...prev,
+    setProcessingIds((previous) => ({
+      ...previous,
       [username]: "loading",
     }));
 
     try {
       if (isEmployer) {
         await api.post(`/CompanyFollow/follow/${username}`);
+
         showToast?.(`Following ${getFullName(user)}`, "success");
-        setProcessingIds((prev) => ({
-          ...prev,
-          [username]: "following",
-        }));
       } else {
         await api.post(`/Connection/send/${username}`);
+
         showToast?.("Connection request sent.", "success");
-        setProcessingIds((prev) => ({
-          ...prev,
-          [username]: "pending",
-        }));
       }
-    } catch (err) {
-      console.error("Recommendation action failed:", err);
+
+      // Once followed/requested, it is no longer a valid recommendation.
+      setRecommendations((current) =>
+        current.filter(
+          (item) =>
+            getUsername(item).toLowerCase() !== username.toLowerCase(),
+        ),
+      );
+      setProcessingIds((previous) => ({ ...previous, [username]: null }));
+    } catch (error) {
+      console.error("Recommendation action failed:", error);
+
       showToast?.("Failed to complete action. Please try again.", "error");
-      setProcessingIds((prev) => ({
-        ...prev,
+
+      setProcessingIds((previous) => ({
+        ...previous,
         [username]: null,
       }));
     }
@@ -266,10 +266,12 @@ export default function HomeRecommendations({ showToast }) {
     return (
       <div className="home-recommendations-card loading">
         <div className="home-recommendations-header">Recommendations</div>
+
         <div className="home-recommendations-skeleton-list">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="home-recommendations-skeleton-item">
+          {[1, 2, 3].map((item) => (
+            <div key={item} className="home-recommendations-skeleton-item">
               <div className="skeleton-avatar" />
+
               <div className="skeleton-text-group">
                 <div className="skeleton-line title" />
                 <div className="skeleton-line subtitle" />
@@ -282,6 +284,7 @@ export default function HomeRecommendations({ showToast }) {
     );
   }
 
+  // API boşdursa recommendation kartı ümumiyyətlə görünməsin.
   if (recommendations.length === 0) {
     return null;
   }
@@ -314,10 +317,10 @@ export default function HomeRecommendations({ showToast }) {
           const fullName = getFullName(user);
           const headline = getHeadline(user);
           const isEmployer = isEmployerUser(user);
-          const state = processingIds[username];
+          const currentState = processingIds[username];
 
           return (
-            <div key={username || Math.random()} className="home-recommendation-item">
+            <div key={username} className="home-recommendation-item">
               <img
                 src={getImageUrl(getProfileImage(user))}
                 alt={fullName}
@@ -325,27 +328,28 @@ export default function HomeRecommendations({ showToast }) {
                 style={{
                   borderRadius: isEmployer ? "8px" : "50%",
                 }}
-                onError={(e) => {
-                  e.currentTarget.src = defaultAvatar;
+                onError={(event) => {
+                  event.currentTarget.src = defaultAvatar;
                 }}
-                onClick={() => username && navigate(`/profile/${username}`)}
+                onClick={() => navigate(`/profile/${username}`)}
               />
 
               <div className="home-recommendation-info">
                 <div
                   className="home-recommendation-name"
-                  onClick={() => username && navigate(`/profile/${username}`)}
+                  onClick={() => navigate(`/profile/${username}`)}
                 >
                   {fullName}
                 </div>
+
                 <div className="home-recommendation-headline">{headline}</div>
 
                 <div className="home-recommendation-actions">
-                  {state === "following" ? (
+                  {currentState === "following" ? (
                     <button className="home-recommendation-btn active" disabled>
                       Following
                     </button>
-                  ) : state === "pending" ? (
+                  ) : currentState === "pending" ? (
                     <button className="home-recommendation-btn active" disabled>
                       Pending
                     </button>
@@ -353,9 +357,9 @@ export default function HomeRecommendations({ showToast }) {
                     <button
                       className="home-recommendation-btn"
                       onClick={() => handleAction(user)}
-                      disabled={state === "loading"}
+                      disabled={currentState === "loading"}
                     >
-                      {state === "loading" ? (
+                      {currentState === "loading" ? (
                         "..."
                       ) : isEmployer ? (
                         <>

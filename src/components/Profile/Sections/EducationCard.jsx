@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import EmptySectionCard from "./EmptySectionCard";
 import educationImage from "../../../assets/Education.png";
-import pencil from "../../../assets/pencil.png";
+import { resolveMediaUrl } from "../../../utils/mediaUrl";
+import ProfileIcon from "../ProfileIcon";
 
 const monthLabels = {
   1: "January",
@@ -67,9 +68,24 @@ export default function EducationCard({
   const hasMore = educations.length > previewCount;
 
   return (
-    <div style={styles.card}>
+    <div className="profile-section-card" style={styles.card}>
       <div style={styles.header}>
-        <h3 style={styles.title}>Education</h3>
+        <h3 className="profile-section-title" style={styles.title}>
+          Education
+        </h3>
+
+        {isOwner && !readOnly && (
+          <button
+            type="button"
+            className="profile-icon-button profile-section-add-button"
+            style={styles.addButton}
+            onClick={onAddEducation}
+            aria-label="Add education"
+            title="Add education"
+          >
+            <ProfileIcon name="plus" size={19} strokeWidth={2.4} />
+          </button>
+        )}
       </div>
 
       <div style={styles.list}>
@@ -94,9 +110,21 @@ export default function EducationCard({
                 <div style={styles.leftIconBox}>
                   <div style={styles.iconWrapper}>
                     <img
-                      src={educationImage}
-                      alt="education"
-                      style={styles.educationIcon}
+                      src={
+                        item.institutionLogoUrl
+                          ? resolveMediaUrl(item.institutionLogoUrl)
+                          : educationImage
+                      }
+                      alt={
+                        item.institutionLogoUrl
+                          ? `${item.school || "Institution"} logo`
+                          : "Education"
+                      }
+                      style={
+                        item.institutionLogoUrl
+                          ? styles.institutionLogo
+                          : styles.educationIcon
+                      }
                     />
                   </div>
                 </div>
@@ -118,10 +146,11 @@ export default function EducationCard({
                 {!readOnly && isOwner && (
                   <button
                     type="button"
+                    className="profile-icon-button"
                     style={styles.iconButton}
                     onClick={() => onEditEducation?.(item)}
                   >
-                    <img src={pencil} alt="edit" style={styles.itemPencil} />
+                    <ProfileIcon name="edit" size={18} />
                   </button>
                 )}
               </div>
@@ -136,9 +165,7 @@ export default function EducationCard({
           style={styles.toggleButton}
           onClick={() => setShowAll((prev) => !prev)}
         >
-          {showAll
-            ? "Show less"
-            : `Show all education (${educations.length})`}
+          {showAll ? "Show less" : `Show all education (${educations.length})`}
         </button>
       )}
     </div>
@@ -147,8 +174,8 @@ export default function EducationCard({
 
 const styles = {
   card: {
-    backgroundColor: "#fff",
-    border: "1px solid #e0e0e0",
+    backgroundColor: "var(--app-surface)",
+    border: "1px solid var(--app-border)",
     borderRadius: 12,
     padding: 20,
   },
@@ -164,9 +191,22 @@ const styles = {
     margin: 0,
     fontSize: 20,
     fontWeight: 600,
-    color: "#1d2226",
+    color: "var(--app-text)",
     fontFamily:
       '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+  },
+
+  addButton: {
+    width: 34,
+    height: 34,
+    display: "grid",
+    placeItems: "center",
+    padding: 0,
+    border: "1px solid var(--app-border)",
+    borderRadius: 10,
+    background: "var(--app-surface)",
+    color: "var(--app-muted)",
+    cursor: "pointer",
   },
 
   list: {
@@ -191,7 +231,7 @@ const styles = {
   iconWrapper: {
     width: 52,
     height: 52,
-    backgroundColor: "#eef3f8",
+    backgroundColor: "var(--app-surface-2)",
     borderRadius: 12,
     display: "flex",
     alignItems: "center",
@@ -202,6 +242,13 @@ const styles = {
     width: 26,
     height: 26,
     objectFit: "contain",
+  },
+
+  institutionLogo: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 12,
+    objectFit: "cover",
   },
 
   content: {
@@ -220,18 +267,13 @@ const styles = {
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
-  },
-
-  itemPencil: {
-    width: 18,
-    height: 18,
-    objectFit: "contain",
+    color: "var(--app-muted)",
   },
 
   schoolName: {
     fontSize: 16,
     fontWeight: 600,
-    color: "#1d2226",
+    color: "var(--app-text)",
     marginBottom: 4,
     fontFamily:
       '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
@@ -239,7 +281,7 @@ const styles = {
 
   degreeField: {
     fontSize: 15,
-    color: "#444",
+    color: "var(--app-text-soft)",
     marginBottom: 4,
     fontFamily:
       '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
@@ -247,7 +289,7 @@ const styles = {
 
   meta: {
     fontSize: 14,
-    color: "#666",
+    color: "var(--app-muted)",
     marginBottom: 6,
     fontFamily:
       '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
@@ -256,7 +298,7 @@ const styles = {
   note: {
     margin: "6px 0 0 0",
     fontSize: 14,
-    color: "#333",
+    color: "var(--app-text-soft)",
     lineHeight: 1.6,
     whiteSpace: "pre-line",
     fontFamily:
@@ -267,7 +309,7 @@ const styles = {
     marginTop: 16,
     border: "none",
     background: "transparent",
-    color: "#0a66c2",
+    color: "var(--app-accent)",
     fontWeight: 600,
     cursor: "pointer",
     fontSize: 14,

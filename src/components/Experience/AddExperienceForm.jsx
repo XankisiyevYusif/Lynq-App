@@ -13,13 +13,11 @@ export default function AddExperienceForm({ onClose }) {
   const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
-    debugger;
     e.preventDefault();
     setLoading(true);
     setError("");
 
     try {
-        debugger;
       const dto = {
         title,
         companyName,
@@ -44,9 +42,8 @@ export default function AddExperienceForm({ onClose }) {
   };
 
   const styles = {
-
     container: {
-      background: "#fff",
+      background: "var(--app-surface)",
       padding: "2rem",
       borderRadius: "1rem",
       boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
@@ -58,7 +55,7 @@ export default function AddExperienceForm({ onClose }) {
       fontSize: "1.5rem",
       fontWeight: "700",
       marginBottom: "1rem",
-      color: "#333",
+      color: "var(--app-text)",
     },
     error: {
       color: "red",
@@ -73,13 +70,13 @@ export default function AddExperienceForm({ onClose }) {
       fontSize: "0.9rem",
       fontWeight: "600",
       marginBottom: "0.25rem",
-      color: "#555",
+      color: "var(--app-text-soft)",
     },
     input: {
       width: "100%",
       padding: "0.5rem",
       borderRadius: "0.5rem",
-      border: "1px solid #ccc",
+      border: "1px solid var(--app-border)",
       fontSize: "0.9rem",
     },
     textarea: {
@@ -87,7 +84,7 @@ export default function AddExperienceForm({ onClose }) {
       height: "100px",
       padding: "0.5rem",
       borderRadius: "0.5rem",
-      border: "1px solid #ccc",
+      border: "1px solid var(--app-border)",
       fontSize: "0.9rem",
       resize: "none",
     },
@@ -110,7 +107,7 @@ export default function AddExperienceForm({ onClose }) {
     },
     cancelBtn: {
       padding: "0.5rem 1rem",
-      backgroundColor: "#ccc",
+      backgroundColor: "var(--app-border)",
       border: "none",
       borderRadius: "0.5rem",
       cursor: "pointer",
@@ -126,8 +123,7 @@ export default function AddExperienceForm({ onClose }) {
   };
 
   return (
-        <div style={styles.container}>
-            
+    <div style={styles.container}>
       <h2 style={styles.header}>Add Experience</h2>
 
       {error && <p style={styles.error}>{error}</p>}

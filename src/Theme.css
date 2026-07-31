@@ -1,0 +1,827 @@
+:root {
+  --app-bg: #f3f2ef;
+  --app-surface: #ffffff;
+  --app-surface-2: #f8fafc;
+  --app-text: #172033;
+  --app-text-soft: #334155;
+  --app-muted: #64748b;
+  --app-border: #e2e8f0;
+  --app-accent: #4f46e5;
+  --app-accent-soft: rgba(79, 70, 229, .09);
+  --app-shadow: 0 6px 22px rgba(15, 23, 42, .045);
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --app-bg: #0b1018;
+  --app-surface: #151c27;
+  --app-surface-2: #1c2532;
+  --app-text: #f1f5f9;
+  --app-text-soft: #e0e7f0;
+  --app-muted: #b7c2d1;
+  --app-border: #3a4659;
+  --app-accent: #a5b4fc;
+  --app-accent-soft: rgba(129, 140, 248, .16);
+  --app-shadow: 0 8px 28px rgba(0, 0, 0, .25);
+}
+
+body {
+  background: var(--app-bg);
+  color: var(--app-text);
+  transition: background-color .2s ease, color .2s ease;
+}
+
+html[data-theme="dark"] .navbar-container {
+  --nav-text: #d7e0ec;
+  --nav-text-strong: #f8fafc;
+  border-color: var(--app-border);
+  background: rgba(21, 28, 39, .94);
+}
+
+html[data-theme="dark"] .navbar-icon {
+  color: #f1f5f9;
+  opacity: .9;
+}
+
+html[data-theme="dark"] .navbar-link.active .navbar-icon {
+  color: var(--app-accent);
+  opacity: 1;
+}
+
+html[data-theme="dark"] .navbar-search-icon {
+  color: #f1f5f9;
+}
+
+html[data-theme="dark"] .navbar-search-box input,
+html[data-theme="dark"] .navbar-search-box input[type="search"] {
+  color: #f8fafc !important;
+  -webkit-text-fill-color: #f8fafc;
+}
+
+html[data-theme="dark"] .navbar-search-box input::placeholder {
+  color: #c1ccd9 !important;
+  -webkit-text-fill-color: #c1ccd9;
+  opacity: 1;
+}
+
+html[data-theme="dark"] :is(
+  .profile-icon-button,
+  .profile-list-edit-icon,
+  .jobs-save-icon,
+  .jobs-icon,
+  .jobs-tab-icon,
+  .company-dashboard-icon,
+  .company-dashboard-metric-icon,
+  .home-widget-icon,
+  .activity-heading-icon,
+  .profile-recommendations-icon,
+  .profile-analytics-metric-icon,
+  .saved-header-icon,
+  .profile-events-empty-icon
+) {
+  color: #f1f5f9 !important;
+}
+
+html[data-theme="dark"] .jobs-save-icon {
+  stroke: currentColor;
+}
+
+html[data-theme="dark"] :is(
+  .profile-connection-icon,
+  .profile-message-icon
+) {
+  filter: brightness(0) invert(1);
+  opacity: .92;
+}
+
+html[data-theme="dark"] :is(.home-page, .network-page, .jobseeker-profile-page, .activity-page, .search-page, .saved-page, .settings-page) {
+  background: var(--app-bg) !important;
+  color: var(--app-text) !important;
+}
+
+html[data-theme="dark"] :is(
+  .navbar-search-popover, .navbar-account-menu,
+  .home-profile-card, .home-stats-card, .home-create-card, .home-widget-card,
+  .home-top-company-card, .nexora-trends-card, .home-discovery-card, .post-card,
+  .jobseeker-profile-card, .profile-section-card, .profile-recommendations-card,
+  .activity-profile-card, .activity-heading-card, .activity-state-card,
+  .network-sidebar, .network-header-card, .network-content-card,
+  .search-surface, .saved-header, .saved-state,
+  .settings-sidebar, .settings-main > header, .settings-card,
+  .event-create-modal, .mention-suggestions
+) {
+  border-color: var(--app-border) !important;
+  background: var(--app-surface) !important;
+  color: var(--app-text) !important;
+  box-shadow: var(--app-shadow) !important;
+}
+
+html[data-theme="dark"] :is(
+  .navbar-link:hover, .navbar-search-box, .navbar-search-box:hover,
+  .navbar-search-box:focus-within, .home-create-input, .home-company-position,
+  .post-pencil-btn:hover, .mention-suggestion-item:hover,
+  .mention-suggestion-item.is-selected, .profile-recommendation-item:hover,
+  .network-person-row:hover, .theme-options > button
+) {
+  background: var(--app-surface-2) !important;
+}
+
+html[data-theme="dark"] :is(
+  .home-widget-heading, .home-widget-list > button, .home-latest-job-row,
+  .home-discovery-footer, .event-card, .event-owner-actions button,
+  .mention-suggestion-item
+) {
+  border-color: var(--app-border) !important;
+  background: var(--app-surface) !important;
+  color: var(--app-text) !important;
+}
+
+html[data-theme="dark"] :is(
+  h1, h2, h3, h4, h5, h6,
+  .home-profile-name, .home-stats-row, .home-widget-heading strong,
+  .home-latest-job-row strong, .post-author-name, .post-content,
+  .post-stats, .post-footer-btn, .event-copy h3,
+  .network-header-card h2, .network-sidebar h2,
+  .saved-header h1, .settings-main h1, .settings-card h2
+) {
+  color: var(--app-text) !important;
+}
+
+html[data-theme="dark"] :is(
+  p, small, label, .home-profile-location, .home-stats-muted,
+  .home-widget-heading small, .home-event-item small, .home-latest-job-row small,
+  .post-author-meta, .event-copy p, .event-meta,
+  .network-header-card p, .saved-header p, .settings-main header p
+) {
+  color: var(--app-muted) !important;
+}
+
+html[data-theme="dark"] :is(input, textarea, select) {
+  border-color: var(--app-border) !important;
+  background: var(--app-surface-2) !important;
+  color: var(--app-text) !important;
+}
+
+html[data-theme="dark"] :is(input, textarea)::placeholder {
+  color: #8390a3 !important;
+  opacity: 1;
+}
+
+html[data-theme="dark"] :is(.post-content-token, .event-company, .home-company-username, .home-profile-link) {
+  color: var(--app-accent) !important;
+}
+
+html[data-theme="dark"] .network-header-card {
+  background: var(--app-surface) !important;
+}
+
+html[data-theme="dark"] .event-media-placeholder {
+  background: var(--app-surface-2) !important;
+}
+
+html[data-theme="dark"] .home-top-company-card > button {
+  border-color: var(--app-accent) !important;
+  background: transparent !important;
+  color: var(--app-accent) !important;
+}
+
+html[data-theme="dark"] .home-top-company-card > button:hover {
+  background: var(--app-accent) !important;
+  color: var(--app-text) !important;
+}
+
+html[data-theme="dark"] .event-attend-button:not(:disabled) {
+  color: #ffffff !important;
+}
+
+html[data-theme="dark"] .event-attend-button.is-attending {
+  border-color: #59657a !important;
+  background: var(--app-surface-2) !important;
+  color: var(--app-text) !important;
+}
+
+html[data-theme="dark"] .search-page :is(h1, h2, h3, h4, strong) {
+  color: var(--app-text) !important;
+}
+
+html[data-theme="dark"] .search-page :is(p, small) {
+  color: var(--app-muted) !important;
+}
+
+html[data-theme="dark"] .search-page :is(section, article, .eventGroup) {
+  border-color: var(--app-border) !important;
+}
+
+html[data-theme="dark"] .search-page-number {
+  border-color: var(--app-border) !important;
+  background: var(--app-surface-2) !important;
+  color: var(--app-text) !important;
+}
+
+html[data-theme="dark"] .search-page-number.is-active {
+  border-color: var(--app-accent) !important;
+  background: var(--app-accent) !important;
+  color: var(--app-text) !important;
+}
+
+html[data-theme="dark"] .network-page :is(.network-person-row, .network-tab) {
+  border-color: var(--app-border) !important;
+  color: var(--app-text) !important;
+}
+
+html[data-theme="dark"] .network-tab.is-active {
+  background: var(--app-accent-soft) !important;
+  color: var(--app-accent) !important;
+}
+
+html[data-theme="dark"] .employer-profile-page {
+  background: var(--app-bg) !important;
+  color: var(--app-text) !important;
+}
+
+html[data-theme="dark"] :is(.employer-header-card, .employer-tabs, .employer-home-card, .employer-followers-card, .employer-discovery-card, .employer-about-card, .employer-edit-modal, .employer-follow-modal) {
+  border-color: var(--app-border) !important;
+  background: var(--app-surface) !important;
+  color: var(--app-text) !important;
+  box-shadow: var(--app-shadow) !important;
+}
+
+html[data-theme="dark"] .employer-about-card :is(p, span, div) {
+  color: var(--app-text-soft) !important;
+}
+
+html[data-theme="dark"] .employer-about-card :is(h2, .employer-about-info-title) {
+  color: var(--app-text) !important;
+}
+
+html[data-theme="dark"] .employer-about-card a {
+  color: var(--app-accent) !important;
+}
+
+html[data-theme="dark"] :is(.employer-edit-header, .employer-edit-sidebar) {
+  border-color: var(--app-border) !important;
+  background: var(--app-surface-2) !important;
+  color: var(--app-text) !important;
+}
+
+html[data-theme="dark"] .employer-edit-tab {
+  color: var(--app-muted) !important;
+}
+
+html[data-theme="dark"] .employer-edit-tab.is-active {
+  border-color: #566184 !important;
+  background: var(--app-accent-soft) !important;
+  color: var(--app-accent) !important;
+}
+
+html[data-theme="dark"] .employer-edit-modal :is(h1, h2, h3, h4, label, p, span, strong, small, div) {
+  color: var(--app-text-soft) !important;
+}
+
+html[data-theme="dark"] .employer-image-menu {
+  border-color: var(--app-border) !important;
+  background: var(--app-surface-2) !important;
+  color: var(--app-text) !important;
+}
+
+html[data-theme="dark"] .employer-image-menu-item {
+  border-color: var(--app-border) !important;
+  background: var(--app-surface-2) !important;
+  color: var(--app-text) !important;
+}
+
+html[data-theme="dark"] .employer-image-menu-item:hover {
+  background: #263143 !important;
+}
+
+html[data-theme="dark"] .employer-image-menu-item.is-danger {
+  color: #f87171 !important;
+}
+
+html[data-theme="dark"] :is(.employer-header-name, .employer-home-title, .employer-followers-title, .employer-follower-name) {
+  color: var(--app-text) !important;
+}
+
+html[data-theme="dark"] :is(.employer-header-description, .employer-header-meta, .employer-header-followers, .employer-home-text, .employer-followers-subtitle, .employer-follower-headline, .employer-follower-location) {
+  color: var(--app-muted) !important;
+}
+
+html[data-theme="dark"] .employer-tab {
+  color: var(--app-muted) !important;
+}
+
+html[data-theme="dark"] .employer-tab.is-active,
+html[data-theme="dark"] .employer-home-link {
+  color: var(--app-accent) !important;
+  border-bottom-color: var(--app-accent) !important;
+}
+
+html[data-theme="dark"] .employer-follower-row {
+  border-color: var(--app-border) !important;
+}
+
+html[data-theme="dark"] .employer-follower-view {
+  border-color: var(--app-accent) !important;
+  background: transparent !important;
+  color: var(--app-accent) !important;
+}
+
+html[data-theme="dark"] .employer-followers-count {
+  background: var(--app-accent-soft) !important;
+  color: var(--app-accent) !important;
+}
+
+html[data-theme="dark"] .home-top-company-card {
+  border-color: #343e5a !important;
+  background: linear-gradient(145deg, #1c2033 0%, #192231 62%, #182538 100%) !important;
+}
+
+html[data-theme="dark"] .nexora-trends-list > button,
+html[data-theme="dark"] .nexora-trends-more {
+  border-color: var(--app-border) !important;
+  background: var(--app-surface) !important;
+  color: var(--app-text) !important;
+}
+
+html[data-theme="dark"] .nexora-trends-list > button:hover {
+  background: var(--app-surface-2) !important;
+}
+
+html[data-theme="dark"] .nexora-trends-topic small,
+html[data-theme="dark"] .nexora-trends-empty {
+  color: var(--app-muted) !important;
+}
+
+html[data-theme="dark"] .nexora-trends-empty strong {
+  color: var(--app-text) !important;
+}
+
+html[data-theme="dark"] .nexora-trends-more {
+  color: var(--app-accent) !important;
+}
+
+html[data-theme="dark"] :is(.jobs-page, .notifications-page) {
+  background: var(--app-bg) !important;
+  color: var(--app-text) !important;
+}
+
+html[data-theme="dark"] :is(.jobs-sidebar, .jobs-search-bar, .jobs-layout, .jobs-list-panel, .jobs-list-header, .jobs-detail-panel, .jobs-pagination, .notification-card, .notification-empty) {
+  border-color: var(--app-border) !important;
+  background: var(--app-surface) !important;
+  color: var(--app-text) !important;
+}
+
+html[data-theme="dark"] .jobs-tab {
+  color: var(--app-muted) !important;
+}
+
+html[data-theme="dark"] .jobs-tab.is-active {
+  background: var(--app-accent-soft) !important;
+  color: var(--app-accent) !important;
+}
+
+html[data-theme="dark"] .notification-card :is(span, strong) {
+  color: var(--app-text-soft) !important;
+}
+
+html[data-theme="dark"] .jobseeker-profile-page {
+  --profile-accent: var(--app-accent);
+  --profile-text: var(--app-text);
+  --profile-muted: var(--app-muted);
+  --profile-border: var(--app-border);
+}
+
+html[data-theme="dark"] .jobseeker-profile-page :is(
+  .profile-about-content, .activity-preview-author,
+  .activity-preview-content, .activity-preview-stats
+) {
+  color: var(--app-text) !important;
+}
+
+html[data-theme="dark"] .jobseeker-profile-page :is(
+  .activity-preview-meta, .profile-recommendation-meta
+) {
+  color: var(--app-muted) !important;
+}
+
+html[data-theme="dark"] .navbar-view-profile {
+  border-color: var(--app-accent) !important;
+  background: var(--app-accent-soft) !important;
+  color: var(--app-accent) !important;
+}
+
+html[data-theme="dark"] .navbar-view-profile:hover {
+  background: var(--app-accent) !important;
+  color: var(--app-text) !important;
+}
+
+/* Complete dark-theme coverage: shared pages, cards, overlays and legacy styles. */
+html[data-theme="dark"],
+html[data-theme="dark"] body,
+html[data-theme="dark"] #root {
+  background: var(--app-bg);
+  color: var(--app-text);
+}
+
+html[data-theme="dark"] :is(
+  .company-dashboard-page,
+  .company-hiring-page,
+  .company-talent-page,
+  .events-page,
+  .event-detail-page,
+  .content-detail-page,
+  .notification-page,
+  .analytics-page,
+  .auth-container,
+  .auth-main,
+  .auth-login-container,
+  .auth-register-container
+) {
+  background-color: var(--app-bg) !important;
+  color: var(--app-text) !important;
+}
+
+html[data-theme="dark"] :is(
+  .company-dashboard-profile-button,
+  .company-dashboard-metric,
+  .company-dashboard-actions-card,
+  .company-dashboard-actions button,
+  .company-dashboard-list-card,
+  .company-dashboard-row,
+  .hiring-tabs,
+  .hiring-metrics article,
+  .hiring-overview-grid article,
+  .hiring-jobs-panel,
+  .hiring-insights,
+  .hiring-job-list > article,
+  .hiring-job-signals span,
+  .hiring-insight-summary article,
+  .talent-hero-stat,
+  .talent-tabs,
+  .talent-discovery-panel,
+  .talent-card,
+  .talent-state,
+  .talent-modal,
+  .talent-availability-modal,
+  .talent-match-modal,
+  .event-detail-card,
+  .event-about-card,
+  .event-detail-state,
+  .events-page-header,
+  .events-page-tabs,
+  .events-page-state,
+  .content-detail-state,
+  .notification-shell,
+  .notification-row,
+  .notification-menu > div,
+  .notification-menu > div button,
+  .home-connections-card,
+  .home-recommendations-card,
+  .network-recommendations-card,
+  .network-recommendation-card,
+  .home-modal-content,
+  .profile-safety-modal,
+  .profile-edit-shell,
+  .post-action-menu,
+  .employer-header-action-menu,
+  .post-report-modal,
+  .job-post-edit-modal,
+  .job-preferences-modal,
+  .job-withdraw-modal,
+  .auth-card,
+  .auth-email-card
+) {
+  border-color: var(--app-border) !important;
+  background: var(--app-surface) !important;
+  color: var(--app-text) !important;
+  box-shadow: var(--app-shadow) !important;
+}
+
+html[data-theme="dark"] :is(
+  .company-dashboard-actions-card,
+  .hiring-job-list > article,
+  .hiring-insight-summary article,
+  .talent-searchbar input,
+  .talent-searchbar select,
+  .talent-find-match select,
+  .talent-card-actions select,
+  .talent-modal select,
+  .talent-modal textarea,
+  .talent-availability-modal > footer,
+  .event-detail-organizer img,
+  .event-detail-organizer > span:first-child,
+  .notification-row:hover,
+  .notification-menu > button:hover,
+  .notification-menu > div button:hover,
+  .home-widget-view-all,
+  .home-discovery-footer,
+  .home-latest-job-row,
+  .profile-modal-tabs,
+  .profile-edit-sidebar,
+  .profile-more-button,
+  .profile-safety-field,
+  .job-withdraw-summary
+) {
+  border-color: var(--app-border) !important;
+  background: var(--app-surface-2) !important;
+  color: var(--app-text-soft) !important;
+}
+
+html[data-theme="dark"] :is(
+  .profile-edit-nav-item,
+  .profile-edit-header button,
+  .post-more-button,
+  .profile-more-button,
+  .employer-header-more-action
+) {
+  color: #f1f5f9 !important;
+}
+
+html[data-theme="dark"] .profile-edit-nav-item.is-active {
+  border-color: var(--app-accent) !important;
+  background: var(--app-accent-soft) !important;
+  color: var(--app-accent) !important;
+}
+
+html[data-theme="dark"] .notification-row.is-unread {
+  background: #1b2740 !important;
+}
+
+html[data-theme="dark"] .notification-row.is-unread:hover {
+  background: #21304b !important;
+}
+
+html[data-theme="dark"] :is(
+  .notification-filters,
+  .notification-row,
+  .talent-card-actions,
+  .talent-availability-modal > header,
+  .talent-availability-modal dl > div,
+  .job-withdraw-modal-actions
+) {
+  border-color: var(--app-border) !important;
+}
+
+html[data-theme="dark"] :is(
+  .company-dashboard-page,
+  .company-hiring-page,
+  .company-talent-page,
+  .event-detail-page,
+  .events-page,
+  .content-detail-page,
+  .notification-page,
+  .analytics-page,
+  .jobseeker-profile-page,
+  .employer-profile-page,
+  .home-page,
+  .network-page,
+  .jobs-page,
+  .search-page,
+  .saved-page,
+  .activity-page,
+  .settings-page
+) :is(h1, h2, h3, h4, h5, h6, strong) {
+  color: var(--app-text) !important;
+}
+
+html[data-theme="dark"] :is(
+  .company-dashboard-page,
+  .company-hiring-page,
+  .company-talent-page,
+  .event-detail-page,
+  .events-page,
+  .content-detail-page,
+  .notification-page,
+  .analytics-page,
+  .jobseeker-profile-page,
+  .employer-profile-page,
+  .home-page,
+  .network-page,
+  .jobs-page,
+  .search-page,
+  .saved-page,
+  .activity-page,
+  .settings-page
+) :is(p, small, time, label, em, dt) {
+  color: var(--app-muted) !important;
+}
+
+html[data-theme="dark"] :is(
+  .notification-copy p,
+  .notification-state strong,
+  .event-detail-meta,
+  .event-about-card p,
+  .event-detail-actions button,
+  .talent-card-identity small,
+  .talent-availability-modal dd,
+  .jobseeker-profile-name,
+  .jobseeker-profile-position,
+  .jobseeker-profile-meta,
+  .profile-about-content,
+  .profile-section-card,
+  .profile-modal-content,
+  .profile-modal-content label
+) {
+  color: var(--app-text-soft) !important;
+}
+
+html[data-theme="dark"] :is(
+  .jobseeker-profile-name,
+  .jobseeker-profile-card h1,
+  .jobseeker-profile-card h2,
+  .profile-section-card h2,
+  .profile-section-card h3
+) {
+  color: var(--app-text) !important;
+}
+
+html[data-theme="dark"] :is(
+  .profile-contact-button,
+  .profile-edit-button,
+  .profile-icon-button,
+  .event-detail-actions button,
+  .notification-filters button,
+  .talent-card-actions button,
+  .talent-modal button,
+  .talent-availability-modal button,
+  .auth-two-factor-actions button
+) {
+  border-color: var(--app-border) !important;
+  background-color: var(--app-surface-2) !important;
+  color: var(--app-text-soft) !important;
+}
+
+html[data-theme="dark"] :is(
+  button.is-primary,
+  .hiring-job-actions button.is-primary,
+  .event-detail-actions .is-primary,
+  .events-page-header > button,
+  .events-page-state button,
+  .content-detail-state button,
+  .auth-btn,
+  .security-actions button,
+  .notification-filters button.is-active
+) {
+  border-color: #6366f1 !important;
+  background: #6366f1 !important;
+  color: #ffffff !important;
+}
+
+html[data-theme="dark"] :is(
+  button.is-danger,
+  .notification-menu > div button.is-danger,
+  .talent-card-actions button.is-danger
+) {
+  color: #fca5a5 !important;
+}
+
+html[data-theme="dark"] :is(
+  button.is-danger-solid,
+  .job-withdraw-confirm
+) {
+  border-color: #dc2626 !important;
+  background: #dc2626 !important;
+  color: #ffffff !important;
+}
+
+html[data-theme="dark"] :is(
+  .talent-open-only,
+  .talent-open-badge,
+  .talent-match,
+  .hiring-job-title > span.is-active,
+  .event-topic-list span,
+  .notification-header .notification-total
+) {
+  background: var(--app-accent-soft) !important;
+  color: var(--app-accent) !important;
+}
+
+html[data-theme="dark"] :is(
+  .auth-container,
+  .auth-login-main,
+  .auth-register-main,
+  .auth-email-page
+) {
+  background:
+    radial-gradient(circle at 82% 14%, rgba(99, 102, 241, .13), transparent 29rem),
+    var(--app-bg) !important;
+}
+
+html[data-theme="dark"] :is(
+  .auth-card-title,
+  .auth-label,
+  .auth-footer-text
+) {
+  color: var(--app-text) !important;
+}
+
+html[data-theme="dark"] :is(
+  .auth-card-subtitle,
+  .auth-divider
+) {
+  color: var(--app-muted) !important;
+}
+
+html[data-theme="dark"] :is(
+  .auth-input,
+  .auth-type-card
+) {
+  border-color: var(--app-border) !important;
+  background: var(--app-surface-2) !important;
+  color: var(--app-text) !important;
+}
+
+html[data-theme="dark"] .auth-input-icon,
+html[data-theme="dark"] .auth-password-toggle {
+  color: var(--app-muted) !important;
+}
+
+html[data-theme="dark"] .auth-two-factor-icon {
+  border-color: #4f5d86;
+  background: var(--app-accent-soft);
+  color: var(--app-accent);
+}
+
+html[data-theme="dark"] :is(
+  .analytics-post-copy strong,
+  .analytics-breakdown-row strong,
+  .analytics-post-stats b,
+  .analytics-privacy-note strong
+) {
+  color: var(--app-text-soft) !important;
+}
+
+html[data-theme="dark"] :is(
+  .analytics-account-card,
+  .analytics-content-summary > div,
+  .analytics-post-row
+) {
+  border-color: var(--app-border) !important;
+}
+
+html[data-theme="dark"] :is(
+  .open-work-card,
+  .open-work-details,
+  .open-work-editor,
+  .open-work-switch,
+  .open-work-field input,
+  .open-work-field textarea,
+  .open-work-field select,
+  .open-work-option-group button
+) {
+  border-color: var(--app-border) !important;
+  background: var(--app-surface) !important;
+  color: var(--app-text) !important;
+}
+
+html[data-theme="dark"] :is(
+  .open-work-switch,
+  .open-work-field input,
+  .open-work-field textarea,
+  .open-work-field select,
+  .open-work-option-group button,
+  .open-work-details header > button,
+  .open-work-editor header > button
+) {
+  background: var(--app-surface-2) !important;
+}
+
+html[data-theme="dark"] :is(
+  .open-work-copy > span,
+  .open-work-copy small,
+  .open-work-details dt,
+  .open-work-editor header p,
+  .open-work-switch small,
+  .open-work-field > small
+) {
+  color: var(--app-muted) !important;
+}
+
+html[data-theme="dark"] :is(
+  .open-work-details dd,
+  .open-work-actions button,
+  .open-work-edit-details,
+  .open-work-editor footer button
+) {
+  color: var(--app-text-soft) !important;
+}
+
+html[data-theme="dark"] :is(
+  .security-card,
+  .security-card input,
+  .security-status > span
+) {
+  border-color: var(--app-border) !important;
+  background: var(--app-surface-2) !important;
+  color: var(--app-text) !important;
+}
+
+@media (max-width: 600px) {
+  .activity-preview-media {
+    height: 160px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body { transition: none; }
+}

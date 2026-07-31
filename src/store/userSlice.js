@@ -1,15 +1,14 @@
-import { createSlice } from '@reduxjs/toolkit';
-
+import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
   user: null,
   loading: false,
   error: null,
-  authLoading: true
+  authLoading: true,
 };
 
 const userSlice = createSlice({
-  name: 'user',
+  name: "user",
   initialState,
   reducers: {
     registerStart: (state) => {
@@ -32,7 +31,6 @@ const userSlice = createSlice({
       state.loading = false;
       state.user = action.payload;
       state.authLoading = false;
-      
     },
     loginFailure: (state, action) => {
       state.loading = false;
@@ -41,7 +39,7 @@ const userSlice = createSlice({
     },
     authCheckDone: (state) => {
       state.authLoading = false;
-    }
+    },
   },
 });
 
@@ -52,9 +50,7 @@ export const {
   loginStart,
   loginSuccess,
   loginFailure,
-  authCheckDone 
+  authCheckDone,
 } = userSlice.actions;
 
 export default userSlice.reducer;
-
- 

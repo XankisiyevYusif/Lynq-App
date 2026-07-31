@@ -1,5 +1,6 @@
 import { useState } from "react";
 import api from "../../../../services/api";
+import ProfileLookupInput from "../../../UI/ProfileLookupInput";
 
 export default function BasicInfoForm({ user, setUser, onClose }) {
   const nameParts = user?.basicInfo?.fullName?.split(" ") || [];
@@ -7,11 +8,11 @@ export default function BasicInfoForm({ user, setUser, onClose }) {
   const [firstName, setFirstName] = useState(nameParts[0] || "");
   const [lastName, setLastName] = useState(nameParts.slice(1).join(" ") || "");
   const [currentPosition, setCurrentPosition] = useState(
-    user?.basicInfo?.currentPosition || ""
+    user?.basicInfo?.currentPosition || "",
   );
   const [location, setLocation] = useState(user?.basicInfo?.location || "");
   const [newUsername, setNewUsername] = useState(
-    user?.basicInfo?.username || ""
+    user?.basicInfo?.username || "",
   );
 
   const [changeEmail, setChangeEmail] = useState(false);
@@ -28,40 +29,41 @@ export default function BasicInfoForm({ user, setUser, onClose }) {
       setMessage("");
 
       const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
-      const usernameValue = newUsername.trim();
+      const usernameValue = newUsername.trim().toLowerCase();
       const currentPositionValue = currentPosition.trim();
       const locationValue = location.trim();
       const emailValue = newEmail.trim();
 
       if (!firstName.trim()) {
-        setError("Ad boş ola bilməz.");
+        setError("First name is required.");
         return;
       }
 
       if (!lastName.trim()) {
-        setError("Soyad boş ola bilməz.");
+        setError("Last name is required.");
         return;
       }
 
       if (!usernameValue) {
-        setError("Username boş ola bilməz.");
+        setError("Username is required.");
         return;
       }
 
       if (usernameValue.length < 3) {
-        setError("Username minimum 3 simvol olmalıdır.");
+        setError("Username must be at least 3 characters.");
         return;
       }
 
       if (usernameValue.length > 30) {
-        setError("Username maksimum 30 simvol ola bilər.");
+        setError("Username can be maximum 30 characters.");
         return;
       }
 
-      const usernameRegex = /^[a-zA-Z0-9._]+$/;
+      const usernameRegex =
+        /^(?![._])(?!.*[._]{2})[a-z0-9]+(?:[._][a-z0-9]+)*$/;
       if (!usernameRegex.test(usernameValue)) {
         setError(
-          "Username yalnız hərf, rəqəm, nöqtə və alt xətdən ibarət ola bilər."
+          "Username can only contain lowercase letters, numbers, dots and underscores.",
         );
         return;
       }
@@ -75,18 +77,18 @@ export default function BasicInfoForm({ user, setUser, onClose }) {
 
       if (changeEmail) {
         if (!emailValue) {
-          setError("Yeni e-posta daxil edin.");
+          setError("Enter a new email address.");
           return;
         }
 
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(emailValue)) {
-          setError("Düzgün e-posta formatı daxil edin.");
+          setError("Enter a valid email address.");
           return;
         }
 
         if (!password.trim()) {
-          setError("E-postayi dəyişmək üçün şifrə daxil edin.");
+          setError("Enter your password to change the email address.");
           return;
         }
 
@@ -101,8 +103,7 @@ export default function BasicInfoForm({ user, setUser, onClose }) {
       const result = response?.data;
       const responseData = result?.data || result;
 
-      const updatedBasicInfo =
-        responseData?.basicInfo ||
+      const updatedBasicInfo = responseData?.basicInfo ||
         responseData || {
           fullName,
           currentPosition: currentPositionValue || null,
@@ -133,7 +134,7 @@ export default function BasicInfoForm({ user, setUser, onClose }) {
         },
       }));
 
-      setMessage(result?.message || "Basic info uğurla yeniləndi.");
+      setMessage(result?.message || "Basic information updated successfully.");
       setPassword("");
 
       if (changeEmail) {
@@ -149,7 +150,7 @@ export default function BasicInfoForm({ user, setUser, onClose }) {
       const serverMessage =
         err?.response?.data?.message ||
         err?.response?.data?.title ||
-        "Yeniləmə zamanı xəta baş verdi.";
+        "An error occurred while updating your information.";
 
       setError(serverMessage);
     } finally {
@@ -159,12 +160,12 @@ export default function BasicInfoForm({ user, setUser, onClose }) {
 
   return (
     <div style={styles.container}>
-      <div style={styles.helper}>* Zəruri sahələr</div>
+      <div style={styles.helper}>* Required fields</div>
 
-      <div style={styles.title}>Temel bilgiler</div>
+      <div style={styles.title}>Basic information</div>
 
       <div style={styles.field}>
-        <label style={styles.label}>Ad*</label>
+        <label style={styles.label}>First name*</label>
         <div style={styles.inputWrapper}>
           <input
             style={styles.input}
@@ -177,7 +178,7 @@ export default function BasicInfoForm({ user, setUser, onClose }) {
       </div>
 
       <div style={styles.field}>
-        <label style={styles.label}>Soyad*</label>
+        <label style={styles.label}>Last name*</label>
         <div style={styles.inputWrapper}>
           <input
             style={styles.input}
@@ -192,12 +193,13 @@ export default function BasicInfoForm({ user, setUser, onClose }) {
       <div style={styles.field}>
         <label style={styles.label}>Current position</label>
         <div style={styles.inputWrapper}>
-          <input
-            style={styles.input}
+          <ProfileLookupInput
+            type="Position"
+            inputStyle={styles.input}
             value={currentPosition}
             maxLength={100}
-            onChange={(e) => setCurrentPosition(e.target.value)}
-            placeholder="Məsələn: Software Engineer"
+            onChange={setCurrentPosition}
+            placeholder="For example: Software Engineer"
           />
           <span style={styles.counter}>{currentPosition.length}/100</span>
         </div>
@@ -206,12 +208,13 @@ export default function BasicInfoForm({ user, setUser, onClose }) {
       <div style={styles.field}>
         <label style={styles.label}>Location</label>
         <div style={styles.inputWrapper}>
-          <input
-            style={styles.input}
+          <ProfileLookupInput
+            type="Location"
+            inputStyle={styles.input}
             value={location}
             maxLength={100}
-            onChange={(e) => setLocation(e.target.value)}
-            placeholder="Məsələn: Baku, Azerbaijan"
+            onChange={setLocation}
+            placeholder="For example: Baku, Azerbaijan"
           />
           <span style={styles.counter}>{location.length}/100</span>
         </div>
@@ -224,17 +227,19 @@ export default function BasicInfoForm({ user, setUser, onClose }) {
             style={styles.input}
             value={newUsername}
             maxLength={30}
-            onChange={(e) => setNewUsername(e.target.value.replace(/\s/g, ""))}
-            placeholder="Username daxil edin"
+            onChange={(e) =>
+              setNewUsername(e.target.value.replace(/\s/g, "").toLowerCase())
+            }
+            placeholder="Enter a username"
           />
           <span style={styles.counter}>{newUsername.length}/30</span>
         </div>
       </div>
 
       <div style={styles.field}>
-        <label style={styles.label}>Mövcud e-posta</label>
+        <label style={styles.label}>Current email</label>
         <input
-          style={{ ...styles.input, backgroundColor: "#f4f4f4", color: "#666" }}
+          style={{ ...styles.input, backgroundColor: "#f4f4f4", color: "var(--app-muted)" }}
           value={user?.contactInfo?.email || ""}
           disabled
         />
@@ -247,29 +252,29 @@ export default function BasicInfoForm({ user, setUser, onClose }) {
           onChange={() => setChangeEmail((prev) => !prev)}
           style={styles.checkbox}
         />
-        <span style={styles.checkboxText}>E-postayi dəyiş</span>
+        <span style={styles.checkboxText}>Change email</span>
       </div>
 
       {changeEmail && (
         <div style={styles.emailBox}>
           <div style={styles.field}>
-            <label style={styles.label}>Yeni e-posta</label>
+            <label style={styles.label}>New email</label>
             <input
               style={styles.input}
               value={newEmail}
               onChange={(e) => setNewEmail(e.target.value)}
-              placeholder="Yeni gmail daxil edin"
+              placeholder="Enter a new email address"
             />
           </div>
 
           <div style={styles.field}>
-            <label style={styles.label}>Şifrə</label>
+            <label style={styles.label}>Password</label>
             <input
               type="password"
               style={styles.input}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Şifrəni daxil edin"
+              placeholder="Enter your password"
             />
           </div>
         </div>
@@ -288,7 +293,7 @@ export default function BasicInfoForm({ user, setUser, onClose }) {
           onClick={save}
           disabled={loading}
         >
-          {loading ? "Kaydediliyor..." : "Kaydet"}
+          {loading ? "Saving..." : "Save"}
         </button>
       </div>
     </div>
@@ -309,7 +314,7 @@ const styles = {
 
   helper: {
     fontSize: 12,
-    color: "#666",
+    color: "var(--app-muted)",
     marginBottom: 10,
   },
 
@@ -344,7 +349,7 @@ const styles = {
     right: 10,
     bottom: -18,
     fontSize: 11,
-    color: "#777",
+    color: "var(--app-muted)",
   },
 
   checkboxRow: {
@@ -362,14 +367,14 @@ const styles = {
 
   checkboxText: {
     fontSize: 14,
-    color: "#222",
+    color: "var(--app-text)",
   },
 
   emailBox: {
     padding: 14,
     border: "1px solid rgba(0,0,0,0.08)",
     borderRadius: 10,
-    backgroundColor: "#fafafa",
+    backgroundColor: "var(--app-surface-2)",
     marginBottom: 10,
   },
 

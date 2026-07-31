@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
 import api from "../../../services/api";
 import defaultAvatar from "../../../assets/default-avatar.png";
-
-const API_ROOT = (api.defaults.baseURL || "").replace(/\/api\/?$/, "");
+import { resolveMediaUrl } from "../../../utils/mediaUrl";
+import { isEmployerAccount } from "../../../utils/accountType";
 
 export default function JobPostItem({
   job,
@@ -11,11 +12,17 @@ export default function JobPostItem({
   onClick,
   onSavedChanged,
   onApplied,
+  showWithdraw = false,
+  onApplicationWithdrawn,
   onDeleted,
   onUpdated,
 }) {
+  const currentUser = useSelector((state) => state.user.user);
+  const isEmployer = isEmployerAccount(currentUser);
   const [saving, setSaving] = useState(false);
   const [applying, setApplying] = useState(false);
+  const [withdrawing, setWithdrawing] = useState(false);
+  const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [updating, setUpdating] = useState(false);
 
@@ -26,6 +33,8 @@ export default function JobPostItem({
     workplaceType: "On-site",
     employmentType: "Full-time",
     applyUrl: "",
+    requiredSkills: "",
+    minimumExperienceYears: "0",
     expiresAt: "",
     isActive: true,
   });
@@ -40,29 +49,36 @@ export default function JobPostItem({
       workplaceType: job.workplaceType || "On-site",
       employmentType: job.employmentType || "Full-time",
       applyUrl: job.applyUrl || "",
+      requiredSkills: (job.requiredSkills || []).join(", "),
+      minimumExperienceYears: String(job.minimumExperienceYears || 0),
       expiresAt: job.expiresAt ? job.expiresAt.slice(0, 10) : "",
       isActive: job.isActive !== false,
     });
   }, [job, isEditOpen]);
 
   useEffect(() => {
-    if (!isEditOpen) return;
+    if (!isEditOpen && !isWithdrawOpen) return;
 
     const oldOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
+    const handleEscape = (event) => {
+      if (event.key !== "Escape" || withdrawing) return;
+      setIsWithdrawOpen(false);
+      setIsEditOpen(false);
+    };
+
+    document.addEventListener("keydown", handleEscape);
+
     return () => {
       document.body.style.overflow = oldOverflow;
+      document.removeEventListener("keydown", handleEscape);
     };
-  }, [isEditOpen]);
+  }, [isEditOpen, isWithdrawOpen, withdrawing]);
 
   if (!job) return null;
 
-  const getImageUrl = (path) => {
-    if (!path) return defaultAvatar;
-    if (path.startsWith("http://") || path.startsWith("https://")) return path;
-    return `${API_ROOT}/${path.replace(/^\/+/, "")}`;
-  };
+  const getImageUrl = (path) => resolveMediaUrl(path, defaultAvatar);
 
   const formatDate = (dateValue) => {
     if (!dateValue) return "";
@@ -77,6 +93,15 @@ export default function JobPostItem({
     if (diffDays < 7) return `${diffDays} days ago`;
     if (diffDays < 30) return `${Math.floor(diffDays / 7)} week ago`;
     return `${Math.floor(diffDays / 30)} month ago`;
+  };
+
+  const formatFullDate = (dateValue) => {
+    if (!dateValue) return "Date unavailable";
+    return new Intl.DateTimeFormat("en", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }).format(new Date(dateValue));
   };
 
   const handleSave = async (e) => {
@@ -121,7 +146,7 @@ export default function JobPostItem({
       alert(
         err.response?.data?.message ||
           err.response?.data?.Message ||
-          "Could not apply for this job."
+          "Could not apply for this job.",
       );
     } finally {
       setApplying(false);
@@ -140,6 +165,29 @@ export default function JobPostItem({
     } catch (err) {
       console.error("Delete job failed:", err);
       alert("Failed to delete job post.");
+    }
+  };
+
+  const handleWithdraw = async (e) => {
+    e?.stopPropagation?.();
+    setIsWithdrawOpen(true);
+  };
+
+  const confirmWithdraw = async () => {
+    try {
+      setWithdrawing(true);
+      await api.delete(`/JobPost/apply/${job.id}`);
+      setIsWithdrawOpen(false);
+      onApplicationWithdrawn?.(job.id);
+    } catch (err) {
+      console.error("Withdraw application failed:", err);
+      alert(
+        err.response?.data?.message ||
+          err.response?.data?.Message ||
+          "Could not withdraw this application.",
+      );
+    } finally {
+      setWithdrawing(false);
     }
   };
 
@@ -184,6 +232,13 @@ export default function JobPostItem({
         workplaceType: editForm.workplaceType,
         employmentType: editForm.employmentType,
         applyUrl: editForm.applyUrl.trim() || null,
+        requiredSkills: editForm.requiredSkills
+          .split(",")
+          .map((skill) => skill.trim())
+          .filter(Boolean),
+        minimumExperienceYears: Number(
+          editForm.minimumExperienceYears || 0,
+        ),
         expiresAt: editForm.expiresAt
           ? new Date(editForm.expiresAt).toISOString()
           : null,
@@ -200,7 +255,7 @@ export default function JobPostItem({
       alert(
         err.response?.data?.message ||
           err.response?.data?.Message ||
-          "Failed to update job post."
+          "Failed to update job post.",
       );
     } finally {
       setUpdating(false);
@@ -210,30 +265,42 @@ export default function JobPostItem({
   if (compact) {
     return (
       <div
+        className={`job-post-compact ${selected ? "is-selected" : ""}`}
         style={{
           ...styles.compactCard,
           ...(selected ? styles.compactSelected : {}),
         }}
         onClick={onClick}
       >
-        <img src={getImageUrl(job.companyLogo)} alt="" style={styles.logoSmall} />
+        <img
+          src={getImageUrl(job.companyLogo)}
+          alt=""
+          style={styles.logoSmall}
+        />
 
         <div style={styles.compactInfo}>
           <div style={styles.compactTitle}>{job.title}</div>
           <div style={styles.company}>{job.companyName || "Company"}</div>
           <div style={styles.meta}>
-            {job.location || "Location not specified"}{" "}
-            {job.workplaceType ? `(${job.workplaceType})` : ""}
+            {job.location || "Location not specified"} · {job.workplaceType || "On-site"} · {job.employmentType || "Full-time"}
           </div>
+          {(job.recommendationReason || job.matchReason) && (
+            <div className="job-recommendation-reason">
+              {job.recommendationReason || job.matchReason}
+            </div>
+          )}
 
-          <div style={styles.smallStatus}>
+          <div className="job-compact-status" style={styles.smallStatus}>
             {job.canApply ? (
               <span style={styles.activeText}>Active</span>
             ) : (
               <span style={styles.closedText}>Applications closed</span>
             )}
-            <span> · {formatDate(job.createdAt)}</span>
+            <span> · Posted {formatFullDate(job.createdAt)}</span>
           </div>
+          {job.isApplied && job.appliedAt && (
+            <div className="job-applied-date">Applied {formatFullDate(job.appliedAt)}</div>
+          )}
         </div>
       </div>
     );
@@ -241,7 +308,7 @@ export default function JobPostItem({
 
   return (
     <>
-      <div style={styles.detailCard}>
+      <div className="job-post-detail" style={styles.detailCard}>
         <div style={styles.header}>
           <img src={getImageUrl(job.companyLogo)} alt="" style={styles.logo} />
 
@@ -249,20 +316,22 @@ export default function JobPostItem({
             <h1 style={styles.title}>{job.title}</h1>
 
             <div style={styles.companyLine}>
-              {job.companyName || "Company"} ·{" "}
-              {job.location || "Location not specified"} · {formatDate(job.createdAt)}
+              <strong>{job.companyName || "Company"}</strong>
             </div>
 
-            <div style={styles.subLine}>
-              {job.canApply
-                ? "Applications are open"
-                : "Applications are no longer accepted for this job."}
+            <div className="job-detail-meta" style={styles.subLine}>
+              <span>{job.location || "Location not specified"}</span>
+              <span>{job.workplaceType || "On-site"}</span>
+              <span>Posted {formatFullDate(job.createdAt)} ({formatDate(job.createdAt)})</span>
             </div>
           </div>
 
           {job.isOwner && (
             <div style={styles.ownerActions}>
-              <button style={styles.editButton} onClick={() => setIsEditOpen(true)}>
+              <button
+                style={styles.editButton}
+                onClick={() => setIsEditOpen(true)}
+              >
                 Edit
               </button>
 
@@ -278,24 +347,54 @@ export default function JobPostItem({
           <span style={styles.badge}>{job.employmentType || "Full-time"}</span>
 
           {!job.canApply && <span style={styles.closedBadge}>Closed</span>}
+          {job.expiresAt && <span style={styles.badge}>Closes {formatFullDate(job.expiresAt)}</span>}
+          {(job.requiredSkills || []).map((skill) => (
+            <span key={skill} style={styles.skillBadge}>{skill}</span>
+          ))}
+          {Number(job.minimumExperienceYears || 0) > 0 && (
+            <span style={styles.badge}>
+              {job.minimumExperienceYears}+ years experience
+            </span>
+          )}
         </div>
 
-        <div style={styles.actions}>
+        {!isEmployer && <div style={styles.actions}>
           <button
             style={{
               ...styles.applyButton,
               ...(!job.canApply ? styles.disabledButton : {}),
             }}
-            disabled={!job.canApply || applying}
+            disabled={!job.canApply || applying || job.isApplied}
             onClick={handleApply}
           >
-            {job.canApply ? (applying ? "Opening..." : "Apply ↗") : "Applications closed"}
+            {job.isApplied
+              ? "Applied"
+              : job.canApply
+              ? applying
+                ? "Opening..."
+                : "Apply ↗"
+              : "Applications closed"}
           </button>
 
-          <button style={styles.saveButton} onClick={handleSave} disabled={saving}>
+          <button
+            style={styles.saveButton}
+            onClick={handleSave}
+            disabled={saving}
+          >
             {job.isSaved ? "Saved" : "Save"}
           </button>
-        </div>
+
+          {showWithdraw && job.isApplied && (
+            <button
+              className="job-withdraw-button"
+              type="button"
+              disabled={withdrawing}
+              onClick={handleWithdraw}
+            >
+              {withdrawing ? "Removing..." : "Withdraw application"}
+            </button>
+          )}
+        </div>}
 
         {!job.canApply && (
           <p style={styles.closedMessage}>
@@ -304,7 +403,9 @@ export default function JobPostItem({
         )}
 
         {job.isApplied && (
-          <p style={styles.appliedMessage}>You have applied for this job.</p>
+          <p style={styles.appliedMessage}>
+            You applied{job.appliedAt ? ` on ${formatFullDate(job.appliedAt)}` : ""}.
+          </p>
         )}
 
         <div style={styles.section}>
@@ -315,10 +416,13 @@ export default function JobPostItem({
 
       {isEditOpen && (
         <div style={styles.overlay} onClick={() => setIsEditOpen(false)}>
-          <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+          <div className="job-post-edit-modal" style={styles.modal} onClick={(e) => e.stopPropagation()}>
             <div style={styles.modalHeader}>
               <h2 style={styles.modalTitle}>Edit job post</h2>
-              <button style={styles.closeButton} onClick={() => setIsEditOpen(false)}>
+              <button
+                style={styles.closeButton}
+                onClick={() => setIsEditOpen(false)}
+              >
                 ×
               </button>
             </div>
@@ -379,6 +483,35 @@ export default function JobPostItem({
                 style={styles.input}
               />
 
+              <div style={styles.row}>
+                <div style={styles.col}>
+                  <label style={styles.label}>Required skills</label>
+                  <input
+                    name="requiredSkills"
+                    value={editForm.requiredSkills}
+                    onChange={handleEditChange}
+                    placeholder="React, .NET, SQL"
+                    style={styles.input}
+                  />
+                </div>
+                <div style={styles.col}>
+                  <label style={styles.label}>Minimum experience</label>
+                  <select
+                    name="minimumExperienceYears"
+                    value={editForm.minimumExperienceYears}
+                    onChange={handleEditChange}
+                    style={styles.input}
+                  >
+                    <option value="0">No minimum</option>
+                    <option value="1">1+ years</option>
+                    <option value="2">2+ years</option>
+                    <option value="3">3+ years</option>
+                    <option value="5">5+ years</option>
+                    <option value="8">8+ years</option>
+                  </select>
+                </div>
+              </div>
+
               <label style={styles.label}>Expires at</label>
               <input
                 type="date"
@@ -415,11 +548,70 @@ export default function JobPostItem({
                   Cancel
                 </button>
 
-                <button type="submit" style={styles.submitButton} disabled={updating}>
+                <button
+                  type="submit"
+                  style={styles.submitButton}
+                  disabled={updating}
+                >
                   {updating ? "Saving..." : "Save changes"}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {isWithdrawOpen && (
+        <div
+          className="job-withdraw-overlay"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !withdrawing) {
+              setIsWithdrawOpen(false);
+            }
+          }}
+        >
+          <div
+            className="job-withdraw-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={`withdraw-title-${job.id}`}
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="job-withdraw-modal-header">
+              <span className="job-withdraw-warning-icon" aria-hidden="true">!</span>
+              <div>
+                <h2 id={`withdraw-title-${job.id}`}>Withdraw application?</h2>
+                <p>
+                  This removes the application from your Applied jobs. You can apply
+                  again later while the job is still open.
+                </p>
+              </div>
+            </div>
+
+            <div className="job-withdraw-summary">
+              <strong>{job.title}</strong>
+              <span>{job.companyName || "Company"}</span>
+            </div>
+
+            <div className="job-withdraw-modal-actions">
+              <button
+                className="job-withdraw-cancel"
+                type="button"
+                disabled={withdrawing}
+                onClick={() => setIsWithdrawOpen(false)}
+              >
+                Keep application
+              </button>
+              <button
+                className="job-withdraw-confirm"
+                type="button"
+                disabled={withdrawing}
+                onClick={confirmWithdraw}
+              >
+                {withdrawing ? "Withdrawing..." : "Withdraw"}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -432,13 +624,13 @@ const styles = {
     display: "flex",
     gap: 12,
     padding: "14px 12px",
-    borderBottom: "1px solid #e5e5e5",
+    borderBottom: "1px solid var(--app-border)",
     cursor: "pointer",
-    backgroundColor: "#fff",
+    backgroundColor: "var(--app-surface)",
   },
   compactSelected: {
-    backgroundColor: "#eef3f8",
-    borderLeft: "3px solid #0a66c2",
+    backgroundColor: "var(--app-accent-soft)",
+    borderLeft: "3px solid var(--app-accent)",
   },
   logoSmall: {
     width: 48,
@@ -454,22 +646,22 @@ const styles = {
   compactTitle: {
     fontSize: 16,
     fontWeight: 700,
-    color: "#0a66c2",
+    color: "var(--app-text)",
     lineHeight: 1.35,
   },
   company: {
     fontSize: 14,
-    color: "#222",
+    color: "var(--app-text)",
     marginTop: 4,
   },
   meta: {
     fontSize: 13,
-    color: "#666",
+    color: "var(--app-muted)",
     marginTop: 3,
   },
   smallStatus: {
     fontSize: 12,
-    color: "#777",
+    color: "var(--app-muted)",
     marginTop: 7,
   },
   activeText: {
@@ -481,9 +673,9 @@ const styles = {
     fontWeight: 700,
   },
   detailCard: {
-    backgroundColor: "#fff",
+    backgroundColor: "var(--app-surface)",
     minHeight: "100%",
-    padding: "28px 32px",
+    padding: "30px 34px",
     boxSizing: "border-box",
   },
   header: {
@@ -500,29 +692,29 @@ const styles = {
   },
   title: {
     margin: 0,
-    fontSize: 28,
+    fontSize: 27,
     fontWeight: 650,
-    color: "#111",
+    color: "var(--app-text)",
     lineHeight: 1.2,
   },
   companyLine: {
     marginTop: 8,
     fontSize: 14,
-    color: "#555",
+    color: "var(--app-text-soft)",
   },
   subLine: {
     marginTop: 5,
     fontSize: 14,
-    color: "#666",
+    color: "var(--app-muted)",
   },
   ownerActions: {
     display: "flex",
     gap: 8,
   },
   editButton: {
-    border: "1px solid #0a66c2",
-    backgroundColor: "#fff",
-    color: "#0a66c2",
+    border: "1px solid var(--app-accent)",
+    backgroundColor: "var(--app-surface)",
+    color: "var(--app-accent)",
     borderRadius: 18,
     padding: "7px 12px",
     cursor: "pointer",
@@ -530,7 +722,7 @@ const styles = {
   },
   deleteButton: {
     border: "1px solid #c0392b",
-    backgroundColor: "#fff",
+    backgroundColor: "var(--app-surface)",
     color: "#c0392b",
     borderRadius: 18,
     padding: "7px 12px",
@@ -544,12 +736,21 @@ const styles = {
     marginTop: 18,
   },
   badge: {
-    border: "1px solid #777",
+    border: "1px solid var(--app-border)",
     borderRadius: 18,
     padding: "7px 14px",
-    color: "#444",
+    color: "var(--app-text-soft)",
     fontSize: 14,
     fontWeight: 600,
+  },
+  skillBadge: {
+    border: "1px solid rgba(8,145,178,.25)",
+    borderRadius: 18,
+    padding: "7px 14px",
+    backgroundColor: "rgba(8,145,178,.07)",
+    color: "#0891b2",
+    fontSize: 14,
+    fontWeight: 700,
   },
   closedBadge: {
     border: "1px solid #c0392b",
@@ -562,29 +763,30 @@ const styles = {
   actions: {
     display: "flex",
     gap: 10,
-    marginTop: 18,
+    marginTop: 22,
+    flexWrap: "wrap",
   },
   applyButton: {
-    border: "1px solid #0a66c2",
-    backgroundColor: "#0a66c2",
+    border: "1px solid var(--app-accent)",
+    backgroundColor: "var(--app-accent)",
     color: "#fff",
-    borderRadius: 22,
+    borderRadius: 10,
     padding: "10px 22px",
     fontWeight: 700,
     fontSize: 15,
     cursor: "pointer",
   },
   disabledButton: {
-    backgroundColor: "#e5e5e5",
-    borderColor: "#d0d0d0",
-    color: "#777",
+    backgroundColor: "var(--app-surface-2)",
+    borderColor: "var(--app-border)",
+    color: "var(--app-muted)",
     cursor: "not-allowed",
   },
   saveButton: {
-    border: "1px solid #0a66c2",
-    backgroundColor: "#fff",
-    color: "#0a66c2",
-    borderRadius: 22,
+    border: "1px solid var(--app-accent)",
+    backgroundColor: "var(--app-surface)",
+    color: "var(--app-accent)",
+    borderRadius: 10,
     padding: "10px 22px",
     fontWeight: 700,
     fontSize: 15,
@@ -614,7 +816,7 @@ const styles = {
     whiteSpace: "pre-wrap",
     fontSize: 15,
     lineHeight: 1.65,
-    color: "#222",
+    color: "var(--app-text-soft)",
   },
   overlay: {
     position: "fixed",
@@ -629,13 +831,13 @@ const styles = {
     width: 560,
     maxHeight: "88vh",
     overflowY: "auto",
-    backgroundColor: "#fff",
+    backgroundColor: "var(--app-surface)",
     borderRadius: 14,
     boxShadow: "0 18px 44px rgba(0,0,0,0.25)",
   },
   modalHeader: {
     padding: "18px 22px",
-    borderBottom: "1px solid #eee",
+    borderBottom: "1px solid var(--app-border)",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
@@ -650,7 +852,7 @@ const styles = {
     backgroundColor: "transparent",
     fontSize: 28,
     cursor: "pointer",
-    color: "#555",
+    color: "var(--app-muted)",
   },
   form: {
     padding: 22,
@@ -660,11 +862,13 @@ const styles = {
   label: {
     fontSize: 13,
     fontWeight: 600,
-    color: "#444",
+    color: "var(--app-text-soft)",
     marginBottom: 6,
   },
   input: {
-    border: "1px solid #c9c9c9",
+    border: "1px solid var(--app-border)",
+    backgroundColor: "var(--app-surface-2)",
+    color: "var(--app-text)",
     borderRadius: 8,
     padding: "10px 12px",
     fontSize: 14,
@@ -672,7 +876,9 @@ const styles = {
     fontFamily: "inherit",
   },
   textarea: {
-    border: "1px solid #c9c9c9",
+    border: "1px solid var(--app-border)",
+    backgroundColor: "var(--app-surface-2)",
+    color: "var(--app-text)",
     borderRadius: 8,
     padding: "10px 12px",
     fontSize: 14,
@@ -697,7 +903,7 @@ const styles = {
     marginBottom: 14,
     fontSize: 14,
     fontWeight: 600,
-    color: "#333",
+    color: "var(--app-text-soft)",
   },
   modalActions: {
     display: "flex",
@@ -705,17 +911,17 @@ const styles = {
     gap: 10,
   },
   cancelButton: {
-    border: "1px solid #ccc",
-    backgroundColor: "#fff",
-    color: "#333",
+    border: "1px solid var(--app-border)",
+    backgroundColor: "var(--app-surface)",
+    color: "var(--app-text-soft)",
     borderRadius: 20,
     padding: "9px 16px",
     fontWeight: 600,
     cursor: "pointer",
   },
   submitButton: {
-    border: "1px solid #0a66c2",
-    backgroundColor: "#0a66c2",
+    border: "1px solid var(--app-accent)",
+    backgroundColor: "var(--app-accent)",
     color: "#fff",
     borderRadius: 20,
     padding: "9px 18px",

@@ -25,8 +25,8 @@ export default function EmployerAbout({ user }) {
   const mapQuery = address || headquarters || companyName;
 
   return (
-    <div style={styles.wrapper}>
-      <div style={styles.card}>
+    <div className="employer-about-wrapper" style={styles.wrapper}>
+      <div className="employer-about-card" style={styles.card}>
         <h2 style={styles.title}>Overview</h2>
 
         <p style={styles.overview}>
@@ -75,7 +75,7 @@ export default function EmployerAbout({ user }) {
         </InfoBlock>
       </div>
 
-      <div style={styles.card}>
+      <div className="employer-about-card" style={styles.card}>
         <h2 style={styles.title}>Locations</h2>
 
         <div style={styles.locationTop}>
@@ -88,7 +88,7 @@ export default function EmployerAbout({ user }) {
           {address && (
             <a
               href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                address
+                address,
               )}`}
               target="_blank"
               rel="noopener noreferrer"
@@ -104,7 +104,7 @@ export default function EmployerAbout({ user }) {
             <iframe
               title="Company location map"
               src={`https://www.google.com/maps?q=${encodeURIComponent(
-                mapQuery
+                mapQuery,
               )}&output=embed`}
               style={styles.mapFrame}
               loading="lazy"
@@ -126,8 +126,8 @@ export default function EmployerAbout({ user }) {
 
 function InfoBlock({ title, children }) {
   return (
-    <div style={styles.infoBlock}>
-      <div style={styles.infoTitle}>{title}</div>
+    <div className="employer-about-info" style={styles.infoBlock}>
+      <div className="employer-about-info-title" style={styles.infoTitle}>{title}</div>
       <div>{children}</div>
     </div>
   );
@@ -144,8 +144,8 @@ const styles = {
 
   card: {
     width: "100%",
-    backgroundColor: "#fff",
-    border: "1px solid #ddd",
+    backgroundColor: "var(--app-surface)",
+    border: "1px solid var(--app-border)",
     borderRadius: 12,
     padding: "22px",
     boxSizing: "border-box",
@@ -155,13 +155,13 @@ const styles = {
   title: {
     margin: 0,
     fontSize: 22,
-    color: "#222",
+    color: "var(--app-text)",
     fontWeight: 700,
   },
 
   overview: {
     marginTop: 14,
-    color: "#666",
+    color: "var(--app-muted)",
     lineHeight: 1.5,
     whiteSpace: "pre-line",
     fontSize: 14,
@@ -174,19 +174,19 @@ const styles = {
 
   infoTitle: {
     fontWeight: 600,
-    color: "#222",
+    color: "var(--app-text)",
     marginBottom: 3,
     fontSize: 14,
   },
 
   text: {
-    color: "#666",
+    color: "var(--app-muted)",
     fontSize: 14,
     fontWeight: 400,
   },
 
   muted: {
-    color: "#888",
+    color: "var(--app-muted)",
     fontSize: 14,
     fontWeight: 400,
   },
@@ -205,13 +205,13 @@ const styles = {
   locationName: {
     fontSize: 14,
     fontWeight: 600,
-    color: "#444",
+    color: "var(--app-text-soft)",
   },
 
   address: {
     marginTop: 5,
     fontSize: 14,
-    color: "#666",
+    color: "var(--app-muted)",
     lineHeight: 1.4,
   },
 
@@ -227,8 +227,8 @@ const styles = {
   mapBox: {
     margin: "24px -22px -22px",
     height: 300,
-    borderTop: "1px solid #e5e5e5",
-    backgroundColor: "#fafafa",
+    borderTop: "1px solid var(--app-border)",
+    backgroundColor: "var(--app-surface-2)",
     overflow: "hidden",
     borderBottomLeftRadius: 12,
     borderBottomRightRadius: 12,
@@ -248,7 +248,7 @@ const styles = {
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    color: "#666",
+    color: "var(--app-muted)",
   },
 
   pin: {
@@ -258,6 +258,6 @@ const styles = {
 
   mapText: {
     fontSize: 14,
-    color: "#666",
+    color: "var(--app-muted)",
   },
 };

@@ -2,18 +2,16 @@ import { useEffect, useRef, useState } from "react";
 import defaultAvatar from "../../assets/default-avatar.png";
 import { formatDistanceToNow } from "date-fns";
 import EditCommentModal from "./EditCommentModal";
+import { resolveMediaUrl } from "../../utils/mediaUrl";
 
 export default function CommentItem({
   comment,
-  isOwner,      // comment owner
-  isPostOwner,  // post owner
+  isOwner, // comment owner
+  isPostOwner, // post owner
   onDelete,
   onUpdate,
 }) {
   if (!comment) return null;
-
-
- 
 
   const {
     commentId,
@@ -76,7 +74,7 @@ export default function CommentItem({
   return (
     <div style={styles.wrapper}>
       <img
-        src={userProfileUrl || defaultAvatar}
+        src={resolveMediaUrl(userProfileUrl, defaultAvatar)}
         alt={`${username} avatar`}
         style={styles.avatar}
         onError={(e) => (e.currentTarget.src = defaultAvatar)}
@@ -162,9 +160,9 @@ const styles = {
     display: "flex",
     gap: "12px",
     padding: "12px",
-    background: "#ffffff",
+    background: "var(--app-surface)",
     borderRadius: "10px",
-    border: "1px solid #e5e7eb",
+    border: "1px solid var(--app-border)",
   },
 
   avatar: {
@@ -190,18 +188,18 @@ const styles = {
   username: {
     fontSize: "14px",
     fontWeight: 600,
-    color: "#111827",
+    color: "var(--app-text)",
   },
 
   time: {
     fontSize: "12px",
-    color: "#6b7280",
+    color: "var(--app-muted)",
   },
 
   text: {
     margin: 0,
     fontSize: "14px",
-    color: "#374151",
+    color: "var(--app-text)",
     lineHeight: 1.5,
     marginTop: "4px",
   },
@@ -218,17 +216,17 @@ const styles = {
     cursor: "pointer",
     fontSize: "18px",
     padding: "2px 6px",
-    color: "#6b7280",
+    color: "var(--app-muted)",
   },
 
   menu: {
     position: "absolute",
     right: 0,
     top: "24px",
-    background: "#ffffff",
+    background: "var(--app-surface)",
     borderRadius: "8px",
     boxShadow: "0 8px 20px rgba(0,0,0,0.15)",
-    border: "1px solid #e5e7eb",
+    border: "1px solid var(--app-border)",
     zIndex: 20,
     minWidth: "140px",
     overflow: "hidden",

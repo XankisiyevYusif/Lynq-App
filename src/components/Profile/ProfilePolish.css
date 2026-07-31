@@ -1,0 +1,851 @@
+.jobseeker-profile-page {
+  --profile-accent: var(--app-accent);
+  --profile-text: var(--app-text);
+  --profile-muted: var(--app-muted);
+  --profile-border: var(--app-border);
+  font-family:
+    "Plus Jakarta Sans",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  background:
+    radial-gradient(
+      circle at 50% 0%,
+      rgba(79, 70, 229, 0.045),
+      transparent 30%
+    ),
+    var(--app-bg) !important;
+  padding: 32px 20px 48px !important;
+}
+
+.jobseeker-profile-container {
+  min-width: 0;
+  max-width: none !important;
+  animation: profile-content-enter 300ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.jobseeker-profile-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 780px) 300px;
+  align-items: start;
+  gap: 20px;
+  width: 100%;
+  max-width: 1100px;
+}
+
+.jobseeker-profile-sidebar {
+  position: static !important;
+  align-self: start;
+  min-width: 0;
+}
+
+.profile-analytics-card {
+  box-sizing: border-box;
+  overflow: hidden;
+  padding: 20px;
+  border: 1px solid var(--profile-border, var(--app-border));
+  border-radius: 16px;
+  background: var(--app-surface);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.03),
+    0 10px 30px rgba(15, 23, 42, 0.045);
+}
+
+.profile-analytics-heading,
+.profile-analytics-title-row,
+.profile-analytics-heading button,
+.profile-analytics-metrics > button {
+  display: flex;
+  align-items: center;
+}
+
+.profile-analytics-heading {
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.profile-analytics-title-row {
+  gap: 10px;
+}
+
+.profile-analytics-title-row h2 {
+  margin: 0;
+  color: var(--app-text);
+  font-size: 19px;
+  letter-spacing: -0.025em;
+}
+
+.profile-analytics-title-row > span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--app-muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.profile-analytics-heading p {
+  margin: 5px 0 0;
+  color: var(--app-muted);
+  font-size: 11.5px;
+}
+
+.profile-analytics-heading > button {
+  gap: 5px;
+  flex: 0 0 auto;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--app-accent-soft);
+  color: var(--app-accent);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.profile-analytics-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 17px;
+}
+
+.profile-analytics-metrics > button {
+  min-width: 0;
+  gap: 10px;
+  padding: 13px;
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  background: var(--app-surface-2);
+  color: var(--app-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: 150ms ease;
+}
+
+.profile-analytics-metrics > button:hover {
+  border-color: rgba(79, 70, 229, 0.35);
+  transform: translateY(-1px);
+}
+
+.profile-analytics-metric-icon {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--app-accent-soft);
+  color: var(--app-accent);
+}
+
+.profile-analytics-metrics > button > span:last-child {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.profile-analytics-metrics strong {
+  color: var(--app-text);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.profile-analytics-metrics b {
+  overflow: hidden;
+  margin-top: 4px;
+  color: var(--app-text-soft);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-analytics-metrics small {
+  margin-top: 2px;
+  color: var(--app-muted);
+  font-size: 8.5px;
+}
+
+.profile-analytics-empty,
+.profile-analytics-state {
+  margin: 12px 0 0;
+  padding: 11px 13px;
+  border-radius: 10px;
+  background: var(--app-surface-2);
+  color: var(--app-muted);
+  font-size: 10.5px;
+  line-height: 1.5;
+}
+
+.profile-analytics-state {
+  text-align: center;
+}
+
+.profile-analytics-state.is-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+}
+
+.profile-analytics-state button {
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 7px;
+  background: var(--app-accent);
+  color: #fff;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.profile-recommendations-card {
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid var(--profile-border, var(--app-border));
+  border-radius: 16px;
+  background: var(--app-surface);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.03),
+    0 10px 30px rgba(15, 23, 42, 0.055);
+  font-family: inherit;
+}
+
+.profile-recommendations-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 18px 14px;
+  border-bottom: 1px solid var(--app-border);
+}
+
+.profile-recommendations-heading span {
+  color: #6366f1;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.profile-recommendations-heading h2 {
+  margin: 3px 0 0;
+  color: var(--app-text);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.profile-recommendations-icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: rgba(79, 70, 229, 0.08);
+  color: #4f46e5;
+}
+
+.profile-recommendations-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.profile-recommendation-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--app-border);
+  transition: background-color 150ms ease;
+}
+
+.profile-recommendation-item:hover {
+  background: var(--app-surface-2);
+}
+
+.profile-recommendation-item:last-child {
+  border-bottom: 0;
+}
+
+.profile-recommendation-item > img {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  border: 1px solid var(--app-border);
+  background: #eef2f7;
+  object-fit: cover;
+  cursor: pointer;
+}
+
+.profile-recommendation-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.profile-recommendation-name {
+  display: block;
+  overflow: hidden;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--app-text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.profile-recommendation-copy p {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 3px 0 9px;
+  color: #64748b;
+  font-size: 11.5px;
+  line-height: 1.35;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.profile-recommendation-action {
+  padding: 5px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: var(--app-surface);
+  color: var(--app-text-soft);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 150ms ease;
+}
+
+.profile-recommendation-action:hover:not(:disabled) {
+  border-color: #4f46e5;
+  background: rgba(79, 70, 229, 0.06);
+  color: #4338ca;
+}
+
+.profile-recommendation-action.is-complete {
+  border-color: #dbeafe;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.profile-recommendations-loading {
+  padding: 8px 16px 16px;
+}
+
+.profile-recommendations-footer {
+  padding: 12px 14px;
+  border-top: 1px solid #e8edf4;
+  background: #fbfcfe;
+}
+
+.profile-recommendations-footer > button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  padding: 7px;
+  border: 0;
+  background: transparent;
+  color: #4f46e5;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.profile-recommendations-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.profile-recommendations-pagination button {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid #dbe2ea;
+  border-radius: 9px;
+  background: var(--app-surface);
+  color: var(--app-text-soft);
+  cursor: pointer;
+}
+
+.profile-recommendations-pagination button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.profile-recommendation-skeleton {
+  height: 68px;
+  margin-top: 8px;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #f1f5f9, #f8fafc, #f1f5f9);
+  background-size: 200% 100%;
+  animation: recommendation-shimmer 1.2s linear infinite;
+}
+
+@keyframes recommendation-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.jobseeker-profile-card,
+.profile-section-card {
+  box-sizing: border-box;
+  border: 1px solid var(--profile-border, var(--app-border)) !important;
+  border-radius: 16px !important;
+  background: var(--app-surface) !important;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.035) !important;
+  font-family:
+    "Plus Jakarta Sans",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif !important;
+}
+
+.jobseeker-profile-card *,
+.profile-section-card * {
+  box-sizing: border-box;
+  font-family:
+    "Plus Jakarta Sans",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif !important;
+}
+
+.profile-section-card {
+  margin-top: 0 !important;
+  padding: 24px !important;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+.profile-section-card:hover {
+  border-color: #d7dce5 !important;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.055) !important;
+}
+
+.profile-section-title {
+  margin: 0 !important;
+  color: var(--profile-text, #172033) !important;
+  font-family: inherit !important;
+  font-size: 20px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.025em;
+  line-height: 1.3;
+}
+
+.profile-section-icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  border: 1px solid rgba(79, 70, 229, 0.14);
+  border-radius: 11px;
+  background: rgba(79, 70, 229, 0.07);
+  color: var(--profile-accent, #4f46e5);
+}
+
+.profile-icon-button {
+  transition:
+    color 150ms ease,
+    background-color 150ms ease,
+    border-color 150ms ease,
+    transform 150ms ease !important;
+}
+
+.profile-icon-button:hover {
+  color: var(--profile-accent, #4f46e5) !important;
+  background-color: rgba(79, 70, 229, 0.07) !important;
+  transform: translateY(-1px);
+}
+
+.profile-icon-button:focus-visible,
+.profile-create-post-button:focus-visible,
+.profile-view-all-button:focus-visible {
+  outline: 3px solid rgba(79, 70, 229, 0.18);
+  outline-offset: 2px;
+}
+
+.profile-cover-action:hover {
+  background-color: var(--app-surface) !important;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.16) !important;
+}
+
+.profile-avatar-action:hover {
+  color: #fff !important;
+  background-color: #4338ca !important;
+}
+
+.profile-create-post-button,
+.profile-view-all-button {
+  transition:
+    color 150ms ease,
+    background-color 150ms ease,
+    border-color 150ms ease,
+    transform 150ms ease;
+}
+
+.profile-create-post-button:hover {
+  border-color: #4f46e5 !important;
+  color: #4338ca !important;
+  background-color: rgba(79, 70, 229, 0.06) !important;
+  transform: translateY(-1px);
+}
+
+.profile-view-all-button:hover {
+  color: #3730a3 !important;
+}
+
+.activity-carousel-section {
+  overflow: hidden;
+}
+
+.activity-filter-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 16px;
+}
+
+.activity-filter-tabs > button {
+  min-height: 34px;
+  padding: 6px 14px;
+  border: 1px solid var(--app-border);
+  border-radius: 999px;
+  background: var(--app-surface);
+  color: var(--app-text-soft);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease,
+    color 160ms ease, transform 160ms ease;
+}
+
+.activity-filter-tabs > button:hover {
+  border-color: #a5b4fc;
+  color: var(--app-accent);
+  transform: translateY(-1px);
+}
+
+.activity-filter-tabs > button.is-active {
+  border-color: var(--app-accent);
+  background: var(--app-accent);
+  color: #fff;
+}
+
+.activity-carousel-track {
+  align-items: stretch;
+}
+
+.activity-carousel-slide {
+  flex: 0 0 50%;
+  width: 50%;
+  display: flex;
+}
+
+.activity-carousel-slide > .activity-preview-card {
+  height: 100%;
+}
+
+@media (max-width: 720px) {
+  .activity-carousel-slide {
+    flex-basis: 100%;
+    width: 100%;
+  }
+
+  .activity-filter-tabs {
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+}
+
+.jobseeker-profile-card {
+  width: 100% !important;
+  max-width: none !important;
+  overflow: visible !important;
+}
+
+.jobseeker-profile-card > div:first-child {
+  border-radius: 16px 16px 0 0 !important;
+}
+
+.jobseeker-profile-info {
+  padding: 72px 28px 24px !important;
+}
+
+.jobseeker-profile-name {
+  color: var(--profile-text, #172033) !important;
+  font-family: inherit !important;
+  font-size: 25px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.035em;
+  line-height: 1.2;
+}
+
+.jobseeker-profile-position {
+  color: var(--app-text) !important;
+  font-family: inherit !important;
+  font-size: 15px !important;
+  font-weight: 500 !important;
+  line-height: 1.45;
+}
+
+.jobseeker-profile-meta {
+  color: var(--profile-muted, #64748b) !important;
+  font-family: inherit !important;
+  font-size: 13px !important;
+  line-height: 1.35;
+}
+
+.profile-contact-button {
+  color: var(--profile-accent, #4f46e5) !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  transition: color 150ms ease;
+}
+
+.profile-contact-button:hover {
+  color: #3730a3 !important;
+  text-decoration: underline;
+}
+
+.profile-edit-button {
+  transition:
+    background-color 160ms ease,
+    transform 160ms ease,
+    box-shadow 160ms ease !important;
+}
+
+.profile-more-button:hover,
+.profile-report-menu-item:hover,
+.employer-header-report-action:hover {
+  background: var(--app-surface-2) !important;
+}
+
+.profile-report-menu-item > span:last-child,
+.employer-header-report-action > span:last-child {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.profile-report-menu-item small,
+.employer-header-report-action small {
+  margin-top: 3px;
+  color: var(--app-muted);
+  font-size: 10.5px;
+  font-weight: 500;
+}
+
+@media (max-width: 680px) {
+  .profile-edit-shell > .profile-edit-header + div {
+    grid-template-columns: 1fr !important;
+  }
+
+  .profile-edit-sidebar {
+    display: flex;
+    overflow-x: auto;
+    border-right: 0 !important;
+    border-bottom: 1px solid var(--app-border);
+  }
+
+  .profile-edit-nav-item {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+}
+
+.profile-image-progress {
+  z-index: 7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #fff;
+  font-family:
+    "Plus Jakarta Sans",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.profile-cover-progress {
+  position: absolute;
+  inset: 0;
+  border-radius: 16px 16px 0 0;
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(2px);
+}
+
+.profile-avatar-progress {
+  position: absolute;
+  inset: 6px;
+  flex-direction: column;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.58);
+  text-align: center;
+}
+
+.profile-image-progress-label {
+  font-size: 10px;
+}
+
+.profile-image-spinner {
+  width: 18px;
+  height: 18px;
+  box-sizing: border-box;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: profile-spinner 700ms linear infinite;
+}
+
+.profile-confirm-overlay {
+  animation: profile-overlay-enter 160ms ease both;
+  backdrop-filter: blur(3px);
+}
+
+.profile-confirm-dialog {
+  font-family:
+    "Plus Jakarta Sans",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  animation: profile-dialog-enter 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes profile-content-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes profile-spinner {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes profile-overlay-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes profile-dialog-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 680px) {
+  .jobseeker-profile-page {
+    padding: 24px 12px !important;
+  }
+
+  .profile-section-card {
+    padding: 20px !important;
+    border-radius: 14px !important;
+  }
+
+  .jobseeker-profile-info {
+    padding: 70px 20px 22px !important;
+  }
+
+  .jobseeker-profile-name {
+    font-size: 23px !important;
+  }
+
+  .profile-analytics-card {
+    padding: 17px;
+  }
+
+  .profile-analytics-heading {
+    align-items: flex-start;
+  }
+
+  .profile-analytics-metrics {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 960px) {
+  .jobseeker-profile-layout {
+    grid-template-columns: minmax(0, 780px);
+    justify-content: center;
+  }
+
+  .jobseeker-profile-sidebar {
+    position: static;
+    grid-row: 2;
+  }
+
+  .profile-recommendations-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .profile-recommendations-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jobseeker-profile-container,
+  .profile-confirm-overlay,
+  .profile-confirm-dialog {
+    animation: none;
+  }
+
+  .profile-section-card {
+    transition: none;
+  }
+}

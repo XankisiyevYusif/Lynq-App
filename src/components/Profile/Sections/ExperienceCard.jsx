@@ -1,5 +1,7 @@
 import React, { useState } from "react";
-import pencil from "../../../assets/pencil.png";
+import EmptySectionCard from "./EmptySectionCard";
+import { resolveMediaUrl } from "../../../utils/mediaUrl";
+import ProfileIcon from "../ProfileIcon";
 
 const monthNames = {
   1: "Jan",
@@ -38,12 +40,26 @@ export default function ExperienceCard({
   experiences = [],
   isOwner,
   readOnly,
+  onAddExperience,
   onEditExperience,
   onViewAllExperiences,
 }) {
   const [expanded, setExpanded] = useState(false);
 
-  if (!experiences || experiences.length === 0) return null;
+  const hasData = Array.isArray(experiences) && experiences.length > 0;
+
+  if (!hasData && !isOwner) return null;
+
+  if (!hasData && isOwner) {
+    return (
+      <EmptySectionCard
+        title="Experience"
+        description="Add your experience to show your professional background."
+        buttonText="Add experience"
+        onAdd={onAddExperience}
+      />
+    );
+  }
 
   const previewCount = 3;
   const expandedCount = 7;
@@ -56,9 +72,24 @@ export default function ExperienceCard({
   const hasMoreThanExpanded = experiences.length > expandedCount;
 
   return (
-    <div style={styles.card}>
+    <div className="profile-section-card" style={styles.card}>
       <div style={styles.header}>
-        <h2 style={styles.title}>Experience</h2>
+        <h2 className="profile-section-title" style={styles.title}>
+          Experience
+        </h2>
+
+        {isOwner && !readOnly && (
+          <button
+            type="button"
+            className="profile-icon-button profile-section-add-button"
+            style={styles.addButton}
+            onClick={onAddExperience}
+            aria-label="Add experience"
+            title="Add experience"
+          >
+            <ProfileIcon name="plus" size={19} strokeWidth={2.4} />
+          </button>
+        )}
       </div>
 
       <div>
@@ -67,7 +98,15 @@ export default function ExperienceCard({
             <div style={styles.item}>
               <div style={styles.left}>
                 <div style={styles.logoBox}>
-                  {(exp.companyName || "E").charAt(0).toUpperCase()}
+                  {exp.companyLogoUrl ? (
+                    <img
+                      src={resolveMediaUrl(exp.companyLogoUrl)}
+                      alt={`${exp.companyName || "Company"} logo`}
+                      style={styles.organizationLogo}
+                    />
+                  ) : (
+                    (exp.companyName || "E").charAt(0).toUpperCase()
+                  )}
                 </div>
 
                 <div style={styles.info}>
@@ -80,10 +119,11 @@ export default function ExperienceCard({
                     {isOwner && !readOnly && (
                       <button
                         type="button"
+                        className="profile-icon-button"
                         style={styles.iconButton}
                         onClick={() => onEditExperience?.(exp)}
                       >
-                        <img src={pencil} alt="edit" style={styles.icon} />
+                        <ProfileIcon name="edit" size={18} />
                       </button>
                     )}
                   </div>
@@ -151,22 +191,38 @@ export default function ExperienceCard({
 
 const styles = {
   card: {
-    backgroundColor: "#fff",
-    border: "1px solid #e0e0e0",
+    backgroundColor: "var(--app-surface)",
+    border: "1px solid var(--app-border)",
     borderRadius: "12px",
     padding: "24px",
     marginTop: "16px",
   },
 
   header: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: "16px",
+  },
+
+  addButton: {
+    width: 34,
+    height: 34,
+    display: "grid",
+    placeItems: "center",
+    padding: 0,
+    border: "1px solid var(--app-border)",
+    borderRadius: 10,
+    background: "var(--app-surface)",
+    color: "var(--app-muted)",
+    cursor: "pointer",
   },
 
   title: {
     margin: 0,
     fontSize: "20px",
     fontWeight: 600,
-    color: "#191919",
+    color: "var(--app-text)",
     fontFamily:
       '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
   },
@@ -185,7 +241,7 @@ const styles = {
     width: "48px",
     height: "48px",
     borderRadius: "10px",
-    backgroundColor: "#eef3f8",
+    backgroundColor: "var(--app-surface-2)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -195,6 +251,13 @@ const styles = {
     flexShrink: 0,
     fontFamily:
       '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+  },
+
+  organizationLogo: {
+    width: "100%",
+    height: "100%",
+    borderRadius: "10px",
+    objectFit: "cover",
   },
 
   info: {
@@ -212,7 +275,7 @@ const styles = {
   position: {
     fontSize: "16px",
     fontWeight: 600,
-    color: "#191919",
+    color: "var(--app-text)",
     marginBottom: "2px",
     fontFamily:
       '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
@@ -220,7 +283,7 @@ const styles = {
 
   company: {
     fontSize: "15px",
-    color: "#191919",
+    color: "var(--app-text)",
     marginBottom: "4px",
     fontFamily:
       '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
@@ -228,7 +291,7 @@ const styles = {
 
   meta: {
     fontSize: "14px",
-    color: "rgba(0,0,0,0.6)",
+    color: "var(--app-muted)",
     marginBottom: "4px",
     fontFamily:
       '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
@@ -238,7 +301,7 @@ const styles = {
     marginTop: "8px",
     fontSize: "14px",
     lineHeight: "22px",
-    color: "#191919",
+    color: "var(--app-text-soft)",
     whiteSpace: "pre-wrap",
     fontFamily:
       '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
@@ -260,19 +323,14 @@ const styles = {
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
-  },
-
-  icon: {
-    width: "18px",
-    height: "18px",
-    objectFit: "contain",
+    color: "var(--app-muted)",
   },
 
   toggleButton: {
     marginTop: "16px",
     border: "none",
     background: "transparent",
-    color: "#0a66c2",
+    color: "var(--app-accent)",
     fontWeight: 600,
     cursor: "pointer",
     fontSize: "14px",
@@ -285,7 +343,7 @@ const styles = {
     marginTop: "12px",
     border: "none",
     background: "transparent",
-    color: "#0a66c2",
+    color: "var(--app-accent)",
     fontWeight: 600,
     cursor: "pointer",
     fontSize: "14px",

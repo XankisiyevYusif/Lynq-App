@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api, { API_ROOT } from "../../services/api";
 import * as signalR from "@microsoft/signalr";
@@ -7,9 +7,11 @@ import connectIcon from "../../assets/connectIcon.png";
 import acceptConnect from "../../assets/acceptConnect.png";
 import pendingConnect from "../../assets/pendingConnect.png";
 import SendMessageIcon from "../../assets/SendMessageIcon.png";
-import pencil from "../../assets/pencil.png";
-import backgroundImage from "../../assets/backgroundImage.png";
 import { useSelector } from "react-redux";
+import { resolveMediaUrl } from "../../utils/mediaUrl";
+import ContactInfoModal from "./ContactInfoModal";
+import ProfileIcon from "./ProfileIcon";
+import { ReportProfileModal } from "./ProfileSafetyModals";
 
 export default function ProfileCard({
   user,
@@ -25,6 +27,7 @@ export default function ProfileCard({
   onDeleteProfileImage,
   onDeleteBackgroundImage,
   menuRef,
+  imageOperation,
 }) {
   const navigate = useNavigate();
 
@@ -40,14 +43,10 @@ export default function ProfileCard({
   const [messageHover, setMessageHover] = useState(false);
   const [editHover, setEditHover] = useState(false);
   const [isRemoveModalOpen, setIsRemoveModalOpen] = useState(false);
-  const [logoutHover, setLogoutHover] = useState(false);
-
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('accessToken');
-    window.location.href = "/";
-  };
+  const [isContactInfoOpen, setIsContactInfoOpen] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const profileMenuRef = useRef(null);
 
   const [connectionStatus, setConnectionStatus] = useState("none");
   const [connectionRequestId, setConnectionRequestId] = useState(null);
@@ -61,12 +60,9 @@ export default function ProfileCard({
   const hasBackgroundImage = !!user?.basicInfo?.backgroundImage;
 
   const canShowConnectionActions = !isOwner && !currentUserIsEmployer;
+  const canReportProfile = !isOwner && Boolean(profileUsername);
 
-  const getImageUrl = (path) => {
-    if (!path) return "";
-    if (path.startsWith("http://") || path.startsWith("https://")) return path;
-    return `${API_BASE_URL}/${path.replace(/^\/+/, "")}`;
-  };
+  const getImageUrl = (path) => resolveMediaUrl(path, "");
 
   const normalizeConnectionStatus = (payload) => {
     const data = payload?.data || payload || {};
@@ -94,6 +90,22 @@ export default function ProfileCard({
   useEffect(() => {
     fetchConnectionStatus();
   }, [profileUsername, isOwner, currentUserIsEmployer]);
+
+  useEffect(() => {
+    if (!profileMenuOpen) return;
+
+    const closeOnOutsideClick = (event) => {
+      if (
+        profileMenuRef.current &&
+        !profileMenuRef.current.contains(event.target)
+      ) {
+        setProfileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", closeOnOutsideClick);
+    return () => document.removeEventListener("mousedown", closeOnOutsideClick);
+  }, [profileMenuOpen]);
 
   useEffect(() => {
     if (!isRemoveModalOpen) return;
@@ -209,7 +221,7 @@ export default function ProfileCard({
       .start()
       .then(() => console.log("ConnectionHub connected in ProfileCard"))
       .catch((err) =>
-        console.error("ConnectionHub error in ProfileCard:", err)
+        console.error("ConnectionHub error in ProfileCard:", err),
       );
 
     return () => {
@@ -353,7 +365,7 @@ export default function ProfileCard({
     ? {
         ...styles.cover,
         background: `url(${getImageUrl(
-          user.basicInfo.backgroundImage
+          user.basicInfo.backgroundImage,
         )}) center/cover no-repeat`,
       }
     : {
@@ -362,34 +374,50 @@ export default function ProfileCard({
 
   return (
     <>
-      <div style={styles.card}>
+      <div className="jobseeker-profile-card" style={styles.card}>
         <div style={coverStyle}>
+          {!hasBackgroundImage && (
+            <span style={styles.nexoraCoverMark} aria-hidden="true">N</span>
+          )}
+          {imageOperation?.type === "background" && (
+            <div className="profile-image-progress profile-cover-progress">
+              <span className="profile-image-spinner" />
+              <span>
+                {imageOperation.action === "delete"
+                  ? "Removing cover..."
+                  : "Updating cover..."}
+              </span>
+            </div>
+          )}
+
           {isOwner && (
-            <div
+            <button
+              type="button"
+              className="profile-icon-button profile-cover-action"
               style={styles.backgroundActionButton}
               onClick={(e) => {
                 e.stopPropagation();
-                onOpenBackgroundImageMenu?.();
+                if (!imageOperation) onOpenBackgroundImageMenu?.();
               }}
               title="Background"
+              aria-label="Change cover image"
             >
-              <img
-                style={{ width: 16, height: 16 }}
-                src={backgroundImage}
-                alt="edit"
-              />
-            </div>
+              <ProfileIcon name="camera" size={18} strokeWidth={2} />
+            </button>
           )}
 
           {isOwner && imageMenu?.open && imageMenu?.type === "background" && (
             <div ref={menuRef} style={styles.coverMenu}>
               {!hasBackgroundImage ? (
                 <div style={styles.menuItem} onClick={onUploadBackgroundImage}>
-                  Fotoğraf yükle
+                  Upload photo
                 </div>
               ) : (
                 <>
-                  <div style={styles.menuItem} onClick={onUploadBackgroundImage}>
+                  <div
+                    style={styles.menuItem}
+                    onClick={onUploadBackgroundImage}
+                  >
                     Update
                   </div>
                   <div
@@ -413,30 +441,47 @@ export default function ProfileCard({
                 : defaultAvatar
             }
             alt="profile"
+            onError={(event) => {
+              event.currentTarget.src = defaultAvatar;
+            }}
           />
 
+          {imageOperation?.type === "profile" && (
+            <div className="profile-image-progress profile-avatar-progress">
+              <span className="profile-image-spinner" />
+              <span className="profile-image-progress-label">
+                {imageOperation.action === "delete" ? "Removing" : "Updating"}
+              </span>
+            </div>
+          )}
+
           {isOwner && (
-            <div
+            <button
+              type="button"
+              className="profile-icon-button profile-avatar-action"
               style={styles.avatarActionButton}
               onClick={(e) => {
                 e.stopPropagation();
-                onOpenProfileImageMenu?.();
+                if (!imageOperation) onOpenProfileImageMenu?.();
               }}
               title="Profile image"
+              aria-label={
+                hasProfileImage ? "Change profile image" : "Add profile image"
+              }
             >
               {hasProfileImage ? (
-                <span style={{ fontSize: 20 }}>✎</span>
+                <ProfileIcon name="camera" size={17} strokeWidth={2.2} />
               ) : (
-                <span style={{ fontSize: 32, translate: "0 -3px" }}>+</span>
+                <ProfileIcon name="plus" size={20} strokeWidth={2.4} />
               )}
-            </div>
+            </button>
           )}
 
           {isOwner && imageMenu?.open && imageMenu?.type === "profile" && (
             <div ref={menuRef} style={styles.avatarMenu}>
               {!hasProfileImage ? (
                 <div style={styles.menuItem} onClick={onUploadProfileImage}>
-                  Fotoğraf yükle
+                  Upload photo
                 </div>
               ) : (
                 <>
@@ -459,24 +504,13 @@ export default function ProfileCard({
           <>
             <button
               type="button"
-              style={{
-                ...styles.logoutBtn,
-                backgroundColor: logoutHover ? "#d11124" : "#fff",
-                color: logoutHover ? "#fff" : "#d11124",
-                transform: logoutHover ? "translateY(-1px)" : "translateY(0)",
-              }}
-              onMouseEnter={() => setLogoutHover(true)}
-              onMouseLeave={() => setLogoutHover(false)}
-              onClick={handleLogout}
-            >
-              Log Out
-            </button>
-            <img
-              src={pencil}
-              alt="edit"
+              aria-label="Edit profile"
+              className="profile-edit-button"
               style={{
                 ...styles.editIcon,
-                backgroundColor: editHover ? "rgba(0,0,0,0.06)" : "transparent",
+                backgroundColor: editHover
+                  ? "var(--app-surface-2)"
+                  : "transparent",
                 transform: editHover
                   ? "translateY(-1px) scale(1.03)"
                   : "translateY(0) scale(1)",
@@ -487,18 +521,72 @@ export default function ProfileCard({
               onMouseEnter={() => setEditHover(true)}
               onMouseLeave={() => setEditHover(false)}
               onClick={() => onEdit?.()}
-            />
+            >
+              <ProfileIcon name="edit" size={19} />
+            </button>
           </>
         )}
 
-        <div style={styles.info}>
+        {canReportProfile && (
+          <div ref={profileMenuRef} style={styles.profileMenuWrap}>
+            <button
+              type="button"
+              className="profile-more-button"
+              aria-label="Profile actions"
+              aria-expanded={profileMenuOpen}
+              style={styles.profileMoreButton}
+              onClick={() => setProfileMenuOpen((current) => !current)}
+            >
+              <span aria-hidden="true">•••</span>
+            </button>
+
+            {profileMenuOpen && (
+              <div style={styles.profileMenu}>
+                <button
+                  type="button"
+                  className="profile-report-menu-item"
+                  style={styles.profileMenuItem}
+                  onClick={() => {
+                    setProfileMenuOpen(false);
+                    setReportModalOpen(true);
+                  }}
+                >
+                  <span style={styles.reportMenuIcon} aria-hidden="true">!</span>
+                  <span>
+                    <strong>Report profile</strong>
+                    <small>Send a private report to moderation</small>
+                  </span>
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="jobseeker-profile-info" style={styles.info}>
           <div style={styles.nameBlock}>
-            <div style={styles.fullname}>{user?.basicInfo?.fullName}</div>
-            <div style={styles.specialty}>
+            <div className="jobseeker-profile-name" style={styles.fullname}>
+              {user?.basicInfo?.fullName}
+            </div>
+            <div
+              className="jobseeker-profile-position"
+              style={styles.specialty}
+            >
               {user?.basicInfo?.currentPosition}
             </div>
-            <div style={styles.location}>{user?.basicInfo?.location}</div>
-            <div style={styles.username}>@{user?.basicInfo?.username}</div>
+            <div className="jobseeker-profile-meta" style={styles.location}>
+              {user?.basicInfo?.location}
+            </div>
+            <div className="jobseeker-profile-meta" style={styles.username}>
+              @{user?.basicInfo?.username}
+            </div>
+            <button
+              type="button"
+              className="profile-contact-button"
+              style={styles.contactInfoButton}
+              onClick={() => setIsContactInfoOpen(true)}
+            >
+              Contact info
+            </button>
           </div>
 
           {canShowConnectionActions && (
@@ -508,14 +596,18 @@ export default function ProfileCard({
                   ...styles.connectionButton,
                   backgroundColor: getConnectionButtonBackground(),
                   opacity: connectionLoading ? 0.7 : 1,
-                  transform: connectHover ? "translateY(-1px)" : "translateY(0)",
-                  transition: "background-color 0.2s ease, transform 0.15s ease",
+                  transform: connectHover
+                    ? "translateY(-1px)"
+                    : "translateY(0)",
+                  transition:
+                    "background-color 0.2s ease, transform 0.15s ease",
                 }}
                 onMouseEnter={() => setConnectHover(true)}
                 onMouseLeave={() => setConnectHover(false)}
                 onClick={handleConnectionClick}
               >
                 <img
+                  className="profile-connection-icon"
                   style={styles.connectIcon}
                   src={getConnectionIcon()}
                   alt="connect"
@@ -531,7 +623,7 @@ export default function ProfileCard({
                   backgroundColor:
                     connectionStatus === "connected" && messageHover
                       ? "rgba(0,115,177,0.08)"
-                      : "#fff",
+                      : "var(--app-surface)",
                   borderColor:
                     connectionStatus === "connected" && messageHover
                       ? "#006097"
@@ -561,6 +653,7 @@ export default function ProfileCard({
                   Message
                 </span>
                 <img
+                  className="profile-message-icon"
                   style={styles.sendMessageIcon}
                   src={SendMessageIcon}
                   alt="message"
@@ -576,10 +669,7 @@ export default function ProfileCard({
           style={styles.removeModalOverlay}
           onClick={() => setIsRemoveModalOpen(false)}
         >
-          <div
-            style={styles.removeModal}
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div style={styles.removeModal} onClick={(e) => e.stopPropagation()}>
             <h3 style={styles.removeModalTitle}>Remove connection?</h3>
 
             <p style={styles.removeModalText}>
@@ -606,6 +696,23 @@ export default function ProfileCard({
           </div>
         </div>
       )}
+
+      {isContactInfoOpen && (
+        <ContactInfoModal
+          contactInfo={user?.contactInfo}
+          onClose={() => setIsContactInfoOpen(false)}
+        />
+      )}
+
+      {reportModalOpen && canReportProfile && (
+        <ReportProfileModal
+          username={profileUsername}
+          targetLabel={user?.basicInfo?.fullName || `@${profileUsername}`}
+          targetKind="profile"
+          onClose={() => setReportModalOpen(false)}
+          showToast={showToast}
+        />
+      )}
     </>
   );
 }
@@ -616,11 +723,11 @@ const styles = {
   card: {
     position: "relative",
     width: "100%",
-    maxWidth: 820,
+    maxWidth: "none",
     borderRadius: 12,
     overflow: "visible",
-    backgroundColor: "#fff",
-    border: "1px solid #e0e0e0",
+    backgroundColor: "var(--app-surface)",
+    border: "1px solid var(--app-border)",
     boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
   },
 
@@ -630,7 +737,22 @@ const styles = {
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     background:
-      "linear-gradient(135deg, rgba(155,205,235,0.8), rgba(40,125,190,0.85))",
+      "radial-gradient(circle at 14% 18%, rgba(255,255,255,0.2) 0 2px, transparent 3px), radial-gradient(circle at 88% 20%, rgba(245,158,11,0.36) 0 42px, transparent 43px), linear-gradient(132deg, #312e81 0%, #4f46e5 52%, #7c3aed 100%)",
+    overflow: "hidden",
+  },
+
+  nexoraCoverMark: {
+    position: "absolute",
+    right: 34,
+    bottom: -43,
+    color: "rgba(255,255,255,0.11)",
+    fontFamily: '"Outfit", sans-serif',
+    fontSize: 190,
+    fontWeight: 850,
+    lineHeight: 1,
+    letterSpacing: -18,
+    pointerEvents: "none",
+    userSelect: "none",
   },
 
   backgroundActionButton: {
@@ -640,7 +762,10 @@ const styles = {
     width: 36,
     height: 36,
     borderRadius: "50%",
-    backgroundColor: "#fff",
+    backgroundColor: "var(--app-surface)",
+    border: "1px solid rgba(226,232,240,0.9)",
+    color: "var(--app-text)",
+    padding: 0,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -656,7 +781,7 @@ const styles = {
     right: 16,
     top: 58,
     minWidth: 150,
-    backgroundColor: "#fff",
+    backgroundColor: "var(--app-surface)",
     borderRadius: 12,
     boxShadow: "0 10px 28px rgba(0,0,0,0.18)",
     border: "1px solid rgba(0,0,0,0.08)",
@@ -678,8 +803,8 @@ const styles = {
     height: 120,
     borderRadius: "50%",
     objectFit: "cover",
-    backgroundColor: "#eee",
-    border: "6px solid #fff",
+    backgroundColor: "var(--app-surface-2)",
+    border: "6px solid var(--app-surface)",
   },
 
   avatarActionButton: {
@@ -690,6 +815,8 @@ const styles = {
     height: 32,
     borderRadius: "50%",
     backgroundColor: "#0a66c2",
+    border: "3px solid var(--app-surface)",
+    padding: 0,
     color: "#fff",
     display: "flex",
     alignItems: "center",
@@ -706,7 +833,7 @@ const styles = {
     left: 95,
     top: 126,
     minWidth: 150,
-    backgroundColor: "#fff",
+    backgroundColor: "var(--app-surface)",
     borderRadius: 12,
     boxShadow: "0 10px 28px rgba(0,0,0,0.18)",
     border: "1px solid rgba(0,0,0,0.08)",
@@ -718,7 +845,7 @@ const styles = {
     padding: "11px 14px",
     fontSize: 14,
     cursor: "pointer",
-    backgroundColor: "#fff",
+    backgroundColor: "var(--app-surface)",
     borderBottom: "1px solid rgba(0,0,0,0.06)",
     fontFamily: font,
   },
@@ -735,27 +862,78 @@ const styles = {
     width: 35,
     height: 35,
     padding: 6,
+    border: "none",
+    background: "transparent",
+    color: "var(--app-text)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
     borderRadius: 10,
     cursor: "pointer",
     boxSizing: "border-box",
     zIndex: 3,
   },
 
-  logoutBtn: {
+  profileMenuWrap: {
     position: "absolute",
-    right: 60,
+    right: 16,
     top: 182,
-    padding: "6px 14px",
-    borderRadius: "8px",
-    border: "1px solid #d11124",
-    backgroundColor: "#fff",
-    color: "#d11124",
-    fontWeight: 600,
-    fontSize: "14px",
+    zIndex: 12,
+  },
+
+  profileMoreButton: {
+    display: "grid",
+    width: 36,
+    height: 36,
+    placeItems: "center",
+    padding: 0,
+    borderRadius: 10,
+    border: "1px solid var(--app-border)",
+    backgroundColor: "var(--app-surface)",
+    color: "var(--app-text-soft)",
+    fontWeight: 800,
+    fontSize: 13,
     cursor: "pointer",
     fontFamily: font,
-    transition: "background-color 0.2s, color 0.2s, transform 0.15s ease",
-    zIndex: 3,
+  },
+
+  profileMenu: {
+    position: "absolute",
+    top: 42,
+    right: 0,
+    width: 260,
+    padding: 7,
+    border: "1px solid var(--app-border)",
+    borderRadius: 13,
+    background: "var(--app-surface)",
+    boxShadow: "0 16px 45px rgba(15,23,42,.18)",
+  },
+
+  profileMenuItem: {
+    display: "flex",
+    width: "100%",
+    alignItems: "center",
+    gap: 11,
+    padding: "10px 11px",
+    border: 0,
+    borderRadius: 9,
+    background: "transparent",
+    color: "var(--app-text)",
+    textAlign: "left",
+    cursor: "pointer",
+    fontFamily: font,
+  },
+
+  reportMenuIcon: {
+    display: "grid",
+    width: 32,
+    height: 32,
+    flex: "0 0 32px",
+    placeItems: "center",
+    borderRadius: 9,
+    background: "#fff1f2",
+    color: "#be123c",
+    fontWeight: 900,
   },
 
   info: {
@@ -774,29 +952,42 @@ const styles = {
   fullname: {
     fontSize: 24,
     fontWeight: 700,
-    color: "rgba(0,0,0,0.92)",
+    color: "var(--app-text)",
     fontFamily: font,
   },
 
   specialty: {
     fontSize: 14,
-    color: "rgba(0,0,0,0.75)",
+    color: "var(--app-text-soft)",
     fontWeight: 400,
     fontFamily: font,
   },
 
   location: {
     fontSize: 12,
-    color: "#6b6f73",
+    color: "var(--app-muted)",
     fontWeight: 400,
     fontFamily: font,
   },
 
   username: {
     fontSize: 12,
-    color: "#6b6f73",
+    color: "var(--app-muted)",
     fontWeight: 400,
     fontFamily: font,
+  },
+
+  contactInfoButton: {
+    alignSelf: "flex-start",
+    marginTop: 2,
+    padding: 0,
+    border: "none",
+    background: "transparent",
+    color: "#0a66c2",
+    fontSize: 13,
+    fontWeight: 600,
+    fontFamily: font,
+    cursor: "pointer",
   },
 
   actionsRow: {
@@ -839,7 +1030,7 @@ const styles = {
     borderRadius: 999,
     border: "1px solid #0073b1",
     cursor: "pointer",
-    backgroundColor: "#fff",
+    backgroundColor: "var(--app-surface)",
   },
 
   messageText: {
@@ -867,7 +1058,7 @@ const styles = {
   removeModal: {
     width: "100%",
     maxWidth: 380,
-    backgroundColor: "#fff",
+    backgroundColor: "var(--app-surface)",
     borderRadius: 12,
     padding: 20,
     boxShadow: "0 16px 40px rgba(0,0,0,0.22)",
@@ -878,7 +1069,7 @@ const styles = {
     margin: 0,
     fontSize: 18,
     fontWeight: 700,
-    color: "#191919",
+    color: "var(--app-text)",
     fontFamily: font,
   },
 
@@ -886,7 +1077,7 @@ const styles = {
     marginTop: 10,
     marginBottom: 18,
     fontSize: 14,
-    color: "#555",
+    color: "var(--app-text-soft)",
     lineHeight: 1.5,
     fontFamily: font,
   },
@@ -899,8 +1090,8 @@ const styles = {
 
   removeCancelBtn: {
     border: "1px solid #999",
-    backgroundColor: "#fff",
-    color: "#555",
+    backgroundColor: "var(--app-surface)",
+    color: "var(--app-text-soft)",
     padding: "8px 14px",
     borderRadius: 18,
     cursor: "pointer",

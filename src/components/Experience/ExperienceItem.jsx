@@ -1,10 +1,21 @@
 export default function ExperienceItem({ experience, onEdit, onDelete }) {
-  const { title, companyName, startDate, endDate, isCurrent, description, location } = experience;
+  const {
+    title,
+    companyName,
+    startDate,
+    endDate,
+    isCurrent,
+    description,
+    location,
+  } = experience;
 
   const formatDate = (dateStr) => {
     if (!dateStr) return "-";
     const date = new Date(dateStr);
-    return date.toLocaleDateString("en-GB", { month: "short", year: "numeric" });
+    return date.toLocaleDateString("en-GB", {
+      month: "short",
+      year: "numeric",
+    });
   };
 
   return (
@@ -12,8 +23,12 @@ export default function ExperienceItem({ experience, onEdit, onDelete }) {
       <div style={styles.headerRow}>
         <p style={styles.title}>{title}</p>
         <div>
-          <button style={styles.editBtn} onClick={onEdit}>Edit</button>
-          <button style={styles.deleteBtn} onClick={onDelete}>Delete</button>
+          <button style={styles.editBtn} onClick={onEdit}>
+            Edit
+          </button>
+          <button style={styles.deleteBtn} onClick={onDelete}>
+            Delete
+          </button>
         </div>
       </div>
 

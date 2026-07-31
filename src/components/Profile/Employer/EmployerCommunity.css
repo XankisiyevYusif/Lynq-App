@@ -1,0 +1,17 @@
+.company-posts-section { width:100%; max-width:100%; }
+.company-posts-header { display:flex; align-items:center; justify-content:space-between; gap:18px; margin-bottom:12px; padding:20px; border:1px solid var(--app-border); border-radius:16px; background:var(--app-surface); box-shadow:var(--app-shadow); }
+.company-posts-header span { color:var(--app-accent); font-size:.68rem; font-weight:800; letter-spacing:.1em; text-transform:uppercase; }
+.company-posts-header h2 { margin:5px 0 3px; color:var(--app-text); font-size:1.25rem; }
+.company-posts-header p { margin:0; color:var(--app-muted); font-size:.78rem; }
+.company-posts-view-switch,.company-posts-sort>div { display:flex; gap:5px; padding:4px; border:1px solid var(--app-border); border-radius:11px; background:var(--app-surface-2); }
+.company-posts-view-switch button,.company-posts-sort button { min-height:34px; padding:0 12px; border:0; border-radius:8px; background:transparent; color:var(--app-muted); font:inherit; font-size:.72rem; font-weight:750; cursor:pointer; }
+.company-posts-view-switch button.is-active,.company-posts-sort button.is-active { background:var(--app-surface); box-shadow:0 2px 8px rgba(15,23,42,.07); color:var(--app-accent); }
+.company-posts-sort { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; padding:10px 14px; border:1px solid var(--app-border); border-radius:12px; background:var(--app-surface); }
+.company-posts-sort>span { color:var(--app-muted); font-size:.72rem; font-weight:700; }
+.company-posts-list { display:grid; gap:14px; }
+.company-context-post { position:relative; padding-left:4px; border-radius:15px; background:linear-gradient(90deg,var(--company-post-accent) 4px,transparent 4px); }
+.company-context-post.is-official { --company-post-accent:var(--app-accent); }
+.company-context-post.is-mention { --company-post-accent:#0891b2; background:linear-gradient(90deg,var(--company-post-accent) 4px,rgba(8,145,178,.025) 4px); }
+.company-context-label { display:inline-flex; margin:0 0 6px 12px; padding:4px 9px; border-radius:999px; background:color-mix(in srgb,var(--company-post-accent) 10%,var(--app-surface)); color:var(--company-post-accent); font-size:.66rem; font-weight:800; }
+.company-posts-state { padding:32px; border:1px dashed var(--app-border); border-radius:15px; background:var(--app-surface); color:var(--app-muted); text-align:center; }
+@media(max-width:620px){.company-posts-header{align-items:flex-start;flex-direction:column}.company-posts-view-switch{width:100%}.company-posts-view-switch button{flex:1}}

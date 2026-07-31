@@ -6,6 +6,8 @@ import * as signalR from "@microsoft/signalr";
 import Navbar from "../components/Layout/Navbar";
 import api, { API_ROOT } from "../services/api";
 import defaultAvatar from "../assets/default-avatar.png";
+import { resolveMediaUrl } from "../utils/mediaUrl";
+import "./NetworkPage.css";
 
 // API_ROOT is imported from api.js
 
@@ -30,12 +32,15 @@ export default function NetworkPage() {
   const [jobseekers, setJobseekers] = useState([]);
   const [employers, setEmployers] = useState([]);
   const [followedCompanies, setFollowedCompanies] = useState([]);
+  const [recommendedConnections, setRecommendedConnections] = useState([]);
+  const [recommendationsLoading, setRecommendationsLoading] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [followersLoading, setFollowersLoading] = useState(false);
   const [jobseekersLoading, setJobseekersLoading] = useState(false);
   const [employersLoading, setEmployersLoading] = useState(false);
-  const [followedCompaniesLoading, setFollowedCompaniesLoading] = useState(false);
+  const [followedCompaniesLoading, setFollowedCompaniesLoading] =
+    useState(false);
 
   const [removeTarget, setRemoveTarget] = useState(null);
   const [toast, setToast] = useState(null);
@@ -63,11 +68,7 @@ export default function NetworkPage() {
     return [];
   };
 
-  const getImageUrl = (path) => {
-    if (!path) return defaultAvatar;
-    if (path.startsWith("http://") || path.startsWith("https://")) return path;
-    return `${API_ROOT}/${path.replace(/^\/+/, "")}`;
-  };
+  const getImageUrl = (path) => resolveMediaUrl(path, defaultAvatar);
 
   const getUserId = (user) => {
     return user?.id || user?.Id || user?.userId || user?.UserId || null;
@@ -117,7 +118,9 @@ export default function NetworkPage() {
   };
 
   const getRequestId = (request) => {
-    return request?.id || request?.Id || request?.requestId || request?.RequestId;
+    return (
+      request?.id || request?.Id || request?.requestId || request?.RequestId
+    );
   };
 
   const getSender = (request) => {
@@ -162,14 +165,18 @@ export default function NetworkPage() {
 
     if (!requestId) return [request, ...list];
 
-    const exists = list.some((item) => Number(getRequestId(item)) === Number(requestId));
+    const exists = list.some(
+      (item) => Number(getRequestId(item)) === Number(requestId),
+    );
     if (exists) return list;
 
     return [request, ...list];
   };
 
   const removeRequestById = (list, requestId) => {
-    return list.filter((item) => Number(getRequestId(item)) !== Number(requestId));
+    return list.filter(
+      (item) => Number(getRequestId(item)) !== Number(requestId),
+    );
   };
 
   const parseUtcDate = (dateValue) => {
@@ -300,11 +307,53 @@ export default function NetworkPage() {
     }
   };
 
+  const fetchRecommendedConnections = async () => {
+    if (currentUserIsEmployer) return;
+    try {
+      setRecommendationsLoading(true);
+      const [recommendedResponse, fallbackResponse, receivedResponse, sentResponse, connectionsResponse] = await Promise.all([
+        api.get("/User/recommended", { params: { pageNumber: 1, pageSize: 12 } }).catch(() => null),
+        api.get("/User/jobseekers").catch(() => null),
+        api.get("/Connection/received").catch(() => null),
+        api.get("/Connection/sent").catch(() => null),
+        api.get("/Connection/my-connections").catch(() => null),
+      ]);
+      const received = getResponseArray(receivedResponse);
+      const sent = getResponseArray(sentResponse);
+      const connected = getResponseArray(connectionsResponse);
+      const isExcluded = (candidate) =>
+        sameUser(candidate, currentUser) ||
+        connected.some((item) => sameUser(item, candidate)) ||
+        sent.some((item) => sameUser(getReceiver(item), candidate)) ||
+        received.some((item) => sameUser(getSender(item), candidate));
+
+      const ranked = getResponseArray(recommendedResponse);
+      const fallback = getResponseArray(fallbackResponse);
+      const source = [...ranked, ...fallback].filter((candidate, index, list) =>
+        list.findIndex((item) => sameUser(item, candidate)) === index,
+      );
+      const list = source.filter((candidate) => {
+        const type = candidate?.userType || candidate?.UserType || "";
+        const status = candidate?.connectionStatus || candidate?.ConnectionStatus || "none";
+        const connected = candidate?.isConnected || candidate?.IsConnected;
+        return type !== "Employer" && !connected && status === "none" && !isExcluded(candidate);
+      });
+      setRecommendedConnections(list.slice(0, 6));
+    } catch (error) {
+      console.error("Fetch recommended connections failed:", error);
+      setRecommendedConnections([]);
+    } finally {
+      setRecommendationsLoading(false);
+    }
+  };
+
   const getConnectionStatusForUser = (user) => {
     if (sameUser(user, currentUser)) return "self";
     if (connections.some((c) => sameUser(c, user))) return "connected";
-    if (sentRequests.some((r) => sameUser(getReceiver(r), user))) return "pending_sent";
-    if (receivedRequests.some((r) => sameUser(getSender(r), user))) return "pending_received";
+    if (sentRequests.some((r) => sameUser(getReceiver(r), user)))
+      return "pending_sent";
+    if (receivedRequests.some((r) => sameUser(getSender(r), user)))
+      return "pending_received";
     return "none";
   };
 
@@ -315,6 +364,7 @@ export default function NetworkPage() {
     try {
       await api.post(`/Connection/send/${username}`);
       showToast("Connection request sent.", "success");
+      setRecommendedConnections((current) => removeUser(current, targetUser));
       fetchNetworkData();
     } catch (err) {
       console.error("Connect action failed:", err);
@@ -338,7 +388,9 @@ export default function NetworkPage() {
   };
 
   const handleAcceptRequestForUser = async (targetUser) => {
-    const req = receivedRequests.find((r) => sameUser(getSender(r), targetUser));
+    const req = receivedRequests.find((r) =>
+      sameUser(getSender(r), targetUser),
+    );
     const requestId = getRequestId(req);
     if (!requestId) return;
 
@@ -386,11 +438,12 @@ export default function NetworkPage() {
       setActiveTab("followers");
     } else {
       fetchNetworkData();
-      fetchFollowedCompanies();
       setActiveTab("received");
     }
-    fetchJobseekers();
-    fetchEmployers();
+  }, [currentUserIsEmployer]);
+
+  useEffect(() => {
+    fetchRecommendedConnections();
   }, [currentUserIsEmployer]);
 
   useEffect(() => {
@@ -422,7 +475,7 @@ export default function NetworkPage() {
 
     connection.on("ConnectionRequestAcceptedByMe", (request) => {
       setReceivedRequests((prev) =>
-        removeRequestById(prev, getRequestId(request))
+        removeRequestById(prev, getRequestId(request)),
       );
       setConnections((prev) => addUniqueUser(prev, getSender(request)));
     });
@@ -433,13 +486,13 @@ export default function NetworkPage() {
 
     connection.on("ConnectionRequestRejectedByMe", (request) => {
       setReceivedRequests((prev) =>
-        removeRequestById(prev, getRequestId(request))
+        removeRequestById(prev, getRequestId(request)),
       );
     });
 
     connection.on("ReceiveConnectionCancelled", (request) => {
       setReceivedRequests((prev) =>
-        removeRequestById(prev, getRequestId(request))
+        removeRequestById(prev, getRequestId(request)),
       );
     });
 
@@ -541,7 +594,11 @@ export default function NetworkPage() {
     const username = getUsername(user);
 
     return (
-      <div key={getUserId(user) || username || Math.random()} style={styles.personRow}>
+      <div
+        key={getUserId(user) || username || Math.random()}
+        className="network-person-row"
+        style={styles.personRow}
+      >
         <img
           src={getImageUrl(getProfileImage(user))}
           alt=""
@@ -583,16 +640,22 @@ export default function NetworkPage() {
         meta: formatTimeAgo(getDateValue(request)),
         actions: (
           <>
-            <button style={styles.acceptButton} onClick={() => handleAccept(request)}>
+            <button
+              style={styles.acceptButton}
+              onClick={() => handleAccept(request)}
+            >
               Accept
             </button>
 
-            <button style={styles.rejectButton} onClick={() => handleReject(request)}>
+            <button
+              style={styles.rejectButton}
+              onClick={() => handleReject(request)}
+            >
               Reject
             </button>
           </>
         ),
-      })
+      }),
     );
   };
 
@@ -608,11 +671,14 @@ export default function NetworkPage() {
         user: getReceiver(request),
         meta: formatTimeAgo(getDateValue(request)),
         actions: (
-          <button style={styles.cancelButton} onClick={() => handleCancel(request)}>
+          <button
+            style={styles.cancelButton}
+            onClick={() => handleCancel(request)}
+          >
             Cancel
           </button>
         ),
-      })
+      }),
     );
   };
 
@@ -635,7 +701,7 @@ export default function NetworkPage() {
             Connected
           </button>
         ),
-      })
+      }),
     );
   };
 
@@ -665,20 +731,11 @@ export default function NetworkPage() {
             count: connections.length,
           },
         ]),
-    {
-      key: "jobseekers",
-      label: "Seek Users",
-      count: jobseekers.length,
-    },
-    {
-      key: "employers",
-      label: "Companies",
-      count: employers.length,
-    },
   ];
 
   const renderJobseekers = () => {
-    if (jobseekersLoading) return <p style={styles.emptyText}>Loading users...</p>;
+    if (jobseekersLoading)
+      return <p style={styles.emptyText}>Loading users...</p>;
 
     if (!jobseekers.length) {
       return <p style={styles.emptyText}>No users found.</p>;
@@ -698,7 +755,11 @@ export default function NetworkPage() {
       } else {
         const status = getConnectionStatusForUser(user);
         if (status === "self") {
-          actions = <span style={{ color: "#777", fontSize: 13, fontWeight: 600 }}>You</span>;
+          actions = (
+            <span style={{ color: "var(--app-muted)", fontSize: 13, fontWeight: 600 }}>
+              You
+            </span>
+          );
         } else if (status === "connected") {
           actions = (
             <button
@@ -747,7 +808,8 @@ export default function NetworkPage() {
   };
 
   const renderEmployers = () => {
-    if (employersLoading) return <p style={styles.emptyText}>Loading companies...</p>;
+    if (employersLoading)
+      return <p style={styles.emptyText}>Loading companies...</p>;
 
     if (!employers.length) {
       return <p style={styles.emptyText}>No companies found.</p>;
@@ -766,7 +828,7 @@ export default function NetworkPage() {
         );
       } else {
         const isFollowing = followedCompanies.some(
-          (c) => getUsername(c) === getUsername(company)
+          (c) => getUsername(c) === getUsername(company),
         );
 
         if (isFollowing) {
@@ -798,20 +860,60 @@ export default function NetworkPage() {
     });
   };
 
+  const renderRecommendedConnections = () => {
+    if (currentUserIsEmployer) return null;
+
+    return (
+      <section className="network-recommendations-card">
+        <div className="network-recommendations-heading">
+          <div><span>Grow your network</span><h2>People you may know</h2></div>
+          <small>Based on skills, education, experience and location</small>
+        </div>
+
+        {recommendationsLoading ? (
+          <div className="network-recommendation-loading">Loading recommendations...</div>
+        ) : recommendedConnections.length ? (
+          <div className="network-recommendation-grid">
+            {recommendedConnections.map((candidate) => {
+              const username = getUsername(candidate);
+              const reason = candidate?.recommendationReason || candidate?.RecommendationReason || "Recommended for you";
+              return (
+                <article className="network-recommendation-card" key={getUserId(candidate) || username}>
+                  <button className="network-recommendation-profile" type="button" onClick={() => username && navigate(`/profile/${username}`)}>
+                    <img src={getImageUrl(getProfileImage(candidate))} alt="" onError={(event) => { event.currentTarget.src = defaultAvatar; }} />
+                    <strong>{getFullName(candidate)}</strong>
+                    <span>{getHeadline(candidate)}</span>
+                    <small>{reason}</small>
+                  </button>
+                  <button className="network-recommendation-connect" type="button" onClick={() => handleConnectUser(candidate)}>Connect</button>
+                </article>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="network-recommendation-empty">Complete your skills, experience and location to get better connection suggestions.</div>
+        )}
+      </section>
+    );
+  };
+
   return (
     <>
       <Navbar />
 
-      <div style={styles.page}>
-        <div style={styles.networkLayout}>
-          <aside style={styles.sidebar}>
-            <h2 style={styles.sidebarTitle}>Network</h2>
+      <div className="network-page" style={styles.page}>
+        <div className="network-layout" style={styles.networkLayout}>
+          <aside className="network-sidebar" style={styles.sidebar}>
+            <h2 style={styles.sidebarTitle}>
+              {currentUserIsEmployer ? "Talent" : "Network"}
+            </h2>
 
             <div style={styles.tabs}>
               {tabs.map((tab) => (
                 <button
                   key={tab.key}
                   type="button"
+                  className={`network-tab ${activeTab === tab.key ? "is-active" : ""}`}
                   style={{
                     ...styles.tabButton,
                     ...(activeTab === tab.key ? styles.activeTab : {}),
@@ -821,46 +923,51 @@ export default function NetworkPage() {
                   <span>{tab.label}</span>
 
                   {tab.count > 0 && (
-                    <span style={styles.tabCount}>{tab.count}</span>
+                    <span
+                      className={`network-tab-count ${
+                        tab.key === "connections" ? "is-connections" : ""
+                      }`}
+                      style={styles.tabCount}
+                    >
+                      {tab.count}
+                    </span>
                   )}
                 </button>
               ))}
             </div>
           </aside>
 
-          <main style={styles.main}>
-            <div style={styles.headerCard}>
+          <main className="network-main" style={styles.main}>
+            <div className="network-header-card" style={styles.headerCard}>
+              <span className="network-eyebrow">
+                {currentUserIsEmployer
+                  ? "Company talent workspace"
+                  : "Manage your network"}
+              </span>
               <h2 style={styles.title}>
                 {activeTab === "received" && "Received requests"}
                 {activeTab === "sent" && "Sent requests"}
                 {activeTab === "connections" && "Connections"}
                 {activeTab === "followers" && "Followers"}
-                {activeTab === "jobseekers" && "Seek Users"}
-                {activeTab === "employers" && "Companies"}
               </h2>
 
               <p style={styles.subtitle}>
                 {activeTab === "received" &&
                   "People who want to connect with you."}
-                {activeTab === "sent" &&
-                  "Connection requests you have sent."}
+                {activeTab === "sent" && "Connection requests you have sent."}
                 {activeTab === "connections" &&
                   "People you are connected with."}
                 {activeTab === "followers" &&
                   "People who follow your company page."}
-                {activeTab === "jobseekers" &&
-                  "Browse all professional users on Lynq."}
-                {activeTab === "employers" &&
-                  "Browse all registered company profiles."}
               </p>
             </div>
 
-            <div style={styles.contentCard}>
+            <div className="network-content-card" style={styles.contentCard}>
               {activeTab === "received" && renderReceived()}
               {activeTab === "sent" && renderSent()}
               {activeTab === "connections" && renderConnections()}
-              {activeTab === "followers" && (
-                followersLoading ? (
+              {activeTab === "followers" &&
+                (followersLoading ? (
                   <p style={styles.emptyText}>Loading followers...</p>
                 ) : !followers.length ? (
                   <p style={styles.emptyText}>No followers yet.</p>
@@ -873,29 +980,31 @@ export default function NetworkPage() {
                         fullName: follower.fullName || follower.FullName,
                         currentPosition:
                           follower.currentPosition || follower.CurrentPosition,
-                        profileImage: follower.profileImage || follower.ProfileImage,
+                        profileImage:
+                          follower.profileImage || follower.ProfileImage,
                         location: follower.location || follower.Location,
                       },
-                      meta: formatTimeAgo(follower.followedAt || follower.FollowedAt),
+                      meta: formatTimeAgo(
+                        follower.followedAt || follower.FollowedAt,
+                      ),
                       actions: (
                         <button
                           style={styles.viewButton}
                           onClick={() =>
                             navigate(
-                              `/profile/${follower.username || follower.Username}`
+                              `/profile/${follower.username || follower.Username}`,
                             )
                           }
                         >
                           View
                         </button>
                       ),
-                    })
+                    }),
                   )
-                )
-              )}
-              {activeTab === "jobseekers" && renderJobseekers()}
-              {activeTab === "employers" && renderEmployers()}
+                ))}
             </div>
+
+            {renderRecommendedConnections()}
           </main>
         </div>
       </div>
@@ -934,7 +1043,9 @@ export default function NetworkPage() {
         <div
           style={{
             ...styles.toast,
-            ...(toast.type === "error" ? styles.toastError : styles.toastSuccess),
+            ...(toast.type === "error"
+              ? styles.toastError
+              : styles.toastSuccess),
           }}
         >
           {toast.message}
@@ -947,7 +1058,7 @@ export default function NetworkPage() {
 const styles = {
   page: {
     minHeight: "100vh",
-    backgroundColor: "#f3f2ef",
+    backgroundColor: "var(--app-bg)",
     padding: "24px 0 60px",
   },
 
@@ -967,8 +1078,8 @@ const styles = {
   },
 
   sidebar: {
-    backgroundColor: "#fff",
-    border: "1px solid #ddd",
+    backgroundColor: "var(--app-surface)",
+    border: "1px solid var(--app-border)",
     borderRadius: 12,
     padding: 16,
     height: "fit-content",
@@ -980,7 +1091,7 @@ const styles = {
     margin: "0 0 16px",
     fontSize: 24,
     fontWeight: 700,
-    color: "#111",
+    color: "var(--app-text)",
   },
 
   tabs: {
@@ -998,15 +1109,15 @@ const styles = {
     textAlign: "left",
     fontSize: 14,
     fontWeight: 700,
-    color: "#222",
+    color: "var(--app-text-soft)",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
   },
 
   activeTab: {
-    backgroundColor: "#eef3f8",
-    color: "#0a66c2",
+    backgroundColor: "var(--app-accent-soft)",
+    color: "var(--app-accent)",
   },
 
   tabCount: {
@@ -1027,8 +1138,8 @@ const styles = {
   },
 
   headerCard: {
-    backgroundColor: "#fff",
-    border: "1px solid #ddd",
+    backgroundColor: "var(--app-surface)",
+    border: "1px solid var(--app-border)",
     borderRadius: 12,
     padding: 20,
     marginBottom: 12,
@@ -1038,18 +1149,18 @@ const styles = {
     margin: 0,
     fontSize: 24,
     fontWeight: 700,
-    color: "#111",
+    color: "var(--app-text)",
   },
 
   subtitle: {
     margin: "6px 0 0",
     fontSize: 14,
-    color: "#666",
+    color: "var(--app-muted)",
   },
 
   contentCard: {
-    backgroundColor: "#fff",
-    border: "1px solid #ddd",
+    backgroundColor: "var(--app-surface)",
+    border: "1px solid var(--app-border)",
     borderRadius: 12,
     overflow: "hidden",
   },
@@ -1059,7 +1170,7 @@ const styles = {
     alignItems: "center",
     gap: 12,
     padding: "14px 18px",
-    borderBottom: "1px solid #eee",
+    borderBottom: "1px solid var(--app-border)",
   },
 
   avatar: {
@@ -1067,7 +1178,7 @@ const styles = {
     height: 58,
     borderRadius: "50%",
     objectFit: "cover",
-    backgroundColor: "#eef3f8",
+    backgroundColor: "var(--app-surface-2)",
   },
 
   personInfo: {
@@ -1080,19 +1191,19 @@ const styles = {
     margin: "0 0 4px",
     fontSize: 16,
     fontWeight: 700,
-    color: "#111",
+    color: "var(--app-text)",
   },
 
   personHeadline: {
     margin: "0 0 3px",
     fontSize: 14,
-    color: "#444",
+    color: "var(--app-text-soft)",
   },
 
   personMeta: {
     margin: 0,
     fontSize: 13,
-    color: "#777",
+    color: "var(--app-muted)",
   },
 
   rowActions: {
@@ -1113,8 +1224,8 @@ const styles = {
 
   rejectButton: {
     border: "1px solid #999",
-    backgroundColor: "#fff",
-    color: "#444",
+    backgroundColor: "var(--app-surface)",
+    color: "var(--app-text-soft)",
     borderRadius: 999,
     padding: "7px 15px",
     fontWeight: 700,
@@ -1123,7 +1234,7 @@ const styles = {
 
   cancelButton: {
     border: "1px solid #b24020",
-    backgroundColor: "#fff",
+    backgroundColor: "var(--app-surface)",
     color: "#b24020",
     borderRadius: 999,
     padding: "7px 15px",
@@ -1143,7 +1254,7 @@ const styles = {
 
   viewButton: {
     border: "1px solid #0a66c2",
-    backgroundColor: "#fff",
+    backgroundColor: "var(--app-surface)",
     color: "#0a66c2",
     borderRadius: 999,
     padding: "7px 16px",
@@ -1153,7 +1264,7 @@ const styles = {
 
   emptyText: {
     padding: 18,
-    color: "#666",
+    color: "var(--app-muted)",
     fontSize: 14,
   },
 
@@ -1171,7 +1282,7 @@ const styles = {
   modal: {
     width: "100%",
     maxWidth: 400,
-    backgroundColor: "#fff",
+    backgroundColor: "var(--app-surface)",
     borderRadius: 12,
     padding: 22,
     boxShadow: "0 16px 40px rgba(0,0,0,0.22)",
@@ -1181,13 +1292,13 @@ const styles = {
     margin: "0 0 10px",
     fontSize: 20,
     fontWeight: 700,
-    color: "#111",
+    color: "var(--app-text)",
   },
 
   modalText: {
     margin: "0 0 20px",
     fontSize: 14,
-    color: "#555",
+    color: "var(--app-muted)",
     lineHeight: 1.5,
   },
 
@@ -1198,9 +1309,9 @@ const styles = {
   },
 
   modalCancelButton: {
-    border: "1px solid #ccc",
-    backgroundColor: "#fff",
-    color: "#333",
+    border: "1px solid var(--app-border)",
+    backgroundColor: "var(--app-surface)",
+    color: "var(--app-text-soft)",
     borderRadius: 999,
     padding: "8px 16px",
     fontWeight: 700,

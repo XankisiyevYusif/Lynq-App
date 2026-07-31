@@ -37,7 +37,7 @@ const styles = {
     zIndex: 10050,
   },
   modal: {
-    background: "#fff",
+    background: "var(--app-surface)",
     padding: 20,
     borderRadius: 12,
     width: "100%",
@@ -55,8 +55,8 @@ const styles = {
   cancelBtn: {
     padding: "8px 14px",
     borderRadius: 8,
-    border: "1px solid #e5e7eb",
-    background: "#fff",
+    border: "1px solid var(--app-border)",
+    background: "var(--app-surface)",
     cursor: "pointer",
   },
   deleteBtn: {

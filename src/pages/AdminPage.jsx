@@ -3,8 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 import api from "../services/api";
 import defaultAvatar from "../assets/default-avatar.png";
-
-const API_ROOT = (api.defaults.baseURL || "").replace(/\/api\/?$/, "");
+import { resolveMediaUrl } from "../utils/mediaUrl";
 
 const AdminPage = () => {
   const navigate = useNavigate();
@@ -39,22 +38,7 @@ const AdminPage = () => {
     return obj[camel] ?? obj[pascal];
   };
 
-  const getImageUrl = (path) => {
-    if (!path) return defaultAvatar;
-
-    const cleanPath = String(path).trim();
-    if (!cleanPath) return defaultAvatar;
-
-    if (
-      cleanPath.startsWith("http://") ||
-      cleanPath.startsWith("https://") ||
-      cleanPath.startsWith("blob:")
-    ) {
-      return cleanPath;
-    }
-
-    return `${API_ROOT}/${cleanPath.replace(/^\/+/, "")}`;
-  };
+  const getImageUrl = (path) => resolveMediaUrl(path, defaultAvatar);
 
   const getUserImageUrl = (user) => {
     return getImageUrl(
@@ -62,7 +46,7 @@ const AdminPage = () => {
         value(user, "companyLogo", "CompanyLogo") ||
         value(user, "logoUrl", "LogoUrl") ||
         value(user, "userPhoto", "UserPhoto") ||
-        value(user, "photoUrl", "PhotoUrl")
+        value(user, "photoUrl", "PhotoUrl"),
     );
   };
 
@@ -74,7 +58,7 @@ const AdminPage = () => {
         value(job, "companyProfileImage", "CompanyProfileImage") ||
         value(job, "logoUrl", "LogoUrl") ||
         value(job, "userPhoto", "UserPhoto") ||
-        value(job, "authorPhoto", "AuthorPhoto")
+        value(job, "authorPhoto", "AuthorPhoto"),
     );
   };
 
@@ -122,7 +106,7 @@ const AdminPage = () => {
       alert(
         `Admin data could not be loaded. Status: ${
           err.response?.status || "unknown"
-        }`
+        }`,
       );
     } finally {
       setLoading(false);
@@ -188,7 +172,7 @@ const AdminPage = () => {
             blockReason: reason || "Blocked by admin",
             BlockReason: reason || "Blocked by admin",
           }
-        : prev
+        : prev,
     );
 
     await loadPosts();
@@ -208,7 +192,7 @@ const AdminPage = () => {
             blockReason: null,
             BlockReason: null,
           }
-        : prev
+        : prev,
     );
 
     await loadPosts();
@@ -233,7 +217,7 @@ const AdminPage = () => {
             blockReason: reason || "Blocked by admin",
             BlockReason: reason || "Blocked by admin",
           }
-        : prev
+        : prev,
     );
 
     await loadJobs();
@@ -252,7 +236,7 @@ const AdminPage = () => {
             blockReason: null,
             BlockReason: null,
           }
-        : prev
+        : prev,
     );
 
     await loadJobs();
@@ -293,11 +277,19 @@ const AdminPage = () => {
           </div>
 
           <div style={styles.topbarActions}>
-            <button type="button" style={styles.refreshButton} onClick={loadAll}>
+            <button
+              type="button"
+              style={styles.refreshButton}
+              onClick={loadAll}
+            >
               Refresh
             </button>
 
-            <button type="button" style={styles.logoutButton} onClick={handleLogout}>
+            <button
+              type="button"
+              style={styles.logoutButton}
+              onClick={handleLogout}
+            >
               Logout
             </button>
           </div>
@@ -329,12 +321,12 @@ const AdminPage = () => {
                 {tab === "dashboard"
                   ? "Dashboard"
                   : tab === "users"
-                  ? "Users"
-                  : tab === "posts"
-                  ? "Posts"
-                  : tab === "jobs"
-                  ? "Jobs"
-                  : "Reports"}
+                    ? "Users"
+                    : tab === "posts"
+                      ? "Posts"
+                      : tab === "jobs"
+                        ? "Jobs"
+                        : "Reports"}
               </button>
             ))}
           </div>
@@ -437,14 +429,18 @@ const AdminPage = () => {
                             />
 
                             <div>
-                              <strong>{value(u, "fullName", "FullName") || "-"}</strong>
+                              <strong>
+                                {value(u, "fullName", "FullName") || "-"}
+                              </strong>
                               <div style={styles.muted}>@{username}</div>
                             </div>
                           </div>
                         </td>
 
                         <td style={styles.td}>{value(u, "email", "Email")}</td>
-                        <td style={styles.td}>{value(u, "userType", "UserType")}</td>
+                        <td style={styles.td}>
+                          {value(u, "userType", "UserType")}
+                        </td>
                         <td style={styles.td}>
                           {formatDate(value(u, "createdAt", "CreatedAt"))}
                         </td>
@@ -517,7 +513,9 @@ const AdminPage = () => {
                     return (
                       <tr key={id}>
                         <td style={styles.td}>
-                          <strong>{value(p, "authorName", "AuthorName") || "-"}</strong>
+                          <strong>
+                            {value(p, "authorName", "AuthorName") || "-"}
+                          </strong>
                           <div style={styles.muted}>
                             @{value(p, "authorUsername", "AuthorUsername")}
                           </div>
@@ -599,7 +597,9 @@ const AdminPage = () => {
                     return (
                       <tr key={id}>
                         <td style={styles.td}>
-                          <strong>{value(j, "companyName", "CompanyName") || "-"}</strong>
+                          <strong>
+                            {value(j, "companyName", "CompanyName") || "-"}
+                          </strong>
                           <div style={styles.muted}>
                             @{value(j, "companyUsername", "CompanyUsername")}
                           </div>
@@ -677,7 +677,11 @@ const AdminPage = () => {
                     const id = value(r, "id", "Id");
                     const postId = value(r, "postId", "PostId");
                     const isReviewed = value(r, "isReviewed", "IsReviewed");
-                    const postIsBlocked = value(r, "postIsBlocked", "PostIsBlocked");
+                    const postIsBlocked = value(
+                      r,
+                      "postIsBlocked",
+                      "PostIsBlocked",
+                    );
 
                     return (
                       <tr key={id}>
@@ -695,14 +699,20 @@ const AdminPage = () => {
                             {value(r, "postOwnerName", "PostOwnerName") || "-"}
                           </strong>
                           <div style={styles.muted}>
-                            @{value(r, "postOwnerUsername", "PostOwnerUsername")}
+                            @
+                            {value(r, "postOwnerUsername", "PostOwnerUsername")}
                           </div>
                         </td>
 
-                        <td style={styles.td}>{value(r, "reason", "Reason")}</td>
+                        <td style={styles.td}>
+                          {value(r, "reason", "Reason")}
+                        </td>
 
                         <td style={styles.td}>
-                          {shortText(value(r, "postContent", "PostContent"), 80)}
+                          {shortText(
+                            value(r, "postContent", "PostContent"),
+                            80,
+                          )}
                         </td>
 
                         <td style={styles.td}>
@@ -722,8 +732,8 @@ const AdminPage = () => {
                                 `/profile/${value(
                                   r,
                                   "postOwnerUsername",
-                                  "PostOwnerUsername"
-                                )}`
+                                  "PostOwnerUsername",
+                                )}`,
                               )
                             }
                           >
@@ -859,7 +869,9 @@ const PostPreviewModal = ({
             type="button"
             style={styles.blueButton}
             onClick={() =>
-              navigate(`/profile/${value(post, "authorUsername", "AuthorUsername")}`)
+              navigate(
+                `/profile/${value(post, "authorUsername", "AuthorUsername")}`,
+              )
             }
           >
             View Author Profile
@@ -910,11 +922,7 @@ const JobPreviewModal = ({
         <h3 style={styles.modalTitle}>Job Post Preview</h3>
 
         <div style={styles.jobHeader}>
-          <img
-            src={getJobLogoUrl(job)}
-            alt=""
-            style={styles.companyLogo}
-          />
+          <img src={getJobLogoUrl(job)} alt="" style={styles.companyLogo} />
 
           <div>
             <h2 style={styles.jobTitle}>{value(job, "title", "Title")}</h2>
@@ -928,7 +936,10 @@ const JobPreviewModal = ({
         </div>
 
         <div style={styles.jobInfoGrid}>
-          <InfoItem label="Location" value={value(job, "location", "Location")} />
+          <InfoItem
+            label="Location"
+            value={value(job, "location", "Location")}
+          />
           <InfoItem
             label="Workplace"
             value={value(job, "workplaceType", "WorkplaceType")}
@@ -941,7 +952,9 @@ const JobPreviewModal = ({
             label="Created"
             value={
               value(job, "createdAt", "CreatedAt")
-                ? new Date(value(job, "createdAt", "CreatedAt")).toLocaleDateString()
+                ? new Date(
+                    value(job, "createdAt", "CreatedAt"),
+                  ).toLocaleDateString()
                 : "-"
             }
           />
@@ -949,7 +962,9 @@ const JobPreviewModal = ({
             label="Expires"
             value={
               value(job, "expiresAt", "ExpiresAt")
-                ? new Date(value(job, "expiresAt", "ExpiresAt")).toLocaleDateString()
+                ? new Date(
+                    value(job, "expiresAt", "ExpiresAt"),
+                  ).toLocaleDateString()
                 : "-"
             }
           />
@@ -959,8 +974,8 @@ const JobPreviewModal = ({
               isBlocked
                 ? "Blocked"
                 : value(job, "isActive", "IsActive")
-                ? "Active"
-                : "Closed"
+                  ? "Active"
+                  : "Closed"
             }
           />
         </div>
@@ -975,7 +990,9 @@ const JobPreviewModal = ({
         {value(job, "applyUrl", "ApplyUrl") && (
           <div style={styles.applyBox}>
             <strong>Apply URL:</strong>
-            <div style={styles.urlText}>{value(job, "applyUrl", "ApplyUrl")}</div>
+            <div style={styles.urlText}>
+              {value(job, "applyUrl", "ApplyUrl")}
+            </div>
           </div>
         )}
 
@@ -984,7 +1001,9 @@ const JobPreviewModal = ({
             type="button"
             style={styles.blueButton}
             onClick={() =>
-              navigate(`/profile/${value(job, "companyUsername", "CompanyUsername")}`)
+              navigate(
+                `/profile/${value(job, "companyUsername", "CompanyUsername")}`,
+              )
             }
           >
             View Company Profile
@@ -1025,7 +1044,7 @@ const InfoItem = ({ label, value }) => {
 const styles = {
   adminTopbar: {
     height: "64px",
-    backgroundColor: "#111827",
+    backgroundColor: "var(--app-text)",
     color: "#fff",
     borderBottom: "1px solid #1f2937",
     position: "sticky",
@@ -1063,7 +1082,7 @@ const styles = {
 
   page: {
     minHeight: "100vh",
-    backgroundColor: "#f3f2ef",
+    backgroundColor: "var(--app-bg)",
     padding: "24px 0 50px",
   },
 
@@ -1074,8 +1093,8 @@ const styles = {
   },
 
   header: {
-    backgroundColor: "#fff",
-    border: "1px solid #ddd",
+    backgroundColor: "var(--app-surface)",
+    border: "1px solid var(--app-border)",
     borderRadius: "12px",
     padding: "20px",
     marginBottom: "14px",
@@ -1084,12 +1103,12 @@ const styles = {
   title: {
     margin: 0,
     fontSize: "28px",
-    color: "#191919",
+    color: "var(--app-text)",
   },
 
   subtitle: {
     margin: "6px 0 0",
-    color: "#666",
+    color: "var(--app-muted)",
     fontSize: "14px",
   },
 
@@ -1114,8 +1133,8 @@ const styles = {
   },
 
   tabs: {
-    backgroundColor: "#fff",
-    border: "1px solid #ddd",
+    backgroundColor: "var(--app-surface)",
+    border: "1px solid var(--app-border)",
     borderRadius: "12px",
     padding: "10px",
     marginBottom: "14px",
@@ -1126,7 +1145,7 @@ const styles = {
   tabButton: {
     border: "none",
     backgroundColor: "transparent",
-    color: "#555",
+    color: "var(--app-text-soft)",
     borderRadius: "999px",
     padding: "9px 16px",
     fontWeight: 700,
@@ -1146,28 +1165,28 @@ const styles = {
   },
 
   statCard: {
-    backgroundColor: "#fff",
-    border: "1px solid #ddd",
+    backgroundColor: "var(--app-surface)",
+    border: "1px solid var(--app-border)",
     borderRadius: "12px",
     padding: "18px",
   },
 
   statTitle: {
-    color: "#666",
+    color: "var(--app-muted)",
     fontSize: "13px",
     fontWeight: 700,
     marginBottom: "10px",
   },
 
   statValue: {
-    color: "#191919",
+    color: "var(--app-text)",
     fontSize: "28px",
     fontWeight: 800,
   },
 
   card: {
-    backgroundColor: "#fff",
-    border: "1px solid #ddd",
+    backgroundColor: "var(--app-surface)",
+    border: "1px solid var(--app-border)",
     borderRadius: "12px",
     padding: "18px",
     overflowX: "auto",
@@ -1176,7 +1195,7 @@ const styles = {
   sectionTitle: {
     margin: "0 0 14px",
     fontSize: "20px",
-    color: "#191919",
+    color: "var(--app-text)",
   },
 
   table: {
@@ -1187,9 +1206,9 @@ const styles = {
 
   th: {
     textAlign: "left",
-    borderBottom: "1px solid #e5e5e5",
+    borderBottom: "1px solid var(--app-border)",
     padding: "10px",
-    color: "#555",
+    color: "var(--app-text-soft)",
     fontSize: "13px",
     whiteSpace: "nowrap",
   },
@@ -1198,7 +1217,7 @@ const styles = {
     borderBottom: "1px solid #f0f0f0",
     padding: "10px",
     verticalAlign: "top",
-    color: "#222",
+    color: "var(--app-text)",
   },
 
   userCell: {
@@ -1212,11 +1231,11 @@ const styles = {
     height: "36px",
     borderRadius: "50%",
     objectFit: "cover",
-    border: "1px solid #e0e0e0",
+    border: "1px solid var(--app-border)",
   },
 
   muted: {
-    color: "#777",
+    color: "var(--app-muted)",
     fontSize: "12px",
     marginTop: "3px",
   },
@@ -1273,7 +1292,7 @@ const styles = {
   },
 
   empty: {
-    color: "#777",
+    color: "var(--app-muted)",
     fontSize: "14px",
   },
 
@@ -1292,7 +1311,7 @@ const styles = {
   postModal: {
     width: "620px",
     maxWidth: "calc(100% - 32px)",
-    backgroundColor: "#fff",
+    backgroundColor: "var(--app-surface)",
     borderRadius: "14px",
     padding: "22px",
     position: "relative",
@@ -1303,7 +1322,7 @@ const styles = {
   jobModal: {
     width: "760px",
     maxWidth: "calc(100% - 32px)",
-    backgroundColor: "#fff",
+    backgroundColor: "var(--app-surface)",
     borderRadius: "14px",
     padding: "24px",
     position: "relative",
@@ -1319,13 +1338,13 @@ const styles = {
     backgroundColor: "transparent",
     fontSize: "26px",
     cursor: "pointer",
-    color: "#555",
+    color: "var(--app-text-soft)",
   },
 
   modalTitle: {
     margin: "0 0 16px",
     fontSize: "20px",
-    color: "#191919",
+    color: "var(--app-text)",
   },
 
   modalAuthor: {
@@ -1333,13 +1352,13 @@ const styles = {
     flexDirection: "column",
     gap: "3px",
     marginBottom: "14px",
-    color: "#333",
+    color: "var(--app-text)",
   },
 
   modalContentText: {
     fontSize: "15px",
     lineHeight: 1.5,
-    color: "#222",
+    color: "var(--app-text)",
     whiteSpace: "pre-wrap",
   },
 
@@ -1348,9 +1367,9 @@ const styles = {
     maxHeight: "420px",
     objectFit: "contain",
     borderRadius: "12px",
-    border: "1px solid #e5e5e5",
+    border: "1px solid var(--app-border)",
     marginTop: "12px",
-    backgroundColor: "#f8f8f8",
+    backgroundColor: "var(--app-surface-2)",
   },
 
   modalActions: {
@@ -1372,7 +1391,7 @@ const styles = {
     height: "64px",
     borderRadius: "12px",
     objectFit: "cover",
-    border: "1px solid #e0e0e0",
+    border: "1px solid var(--app-border)",
   },
 
   jobTitle: {
@@ -1385,7 +1404,7 @@ const styles = {
     marginTop: "5px",
     fontSize: "15px",
     fontWeight: 700,
-    color: "#222",
+    color: "var(--app-text)",
   },
 
   jobInfoGrid: {
@@ -1396,39 +1415,39 @@ const styles = {
   },
 
   infoItem: {
-    backgroundColor: "#f8fafc",
-    border: "1px solid #e5e7eb",
+    backgroundColor: "var(--app-surface-2)",
+    border: "1px solid var(--app-border)",
     borderRadius: "10px",
     padding: "10px",
   },
 
   infoLabel: {
     fontSize: "12px",
-    color: "#64748b",
+    color: "var(--app-muted)",
     fontWeight: 700,
     marginBottom: "5px",
   },
 
   infoValue: {
     fontSize: "14px",
-    color: "#111827",
+    color: "var(--app-text)",
     fontWeight: 600,
   },
 
   jobDescriptionBox: {
-    borderTop: "1px solid #e5e7eb",
+    borderTop: "1px solid var(--app-border)",
     paddingTop: "14px",
   },
 
   smallTitle: {
     margin: "0 0 8px",
     fontSize: "16px",
-    color: "#111827",
+    color: "var(--app-text)",
   },
 
   applyBox: {
-    backgroundColor: "#f8fafc",
-    border: "1px solid #e5e7eb",
+    backgroundColor: "var(--app-surface-2)",
+    border: "1px solid var(--app-border)",
     borderRadius: "10px",
     padding: "12px",
     marginTop: "14px",

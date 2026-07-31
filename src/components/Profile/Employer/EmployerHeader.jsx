@@ -1,10 +1,9 @@
-import React, { useState } from "react";
-import { API_ROOT } from "../../../services/api";
+import React, { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import defaultAvatar from "../../../assets/default-avatar.png";
-import backgroundImage from "../../../assets/backgroundImage.png";
-import pencil from "../../../assets/pencil.png";
-
-const API_BASE_URL = API_ROOT;
+import { resolveMediaUrl } from "../../../utils/mediaUrl";
+import ProfileIcon from "../ProfileIcon";
+import { ReportProfileModal } from "../ProfileSafetyModals";
 
 export default function EmployerHeader({
   user,
@@ -13,6 +12,7 @@ export default function EmployerHeader({
   onEdit,
   followButton,
   followerCount = 0,
+  showToast,
 
   imageMenu,
   menuRef,
@@ -23,15 +23,10 @@ export default function EmployerHeader({
   onDeleteProfileImage,
   onDeleteBackgroundImage,
 }) {
-  const [editHover, setEditHover] = useState(false);
-  const [logoutHover, setLogoutHover] = useState(false);
-
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('accessToken');
-    window.location.href = "/";
-  };
+  const navigate = useNavigate();
+  const [companyMenuOpen, setCompanyMenuOpen] = useState(false);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const companyMenuRef = useRef(null);
 
   const basic = user?.basicInfo || {};
   const company = user?.companyInfo || {};
@@ -41,22 +36,47 @@ export default function EmployerHeader({
   const industry = company.industry || "";
   const location = company.location || basic.location || "";
   const tagline = company.tagline || "";
+  const getImageUrl = (path) => resolveMediaUrl(path, "");
 
   const logoUrl = company.logoUrl || basic.profileImage;
+  const fallbackLogoUrl =
+    basic.profileImage && basic.profileImage !== logoUrl
+      ? getImageUrl(basic.profileImage)
+      : defaultAvatar;
   const coverUrl = basic.backgroundImage;
 
   const hasLogo = !!logoUrl;
   const hasBackground = !!coverUrl;
 
-  const getImageUrl = (path) => {
-    if (!path) return "";
-    if (path.startsWith("http://") || path.startsWith("https://")) return path;
-    return `${API_BASE_URL}/${path.replace(/^\/+/, "")}`;
-  };
+  useEffect(() => {
+    if (!companyMenuOpen) return;
+
+    const closeOnOutsideClick = (event) => {
+      if (
+        companyMenuRef.current &&
+        !companyMenuRef.current.contains(event.target)
+      ) {
+        setCompanyMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", closeOnOutsideClick);
+    return () => document.removeEventListener("mousedown", closeOnOutsideClick);
+  }, [companyMenuOpen]);
 
   return (
-    <div style={styles.card}>
-      <div style={styles.coverWrap}>
+    <>
+      <div className="employer-header-card" style={styles.card}>
+      <div className="employer-header-cover" style={styles.coverWrap}>
+        {!hasBackground && (
+          <span
+            className="employer-header-cover-mark"
+            style={styles.nexoraCoverMark}
+            aria-hidden="true"
+          >
+            N
+          </span>
+        )}
         {hasBackground && (
           <img
             src={getImageUrl(coverUrl)}
@@ -74,27 +94,24 @@ export default function EmployerHeader({
             }}
             title="Background"
           >
-            <img
-              style={{ width: 16, height: 16 }}
-              src={backgroundImage}
-              alt="edit"
-            />
+            <ProfileIcon name="camera" size={17} strokeWidth={2.2} />
           </div>
         )}
 
         {imageMenu?.open && imageMenu?.type === "background" && (
-          <div ref={menuRef} style={styles.coverMenu}>
+          <div className="employer-image-menu" ref={menuRef} style={styles.coverMenu}>
             {!hasBackground ? (
-              <div style={styles.menuItem} onClick={onUploadBackgroundImage}>
+              <div className="employer-image-menu-item" style={styles.menuItem} onClick={onUploadBackgroundImage}>
                 Upload photo
               </div>
             ) : (
               <>
-                <div style={styles.menuItem} onClick={onUploadBackgroundImage}>
+                <div className="employer-image-menu-item" style={styles.menuItem} onClick={onUploadBackgroundImage}>
                   Update
                 </div>
 
                 <div
+                  className="employer-image-menu-item is-danger"
                   style={{ ...styles.menuItem, ...styles.deleteItem }}
                   onClick={onDeleteBackgroundImage}
                 >
@@ -106,43 +123,54 @@ export default function EmployerHeader({
         )}
       </div>
 
-      <div style={styles.logoBox}>
+      <div className="employer-header-logo-box" style={styles.logoBox}>
         <img
           src={hasLogo ? getImageUrl(logoUrl) : defaultAvatar}
           alt="Company logo"
           style={styles.logo}
+          onError={(event) => {
+            if (event.currentTarget.src !== fallbackLogoUrl) {
+              event.currentTarget.src = fallbackLogoUrl;
+            } else {
+              event.currentTarget.src = defaultAvatar;
+            }
+          }}
         />
 
         {isOwner && !readOnly && (
-          <div
+          <button
+            type="button"
+            className="profile-icon-button"
             style={styles.logoActionButton}
             onClick={(e) => {
               e.stopPropagation();
               onOpenProfileImageMenu?.();
             }}
             title="Company logo"
+            aria-label={hasLogo ? "Change company logo" : "Add company logo"}
           >
             {hasLogo ? (
-              <span style={{ fontSize: 18 }}>✎</span>
+              <ProfileIcon name="camera" size={16} strokeWidth={2.2} />
             ) : (
-              <span style={{ fontSize: 28, translate: "0 -3px" }}>+</span>
+              <ProfileIcon name="plus" size={19} strokeWidth={2.4} />
             )}
-          </div>
+          </button>
         )}
 
         {imageMenu?.open && imageMenu?.type === "profile" && (
-          <div ref={menuRef} style={styles.logoMenu}>
+          <div className="employer-image-menu" ref={menuRef} style={styles.logoMenu}>
             {!hasLogo ? (
-              <div style={styles.menuItem} onClick={onUploadProfileImage}>
+              <div className="employer-image-menu-item" style={styles.menuItem} onClick={onUploadProfileImage}>
                 Upload photo
               </div>
             ) : (
               <>
-                <div style={styles.menuItem} onClick={onUploadProfileImage}>
+                <div className="employer-image-menu-item" style={styles.menuItem} onClick={onUploadProfileImage}>
                   Update
                 </div>
 
                 <div
+                  className="employer-image-menu-item is-danger"
                   style={{ ...styles.menuItem, ...styles.deleteItem }}
                   onClick={onDeleteProfileImage}
                 >
@@ -154,72 +182,108 @@ export default function EmployerHeader({
         )}
       </div>
 
-      {isOwner && !readOnly && (
-        <>
-          <button
-            type="button"
-            style={{
-              ...styles.logoutBtn,
-              backgroundColor: logoutHover ? "#d11124" : "#fff",
-              color: logoutHover ? "#fff" : "#d11124",
-              transform: logoutHover ? "translateY(-1px)" : "translateY(0)",
-            }}
-            onMouseEnter={() => setLogoutHover(true)}
-            onMouseLeave={() => setLogoutHover(false)}
-            onClick={handleLogout}
-          >
-            Log Out
-          </button>
-          <img
-            src={pencil}
-            alt="edit"
-            style={{
-              ...styles.editIcon,
-              backgroundColor: editHover ? "rgba(0,0,0,0.06)" : "transparent",
-              transform: editHover
-                ? "translateY(-1px) scale(1.03)"
-                : "translateY(0) scale(1)",
-              boxShadow: editHover ? "0 2px 8px rgba(0,0,0,0.12)" : "none",
-              transition:
-                "background-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease",
-            }}
-            onMouseEnter={() => setEditHover(true)}
-            onMouseLeave={() => setEditHover(false)}
-            onClick={() => onEdit?.()}
-          />
-        </>
-      )}
-
-      <div style={styles.body}>
-        <div style={styles.content}>
-          <div style={styles.topRow}>
+      <div className="employer-header-body" style={styles.body}>
+        <div className="employer-header-content" style={styles.content}>
+          <div className="employer-header-info" style={styles.topRow}>
             <div>
-              <h1 style={styles.name}>{companyName}</h1>
+              <h1 className="employer-header-name" style={styles.name}>{companyName}</h1>
 
-              {tagline && <p style={styles.description}>{tagline}</p>}
+              {tagline && <p className="employer-header-description" style={styles.description}>{tagline}</p>}
 
-              <p style={styles.meta}>
+              <p className="employer-header-meta" style={styles.meta}>
                 {industry || "Industry not provided"}
                 {location ? ` · ${location}` : ""}
                 {username ? ` · @${username}` : ""}
               </p>
 
-             <p style={styles.followers}>
+              <p className="employer-header-followers" style={styles.followers}>
                 {followerCount} {followerCount === 1 ? "follower" : "followers"}
-            </p>
+              </p>
             </div>
           </div>
 
-        {!isOwner && (
-          <div style={styles.actions}>
-            {followButton}
+          <div className="employer-header-actions" style={styles.actions}>
+            {isOwner && !readOnly ? (
+              <>
+                <button
+                  type="button"
+                  className="employer-header-primary-action"
+                  onClick={() => navigate("/company/dashboard")}
+                >
+                  Manage page
+                </button>
+                <button
+                  type="button"
+                  className="employer-header-secondary-action"
+                  onClick={() => onEdit?.()}
+                >
+                  <ProfileIcon name="edit" size={17} />
+                  Edit page
+                </button>
+              </>
+            ) : (
+              <>
+              {followButton}
 
-            <button style={styles.moreBtn}>...</button>
+                {company.website && (
+                  <a
+                    className="employer-header-secondary-action"
+                    href={company.website}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Visit website
+                  </a>
+                )}
+
+                <div ref={companyMenuRef} style={styles.moreWrap}>
+                  <button
+                    className="employer-header-more-action"
+                    type="button"
+                    aria-label="Company profile actions"
+                    aria-expanded={companyMenuOpen}
+                    onClick={() => setCompanyMenuOpen((current) => !current)}
+                  >
+                    •••
+                  </button>
+
+                  {companyMenuOpen && (
+                    <div className="employer-header-action-menu" style={styles.moreMenu}>
+                      <button
+                        type="button"
+                        className="employer-header-report-action"
+                        style={styles.reportAction}
+                        onClick={() => {
+                          setCompanyMenuOpen(false);
+                          setReportModalOpen(true);
+                        }}
+                      >
+                        <span style={styles.reportIcon} aria-hidden="true">!</span>
+                        <span>
+                          <strong>Report company</strong>
+                          <small>Send a private report to moderation</small>
+                        </span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </div>
-        )}
         </div>
       </div>
-    </div>
+      </div>
+
+      {reportModalOpen && username && !isOwner && (
+        <ReportProfileModal
+          username={username}
+          targetLabel={companyName}
+          targetKind="company"
+          onClose={() => setReportModalOpen(false)}
+          showToast={showToast}
+        />
+      )}
+    </>
   );
 }
 
@@ -230,8 +294,8 @@ const styles = {
     position: "relative",
     width: "100%",
     maxWidth: 820,
-    backgroundColor: "#fff",
-    border: "1px solid #e0e0e0",
+    backgroundColor: "var(--app-surface)",
+    border: "1px solid var(--app-border)",
     borderRadius: 12,
     overflow: "visible",
     boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
@@ -244,8 +308,23 @@ const styles = {
     borderTopLeftRadius: 12,
     borderTopRightRadius: 12,
     background:
-      "linear-gradient(135deg, rgba(155,205,235,0.8), rgba(40,125,190,0.85))",
+      "radial-gradient(circle at 14% 18%, rgba(255,255,255,0.2) 0 2px, transparent 3px), radial-gradient(circle at 88% 20%, rgba(245,158,11,0.36) 0 42px, transparent 43px), linear-gradient(132deg, #312e81 0%, #4f46e5 52%, #7c3aed 100%)",
     overflow: "visible",
+  },
+
+  nexoraCoverMark: {
+    position: "absolute",
+    right: 34,
+    bottom: -43,
+    zIndex: 0,
+    color: "rgba(255,255,255,0.11)",
+    fontFamily: '"Outfit", sans-serif',
+    fontSize: 190,
+    fontWeight: 850,
+    lineHeight: 1,
+    letterSpacing: -18,
+    pointerEvents: "none",
+    userSelect: "none",
   },
 
   coverImage: {
@@ -264,7 +343,7 @@ const styles = {
     width: 36,
     height: 36,
     borderRadius: "50%",
-    backgroundColor: "#fff",
+    backgroundColor: "var(--app-surface)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -280,7 +359,7 @@ const styles = {
     right: 16,
     top: 58,
     minWidth: 150,
-    backgroundColor: "#fff",
+    backgroundColor: "var(--app-surface)",
     borderRadius: 12,
     boxShadow: "0 10px 28px rgba(0,0,0,0.18)",
     border: "1px solid rgba(0,0,0,0.08)",
@@ -302,7 +381,7 @@ const styles = {
     height: 120,
     borderRadius: 8,
     objectFit: "cover",
-    backgroundColor: "#eee",
+    backgroundColor: "var(--app-surface-2)",
     border: "6px solid #fff",
     boxSizing: "border-box",
   },
@@ -315,6 +394,7 @@ const styles = {
     height: 32,
     borderRadius: "50%",
     backgroundColor: "#0a66c2",
+    border: 0,
     color: "#fff",
     display: "flex",
     alignItems: "center",
@@ -326,12 +406,56 @@ const styles = {
     userSelect: "none",
   },
 
+  moreWrap: {
+    position: "relative",
+  },
+
+  moreMenu: {
+    position: "absolute",
+    zIndex: 30,
+    top: 43,
+    right: 0,
+    width: 270,
+    padding: 7,
+    border: "1px solid var(--app-border)",
+    borderRadius: 13,
+    background: "var(--app-surface)",
+    boxShadow: "0 16px 45px rgba(15,23,42,.18)",
+  },
+
+  reportAction: {
+    display: "flex",
+    width: "100%",
+    alignItems: "center",
+    gap: 11,
+    padding: "10px 11px",
+    border: 0,
+    borderRadius: 9,
+    background: "transparent",
+    color: "var(--app-text)",
+    textAlign: "left",
+    cursor: "pointer",
+    fontFamily: font,
+  },
+
+  reportIcon: {
+    display: "grid",
+    width: 32,
+    height: 32,
+    flex: "0 0 32px",
+    placeItems: "center",
+    borderRadius: 9,
+    background: "#fff1f2",
+    color: "#be123c",
+    fontWeight: 900,
+  },
+
   logoMenu: {
     position: "absolute",
     left: 95,
     top: 126,
     minWidth: 150,
-    backgroundColor: "#fff",
+    backgroundColor: "var(--app-surface)",
     borderRadius: 12,
     boxShadow: "0 10px 28px rgba(0,0,0,0.18)",
     border: "1px solid rgba(0,0,0,0.08)",
@@ -343,7 +467,7 @@ const styles = {
     padding: "11px 14px",
     fontSize: 14,
     cursor: "pointer",
-    backgroundColor: "#fff",
+    backgroundColor: "var(--app-surface)",
     borderBottom: "1px solid rgba(0,0,0,0.06)",
     fontFamily: font,
   },
@@ -351,36 +475,6 @@ const styles = {
   deleteItem: {
     color: "#d11124",
     fontWeight: 600,
-  },
-
-  editIcon: {
-    position: "absolute",
-    right: 16,
-    top: 182,
-    width: 35,
-    height: 35,
-    padding: 6,
-    borderRadius: 10,
-    cursor: "pointer",
-    boxSizing: "border-box",
-    zIndex: 8,
-  },
-
-  logoutBtn: {
-    position: "absolute",
-    right: 60,
-    top: 182,
-    padding: "6px 14px",
-    borderRadius: "8px",
-    border: "1px solid #d11124",
-    backgroundColor: "#fff",
-    color: "#d11124",
-    fontWeight: 600,
-    fontSize: "14px",
-    cursor: "pointer",
-    fontFamily: font,
-    transition: "background-color 0.2s, color 0.2s, transform 0.15s ease",
-    zIndex: 8,
   },
 
   body: {
@@ -405,14 +499,14 @@ const styles = {
     margin: 0,
     fontSize: 24,
     fontWeight: 700,
-    color: "rgba(0,0,0,0.92)",
+    color: "var(--app-text)",
     fontFamily: font,
   },
 
   description: {
     margin: "6px 0 0",
     fontSize: 14,
-    color: "rgba(0,0,0,0.75)",
+    color: "var(--app-text-soft)",
     lineHeight: 1.4,
     fontFamily: font,
   },
@@ -420,19 +514,19 @@ const styles = {
   meta: {
     margin: "8px 0 0",
     fontSize: 13,
-    color: "#6b6f73",
+    color: "var(--app-muted)",
     fontFamily: font,
   },
 
   followers: {
     margin: "8px 0 0",
     fontSize: 14,
-    color: "#6b6f73",
+    color: "var(--app-muted)",
     fontFamily: font,
   },
 
   actions: {
-    marginTop: 16,
+    marginTop: 20,
     display: "flex",
     gap: 8,
     alignItems: "center",
@@ -451,7 +545,7 @@ const styles = {
   },
 
   followBtn: {
-    backgroundColor: "#fff",
+    backgroundColor: "var(--app-surface)",
     color: "#0a66c2",
     border: "1px solid #0a66c2",
     borderRadius: 999,
@@ -467,7 +561,7 @@ const styles = {
     height: 38,
     borderRadius: "50%",
     border: "1px solid #777",
-    backgroundColor: "#fff",
+    backgroundColor: "var(--app-surface)",
     cursor: "pointer",
     fontSize: 18,
     lineHeight: "18px",

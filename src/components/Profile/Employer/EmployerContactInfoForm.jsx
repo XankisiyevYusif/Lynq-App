@@ -1,11 +1,18 @@
 import { useState } from "react";
 import api from "../../../services/api";
 
-export default function EmployerContactInfoForm({ user, setUser, onClose, showToast }) {
+export default function EmployerContactInfoForm({
+  user,
+  setUser,
+  onClose,
+  showToast,
+}) {
   const contact = user?.contactInfo || {};
   const company = user?.companyInfo || {};
 
-  const [website, setWebsite] = useState(company.website || contact.website || "");
+  const [website, setWebsite] = useState(
+    company.website || contact.website || "",
+  );
   const [email, setEmail] = useState(contact.email || "");
   const [phoneNumber, setPhoneNumber] = useState(contact.phoneNumber || "");
   const [changeEmail, setChangeEmail] = useState(false);
@@ -14,6 +21,8 @@ export default function EmployerContactInfoForm({ user, setUser, onClose, showTo
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
+  const [passwordMessage, setPasswordMessage] = useState("");
 
   const save = async () => {
     try {
@@ -54,23 +63,23 @@ export default function EmployerContactInfoForm({ user, setUser, onClose, showTo
 
       setLoading(true);
 
-    const payload = {
-      website: websiteValue || null,
-      phoneNumber: phoneValue || null,
-      changeEmail: changeEmail,
-    };
+      const payload = {
+        website: websiteValue || null,
+        phoneNumber: phoneValue || null,
+        changeEmail: changeEmail,
+      };
 
-    if (changeEmail) {
-      payload.email = emailValue;
-      payload.currentPassword = currentPassword.trim();
-    }
+      if (changeEmail) {
+        payload.email = emailValue;
+        payload.currentPassword = currentPassword.trim();
+      }
 
       const res = await api.put("/User/employer/contact-info", payload);
       const result = res?.data;
 
       if (result?.success === false) {
-         throw new Error(result?.message || "Update failed.");
-       }
+        throw new Error(result?.message || "Update failed.");
+      }
       const data = result?.data || result;
 
       setUser((prev) => ({
@@ -86,11 +95,11 @@ export default function EmployerContactInfoForm({ user, setUser, onClose, showTo
       }));
 
       showToast?.(
-          result?.message || "Contact information updated successfully.",
-          "success"
-        );
+        result?.message || "Contact information updated successfully.",
+        "success",
+      );
 
-       onClose?.();
+      onClose?.();
       setCurrentPassword("");
 
       if (changeEmail) {
@@ -107,13 +116,38 @@ export default function EmployerContactInfoForm({ user, setUser, onClose, showTo
         err?.response?.data ||
         "Update failed.";
 
-     const finalMessage =
-     typeof serverMessage === "string" ? serverMessage : "Update failed.";
+      const finalMessage =
+        typeof serverMessage === "string" ? serverMessage : "Update failed.";
 
-        setError(finalMessage);
-        showToast?.(finalMessage, "error");
+      setError(finalMessage);
+      showToast?.(finalMessage, "error");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const sendPasswordResetLink = async () => {
+    const verifiedEmail = (contact.email || email).trim();
+    if (!verifiedEmail || resetLoading) return;
+
+    try {
+      setResetLoading(true);
+      setError("");
+      setPasswordMessage("");
+      const response = await api.post("/Auth/forgot-password", {
+        email: verifiedEmail,
+      });
+      setPasswordMessage(
+        response?.data?.message ||
+          "A secure password reset link was sent to your email.",
+      );
+    } catch (err) {
+      setError(
+        err?.response?.data?.message ||
+          "The password reset email could not be sent.",
+      );
+    } finally {
+      setResetLoading(false);
     }
   };
 
@@ -137,6 +171,28 @@ export default function EmployerContactInfoForm({ user, setUser, onClose, showTo
           <span style={styles.counter}>{website.length}/300</span>
         </div>
       </div>
+
+      <section style={styles.securityCard}>
+        <div style={styles.securityIcon} aria-hidden="true">↗</div>
+        <div style={styles.securityCopy}>
+          <strong style={styles.securityTitle}>Change password</strong>
+          <p style={styles.securityText}>
+            We will email <b>{contact.email || "your verified address"}</b> a
+            secure 10-minute link. Open it to choose a new password.
+          </p>
+          {passwordMessage && (
+            <div style={styles.securitySuccess}>{passwordMessage}</div>
+          )}
+        </div>
+        <button
+          type="button"
+          style={styles.resetButton}
+          onClick={sendPasswordResetLink}
+          disabled={resetLoading || !contact.email}
+        >
+          {resetLoading ? "Sending..." : "Send reset link"}
+        </button>
+      </section>
 
       <div style={styles.field}>
         <label style={styles.label}>Email</label>
@@ -233,10 +289,12 @@ const styles = {
     width: "100%",
     height: 40,
     borderRadius: 8,
-    border: "1px solid rgba(0,0,0,0.25)",
+    border: "1px solid var(--app-border)",
     padding: "0 12px",
     fontSize: 14,
     boxSizing: "border-box",
+    backgroundColor: "var(--app-surface)",
+    color: "var(--app-text)",
   },
   counter: {
     position: "absolute",
@@ -244,7 +302,7 @@ const styles = {
     top: "50%",
     transform: "translateY(-50%)",
     fontSize: 11,
-    color: "#777",
+    color: "var(--app-muted)",
   },
   emailRow: {
     display: "flex",
@@ -259,7 +317,7 @@ const styles = {
   },
   changeBtn: {
     border: "1px solid #0a66c2",
-    backgroundColor: "#fff",
+    backgroundColor: "var(--app-surface)",
     color: "#0a66c2",
     padding: "6px 14px",
     borderRadius: 18,
@@ -270,9 +328,57 @@ const styles = {
     marginTop: 10,
     border: "none",
     backgroundColor: "transparent",
-    color: "#666",
+    color: "var(--app-muted)",
     cursor: "pointer",
     fontWeight: 600,
+  },
+  securityCard: {
+    display: "flex",
+    flexWrap: "wrap",
+    alignItems: "flex-start",
+    gap: 12,
+    margin: "24px 0 8px",
+    padding: 15,
+    border: "1px solid var(--app-border)",
+    borderRadius: 12,
+    background: "var(--app-surface-2)",
+  },
+  securityIcon: {
+    display: "grid",
+    width: 34,
+    height: 34,
+    flex: "0 0 34px",
+    placeItems: "center",
+    borderRadius: 10,
+    background: "var(--app-accent-soft)",
+    color: "var(--app-accent)",
+    fontSize: 18,
+    fontWeight: 800,
+  },
+  securityCopy: { flex: 1, minWidth: 0 },
+  securityTitle: { display: "block", color: "var(--app-text)", fontSize: 13 },
+  securityText: {
+    margin: "4px 0 0",
+    color: "var(--app-muted)",
+    fontSize: 11.5,
+    lineHeight: 1.5,
+  },
+  securitySuccess: {
+    marginTop: 8,
+    color: "#15803d",
+    fontSize: 11.5,
+    lineHeight: 1.45,
+  },
+  resetButton: {
+    minHeight: 36,
+    flex: "0 0 auto",
+    padding: "0 13px",
+    border: "1px solid var(--app-accent)",
+    borderRadius: 9,
+    background: "transparent",
+    color: "var(--app-accent)",
+    cursor: "pointer",
+    fontWeight: 700,
   },
   actions: {
     display: "flex",
@@ -282,8 +388,8 @@ const styles = {
   },
   cancelBtn: {
     border: "1px solid #999",
-    backgroundColor: "#fff",
-    color: "#555",
+    backgroundColor: "var(--app-surface)",
+    color: "var(--app-text-soft)",
     padding: "8px 16px",
     borderRadius: 18,
     cursor: "pointer",

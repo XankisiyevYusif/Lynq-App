@@ -1,751 +1,430 @@
 import React, { useContext, useEffect, useMemo, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
-import Navbar from "../../components/Layout/Navbar";
+import Navbar from "../Layout/Navbar";
+import EventCard from "../Events/EventCard";
+import JobPostItem from "../Post/JobPosts/JobPostItem";
+import PostItem from "../Post/PostItem";
+import ProfileIcon from "../Profile/ProfileIcon";
 import defaultAvatar from "../../assets/default-avatar.png";
 import { SearchContext } from "../../context/SearchContext";
-import { searchJobs, searchUsers } from "../../services/searchApi";
+import {
+  searchCompanies,
+  searchDirectoryJobs,
+  searchDirectoryPeople,
+  searchEvents,
+  getRelevantHashtags,
+  searchPosts,
+} from "../../services/searchApi";
+import { resolveMediaUrl } from "../../utils/mediaUrl";
 import api from "../../services/api";
+import "./SearchPage.css";
+import "../../pages/JobsPage.css";
 
-const API_ROOT = (api.defaults.baseURL || "").replace(/\/api\/?$/, "");
-const PEOPLE_PAGE_SIZE = 6;
-const JOBS_PAGE_SIZE = 6;
+const PREVIEW_SIZE = 3;
+const PAGE_SIZE = 6;
+const TABS = [
+  ["all", "All results", "search"],
+  ["posts", "Posts", "post"],
+  ["people", "People", "user"],
+  ["companies", "Companies", "building"],
+  ["jobs", "Jobs", "briefcase"],
+  ["events", "Events", "calendar"],
+];
+
+const EMPTY_PAGE = { items: [], page: 1, totalPages: 1, totalCount: 0, hasMore: false };
+
+const normalisePage = (value, fallbackPage = 1) => {
+  if (Array.isArray(value)) {
+    return {
+      items: value,
+      page: fallbackPage,
+      totalPages: fallbackPage + (value.length === PAGE_SIZE ? 1 : 0),
+      totalCount: value.length,
+      hasMore: value.length === PAGE_SIZE,
+    };
+  }
+  return { ...EMPTY_PAGE, ...value, items: value?.items || [] };
+};
 
 export default function SearchPage() {
+  const location = useLocation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-
-  const urlQuery = searchParams.get("query") || "";
-
   const { setQuery } = useContext(SearchContext);
+  const query = searchParams.get("query") || "";
+  const requestedType = searchParams.get("type") || "all";
+  const requestedJobId = searchParams.get("jobId");
+  const initialTab = TABS.some(([key]) => key === requestedType) ? requestedType : "all";
 
-  const [searchText, setSearchText] = useState(urlQuery);
-  const [activeTab, setActiveTab] = useState("all");
-
-  const [people, setPeople] = useState([]);
-  const [jobs, setJobs] = useState([]);
-
-  const [peoplePage, setPeoplePage] = useState(1);
-  const [jobsPage, setJobsPage] = useState(1);
-
-  const [loadingPeople, setLoadingPeople] = useState(false);
-  const [loadingJobs, setLoadingJobs] = useState(false);
+  const [activeTab, setActiveTab] = useState(initialTab);
+  const [page, setPage] = useState(1);
+  const [results, setResults] = useState({
+    posts: EMPTY_PAGE,
+    people: EMPTY_PAGE,
+    companies: EMPTY_PAGE,
+    jobs: EMPTY_PAGE,
+    events: EMPTY_PAGE,
+  });
+  const [loading, setLoading] = useState({});
+  const [hashtags, setHashtags] = useState([]);
+  const [eventRefreshKey, setEventRefreshKey] = useState(0);
+  const [selectedJob, setSelectedJob] = useState(
+    location.state?.selectedJob || null,
+  );
+  const [selectedJobLoading, setSelectedJobLoading] = useState(false);
 
   useEffect(() => {
-    setSearchText(urlQuery);
-    setQuery(urlQuery);
-    setPeoplePage(1);
-    setJobsPage(1);
-  }, [urlQuery, setQuery]);
+    setQuery(query);
+    setPage(1);
+    setActiveTab(TABS.some(([key]) => key === requestedType) ? requestedType : "all");
+  }, [query, requestedType, setQuery]);
 
-  const getImageUrl = (path) => {
-    if (!path) return defaultAvatar;
-    if (path.startsWith("http://") || path.startsWith("https://")) return path;
-    return `${API_ROOT}/${path.replace(/^\/+/, "")}`;
+  const updateResult = (key, value) =>
+    setResults((current) => ({ ...current, [key]: normalisePage(value, page) }));
+
+  const loadOne = async (key, targetPage, preview = false) => {
+    const size = preview ? PREVIEW_SIZE + 1 : PAGE_SIZE;
+    setLoading((current) => ({ ...current, [key]: true }));
+    try {
+      let value;
+      if (key === "posts") {
+        const postRequestSize = preview ? PREVIEW_SIZE + 1 : PAGE_SIZE;
+        const items = query.trim() ? await searchPosts(query.trim(), targetPage, postRequestSize) : [];
+        value = {
+          items: items.slice(0, preview ? PREVIEW_SIZE : PAGE_SIZE),
+          page: targetPage,
+          totalPages: targetPage + (items.length >= (preview ? PREVIEW_SIZE + 1 : PAGE_SIZE) ? 1 : 0),
+          totalCount: items.length,
+          hasMore: items.length >= (preview ? PREVIEW_SIZE + 1 : PAGE_SIZE),
+        };
+      } else if (key === "people") {
+        value = await searchDirectoryPeople(query, targetPage, size);
+      } else if (key === "companies") {
+        value = await searchCompanies(query, targetPage, size);
+      } else if (key === "jobs") {
+        value = await searchDirectoryJobs(query, targetPage, size);
+      } else {
+        value = await searchEvents(query, targetPage, size, true);
+      }
+      const normalized = normalisePage(value, targetPage);
+      if (preview) {
+        normalized.hasMore = normalized.hasMore || normalized.items.length > PREVIEW_SIZE;
+        normalized.items = normalized.items.slice(0, PREVIEW_SIZE);
+      }
+      if ((key === "people" || key === "companies") && query.trim().length >= 2) {
+        const usernames = normalized.items
+          .map((item) => item.username || item.userName)
+          .filter(Boolean);
+        if (usernames.length) {
+          api.post("/Analytics/track/search-appearances", {
+            query: query.trim(),
+            usernames,
+          }).catch((error) => {
+            console.error("Search appearance tracking failed:", error);
+          });
+        }
+      }
+      updateResult(key, normalized);
+    } catch (error) {
+      console.error(`${key} search failed:`, error);
+      updateResult(key, EMPTY_PAGE);
+    } finally {
+      setLoading((current) => ({ ...current, [key]: false }));
+    }
   };
 
-  const cleanQuery = searchText.trim();
+  useEffect(() => {
+    if (activeTab === "all") {
+      if (!query.trim()) return;
+      ["posts", "people", "companies", "jobs", "events"].forEach((key) => loadOne(key, 1, true));
+      return;
+    }
+    loadOne(activeTab, page, false);
+    // eventRefreshKey intentionally reloads attendance changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, activeTab, page, eventRefreshKey]);
 
-  const peopleTotalPages = Math.max(
-    1,
-    Math.ceil(people.length / PEOPLE_PAGE_SIZE)
-  );
+  useEffect(() => {
+    getRelevantHashtags(query.trim(), 5).then(setHashtags).catch(() => setHashtags([]));
+  }, [query]);
 
-  const pagedPeople = useMemo(() => {
-    const start = (peoplePage - 1) * PEOPLE_PAGE_SIZE;
-    return people.slice(start, start + PEOPLE_PAGE_SIZE);
-  }, [people, peoplePage]);
-
-  const allPeoplePreview = people.slice(0, 3);
-  const allJobsPreview = jobs.slice(0, 3);
-
-  const submitSearch = (e) => {
-    e?.preventDefault?.();
-
-    const nextQuery = searchText.trim();
-
-    setQuery(nextQuery);
-    setPeoplePage(1);
-    setJobsPage(1);
-
-    if (!nextQuery) {
-      setSearchParams({});
+  useEffect(() => {
+    if (!requestedJobId) {
+      setSelectedJob(null);
+      setSelectedJobLoading(false);
       return;
     }
 
-    setSearchParams({ query: nextQuery });
-  };
+    const jobFromResults = results.jobs.items.find(
+      (job) => Number(job.id) === Number(requestedJobId),
+    );
 
-  const goToProfile = (username) => {
-    if (!username) return;
-    navigate(`/profile/${username}`);
-  };
+    if (jobFromResults) {
+      setSelectedJobLoading(false);
+      setSelectedJob((current) => ({
+        ...jobFromResults,
+        ...(Number(current?.id) === Number(jobFromResults.id) ? current : {}),
+      }));
+      return;
+    }
 
-  const goToJob = (job) => {
-    navigate("/jobs", {
-      state: {
-        query: cleanQuery,
-        selectedJobId: job.id,
-      },
-    });
-  };
+    if (Number(selectedJob?.id) === Number(requestedJobId)) {
+      setSelectedJobLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setSelectedJobLoading(true);
+
+    api
+      .get(`/JobPost/${requestedJobId}`)
+      .then((response) => {
+        if (cancelled) return;
+        const payload =
+          response?.data?.data ?? response?.data?.Data ?? response?.data;
+        setSelectedJob(payload || null);
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          console.error("Selected job loading failed:", error);
+          setSelectedJob(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setSelectedJobLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [requestedJobId, results.jobs.items, selectedJob?.id]);
 
   const switchTab = (tab) => {
+    setPage(1);
     setActiveTab(tab);
-    setPeoplePage(1);
-    setJobsPage(1);
+    const next = {};
+    if (query) next.query = query;
+    if (tab !== "all") next.type = tab;
+    setSearchParams(next);
+    if (tab !== "jobs") setSelectedJob(null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  useEffect(() => {
-    const fetchPeople = async () => {
-      if (!urlQuery.trim()) {
-        setPeople([]);
-        return;
-      }
+  const openJobInsideSearch = (job) => {
+    setSelectedJob(job);
+    setActiveTab("jobs");
+    setPage(1);
 
-      try {
-        setLoadingPeople(true);
-        const res = await searchUsers(urlQuery.trim());
-        setPeople(res);
-      } catch (err) {
-        console.error("People search failed:", err);
-        setPeople([]);
-      } finally {
-        setLoadingPeople(false);
-      }
-    };
+    const next = { type: "jobs", jobId: String(job.id) };
+    if (query) next.query = query;
+    setSearchParams(next);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
-    fetchPeople();
-  }, [urlQuery]);
-
-  useEffect(() => {
-    const fetchJobs = async () => {
-      if (!urlQuery.trim()) {
-        setJobs([]);
-        return;
-      }
-
-      try {
-        setLoadingJobs(true);
-
-        const pageToLoad = activeTab === "jobs" ? jobsPage : 1;
-        const res = await searchJobs(
-          urlQuery.trim(),
-          pageToLoad,
-          JOBS_PAGE_SIZE
-        );
-
-        setJobs(res);
-      } catch (err) {
-        console.error("Jobs search failed:", err);
-        setJobs([]);
-      } finally {
-        setLoadingJobs(false);
-      }
-    };
-
-    fetchJobs();
-  }, [urlQuery, activeTab, jobsPage]);
-
-  const renderPersonCard = (user) => {
-    const isEmployer =
-      user.userType === "Employer" ||
-      user.UserType === "Employer" ||
-      user.role === "Employer" ||
-      user.Role === "Employer";
-
-    return (
-      <div key={user.id || user.username} style={styles.personCard}>
-        <img
-          src={getImageUrl(user.profileImage)}
-          alt=""
-          style={{
-            ...styles.personAvatar,
-            borderRadius: isEmployer ? 10 : "50%",
-          }}
-        />
-
-        <div
-          style={styles.personInfo}
-          onClick={() => goToProfile(user.username)}
-        >
-          <h3 style={styles.personName}>
-            {user.fullName || user.name || user.username}
-          </h3>
-
-          <p style={styles.personHeadline}>
-            {user.currentPosition ||
-              user.bio ||
-              (isEmployer ? "Company profile" : "Profile")}
-          </p>
-
-          <p style={styles.personMeta}>
-            {isEmployer ? "Company" : "Person"}
-            {user.location ? ` · ${user.location}` : ""}
-          </p>
-        </div>
-
-        <button
-          type="button"
-          style={styles.viewButton}
-          onClick={() => goToProfile(user.username)}
-        >
-          View
-        </button>
-      </div>
+  const handleSelectedJobSaved = (jobId, isSaved) => {
+    setSelectedJob((current) =>
+      Number(current?.id) === Number(jobId) ? { ...current, isSaved } : current,
     );
+    setResults((current) => ({
+      ...current,
+      jobs: {
+        ...current.jobs,
+        items: current.jobs.items.map((job) =>
+          Number(job.id) === Number(jobId) ? { ...job, isSaved } : job,
+        ),
+      },
+    }));
   };
 
-  const renderJobCard = (job) => (
-    <div key={job.id} style={styles.jobCard} onClick={() => goToJob(job)}>
-      <img
-        src={getImageUrl(job.companyLogo || job.employerProfileImage)}
-        alt=""
-        style={styles.companyLogo}
-      />
+  const handleSelectedJobApplied = (jobId) => {
+    const appliedAt = new Date().toISOString();
+    setSelectedJob((current) =>
+      Number(current?.id) === Number(jobId)
+        ? { ...current, isApplied: true, appliedAt }
+        : current,
+    );
+    setResults((current) => ({
+      ...current,
+      jobs: {
+        ...current.jobs,
+        items: current.jobs.items.map((job) =>
+          Number(job.id) === Number(jobId)
+            ? { ...job, isApplied: true, appliedAt }
+            : job,
+        ),
+      },
+    }));
+  };
 
-      <div style={styles.jobInfo}>
-        <h3 style={styles.jobTitle}>{job.title}</h3>
+  const pageNumbers = useMemo(() => {
+    const total = Math.max(1, Number(results[activeTab]?.totalPages || 1));
+    return Array.from({ length: total }, (_, index) => index + 1).filter(
+      (number) => number === 1 || number === total || Math.abs(number - page) <= 1,
+    );
+  }, [activeTab, page, results]);
 
-        <p style={styles.companyName}>
-          {job.companyName || job.employerName || "Company"}
-        </p>
+  const imageUrl = (path) => resolveMediaUrl(path, defaultAvatar);
 
-        <p style={styles.jobMeta}>
-          {job.location || "Location not specified"}
-          {job.workplaceType ? ` · ${job.workplaceType}` : ""}
-          {job.employmentType ? ` · ${job.employmentType}` : ""}
-        </p>
-
-        {job.canApply === false && (
-          <p style={styles.closedText}>Applications closed</p>
-        )}
-      </div>
-
-      <button type="button" style={styles.openJobButton}>
-        Open
+  const PersonCard = ({ person }) => (
+    <article className="directory-row">
+      <img className="directory-avatar" src={imageUrl(person.profileImage)} alt="" />
+      <button className="directory-copy" type="button" onClick={() => navigate(`/profile/${person.username}`)}>
+        <strong>{person.fullName || person.username}</strong>
+        <span>{person.currentPosition || person.bio || "Nexora member"}</span>
+        {person.relationReason && <small>{person.relationReason}</small>}
+        {person.location && <small>{person.location}</small>}
       </button>
-    </div>
+      <button className="directory-action" type="button" onClick={() => navigate(`/profile/${person.username}`)}>View</button>
+    </article>
   );
+
+  const CompanyCard = ({ company }) => (
+    <article className="directory-row directory-company-row">
+      <img className="directory-company-logo" src={imageUrl(company.logoUrl)} alt="" />
+      <button className="directory-copy" type="button" onClick={() => navigate(`/profile/${company.username}`)}>
+        <strong>{company.name}</strong>
+        <span>{company.industry || "Company"}{company.location ? ` · ${company.location}` : ""}</span>
+        {company.bio && <small className="directory-clamp">{company.bio}</small>}
+        <small>{company.followerCount || 0} followers</small>
+      </button>
+      <button className="directory-action" type="button" onClick={() => navigate(`/profile/${company.username}`)}>View</button>
+    </article>
+  );
+
+  const JobCard = ({ job }) => (
+    <article
+      className={`directory-row directory-clickable ${
+        Number(selectedJob?.id) === Number(job.id) ? "is-selected-job" : ""
+      }`}
+      onClick={() => openJobInsideSearch(job)}
+    >
+      <img className="directory-company-logo" src={imageUrl(job.companyLogo)} alt="" />
+      <div className="directory-copy">
+        <strong>{job.title}</strong>
+        <span>{job.companyName || "Company"}</span>
+        <small>{[job.location, job.workplaceType, job.employmentType].filter(Boolean).join(" · ")}</small>
+        {job.matchReason && <small className="directory-match">{job.matchReason}</small>}
+      </div>
+      <button className="directory-action" type="button">View</button>
+    </article>
+  );
+
+  const renderItems = (key, items) => {
+    if (loading[key]) return <div className="search-state">Loading {key}...</div>;
+    if (!items.length) return <div className="search-state">No {key} found.</div>;
+    if (key === "posts") return <div className="search-post-list">{items.map((item) => <PostItem key={item.id} post={item} />)}</div>;
+    if (key === "people") return items.map((item) => <PersonCard key={item.id || item.username} person={item} />);
+    if (key === "companies") return items.map((item) => <CompanyCard key={item.id || item.username} company={item} />);
+    if (key === "jobs") return items.map((item) => <JobCard key={item.id} job={item} />);
+    return <div className="search-event-list">{items.map((item) => <EventCard key={item.id || item.Id} event={item} onChanged={() => setEventRefreshKey((value) => value + 1)} />)}</div>;
+  };
+
+  const sectionLabel = { posts: "Posts", people: "People", companies: "Companies", jobs: "Jobs", events: "Events" };
 
   return (
     <>
       <Navbar />
-
-      <div style={styles.page}>
-        <div style={styles.layout}>
-          <aside style={styles.sidebar}>
-            <h2 style={styles.sidebarTitle}>Search</h2>
-
-            <button
-              type="button"
-              style={{
-                ...styles.tabButton,
-                ...(activeTab === "all" ? styles.activeTab : {}),
-              }}
-              onClick={() => switchTab("all")}
-            >
-              All results
-            </button>
-
-            <button
-              type="button"
-              style={{
-                ...styles.tabButton,
-                ...(activeTab === "people" ? styles.activeTab : {}),
-              }}
-              onClick={() => switchTab("people")}
-            >
-              People
-            </button>
-
-            <button
-              type="button"
-              style={{
-                ...styles.tabButton,
-                ...(activeTab === "jobs" ? styles.activeTab : {}),
-              }}
-              onClick={() => switchTab("jobs")}
-            >
-              Jobs
-            </button>
-          </aside>
-
-          <main style={styles.main}>
-            <form style={styles.searchBox} onSubmit={submitSearch}>
-              <input
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                placeholder="Search people, companies or jobs"
-                style={styles.searchInput}
-              />
-
-              <button type="submit" style={styles.searchButton}>
-                Search
+      <div className="search-page search-page-shell">
+        <aside className="search-filter-card">
+          <h2>Search filters</h2>
+          <nav aria-label="Search result filters">
+            {TABS.map(([key, label, icon]) => (
+              <button className={activeTab === key ? "is-active" : ""} key={key} type="button" onClick={() => switchTab(key)}>
+                <ProfileIcon name={icon} size={18} />
+                <span>{label}</span>
               </button>
-            </form>
+            ))}
+          </nav>
+        </aside>
 
-            {!urlQuery.trim() && (
-              <div style={styles.emptyState}>
-                <h2 style={styles.emptyTitle}>Search WorkHub</h2>
-                <p style={styles.emptyText}>
-                  Search for people, companies, and job posts.
-                </p>
+        <main className="search-results-column">
+          {!query.trim() && activeTab !== "events" && activeTab !== "jobs" ? (
+            <section className="search-empty-card">
+              <ProfileIcon name="search" size={34} />
+              <h1>Find what matters to you</h1>
+              <p>Search posts, people, companies, jobs and events from the expanded search in the navbar.</p>
+            </section>
+          ) : activeTab === "all" ? (
+            <>
+              <div className="search-query-heading">Results for <strong>“{query}”</strong></div>
+              {["posts", "people", "companies", "jobs", "events"].map((key) => (
+                <section className="search-section-card" key={key}>
+                  <div className="search-section-title"><h2>{sectionLabel[key]}</h2></div>
+                  {renderItems(key, results[key].items)}
+                  {(results[key].hasMore || results[key].items.length === PREVIEW_SIZE) && (
+                    <button className="search-see-all" type="button" onClick={() => switchTab(key)}>
+                      See all {sectionLabel[key].toLowerCase()} <span>→</span>
+                    </button>
+                  )}
+                </section>
+              ))}
+            </>
+          ) : (
+            <section className="search-section-card search-full-card">
+              <div className="search-section-title">
+                <div><small>{query ? `Results for “${query}”` : "Recommended for you"}</small><h1>{sectionLabel[activeTab]}</h1></div>
+                {!!results[activeTab].totalCount && <span>{results[activeTab].totalCount} results</span>}
               </div>
-            )}
+              {activeTab === "jobs" ? (
+                <div
+                  className={`search-jobs-workspace ${
+                    selectedJob || selectedJobLoading ? "has-selection" : ""
+                  }`}
+                >
+                  <div className="search-jobs-list">
+                    {renderItems(activeTab, results[activeTab].items)}
+                  </div>
 
-            {urlQuery.trim() && (
-              <div style={styles.resultsCard}>
-                <div style={styles.resultsHeader}>
-                  <h2 style={styles.resultsTitle}>
-                    Search results for “{urlQuery}”
-                  </h2>
+                  {(selectedJob || selectedJobLoading) && (
+                    <aside className="search-job-detail">
+                      {selectedJobLoading ? (
+                        <div className="search-state">Loading job details...</div>
+                      ) : (
+                        <JobPostItem
+                          job={selectedJob}
+                          onSavedChanged={handleSelectedJobSaved}
+                          onApplied={handleSelectedJobApplied}
+                        />
+                      )}
+                    </aside>
+                  )}
                 </div>
+              ) : (
+                renderItems(activeTab, results[activeTab].items)
+              )}
+              {(page > 1 || results[activeTab].hasMore || results[activeTab].totalPages > 1) && (
+                <div className="search-pagination">
+                  <button type="button" disabled={page === 1} onClick={() => setPage((value) => Math.max(1, value - 1))}>‹</button>
+                  {pageNumbers.map((number, index) => (
+                    <React.Fragment key={number}>
+                      {index > 0 && number - pageNumbers[index - 1] > 1 && <span>…</span>}
+                      <button className={number === page ? "is-active" : ""} type="button" onClick={() => setPage(number)}>{number}</button>
+                    </React.Fragment>
+                  ))}
+                  <button type="button" disabled={!results[activeTab].hasMore && page >= results[activeTab].totalPages} onClick={() => setPage((value) => value + 1)}>›</button>
+                </div>
+              )}
+            </section>
+          )}
+        </main>
 
-                {activeTab === "all" && (
-                  <>
-                    <section style={styles.section}>
-                      <div style={styles.sectionHeader}>
-                        <h3 style={styles.sectionTitle}>People</h3>
-
-                        {people.length > 3 && (
-                          <button
-                            type="button"
-                            style={styles.linkButton}
-                            onClick={() => switchTab("people")}
-                          >
-                            See all people
-                          </button>
-                        )}
-                      </div>
-
-                      {loadingPeople ? (
-                        <p style={styles.info}>Loading people...</p>
-                      ) : allPeoplePreview.length > 0 ? (
-                        allPeoplePreview.map(renderPersonCard)
-                      ) : (
-                        <p style={styles.info}>No people found.</p>
-                      )}
-                    </section>
-
-                    <section style={styles.section}>
-                      <div style={styles.sectionHeader}>
-                        <h3 style={styles.sectionTitle}>Jobs</h3>
-
-                        {jobs.length > 3 && (
-                          <button
-                            type="button"
-                            style={styles.linkButton}
-                            onClick={() => switchTab("jobs")}
-                          >
-                            See all jobs
-                          </button>
-                        )}
-                      </div>
-
-                      {loadingJobs ? (
-                        <p style={styles.info}>Loading jobs...</p>
-                      ) : allJobsPreview.length > 0 ? (
-                        allJobsPreview.map(renderJobCard)
-                      ) : (
-                        <p style={styles.info}>No jobs found.</p>
-                      )}
-                    </section>
-                  </>
-                )}
-
-                {activeTab === "people" && (
-                  <section style={styles.section}>
-                    {loadingPeople ? (
-                      <p style={styles.info}>Loading people...</p>
-                    ) : pagedPeople.length > 0 ? (
-                      pagedPeople.map(renderPersonCard)
-                    ) : (
-                      <p style={styles.info}>No people found.</p>
-                    )}
-
-                    {people.length > PEOPLE_PAGE_SIZE && (
-                      <div style={styles.pagination}>
-                        <button
-                          type="button"
-                          style={{
-                            ...styles.pageButton,
-                            ...(peoplePage === 1
-                              ? styles.disabledPageButton
-                              : {}),
-                          }}
-                          disabled={peoplePage === 1}
-                          onClick={() =>
-                            setPeoplePage((prev) => Math.max(1, prev - 1))
-                          }
-                        >
-                          ‹ Back
-                        </button>
-
-                        <span style={styles.pageText}>
-                          Page {peoplePage} of {peopleTotalPages}
-                        </span>
-
-                        <button
-                          type="button"
-                          style={{
-                            ...styles.pageButton,
-                            ...(peoplePage >= peopleTotalPages
-                              ? styles.disabledPageButton
-                              : {}),
-                          }}
-                          disabled={peoplePage >= peopleTotalPages}
-                          onClick={() =>
-                            setPeoplePage((prev) =>
-                              Math.min(peopleTotalPages, prev + 1)
-                            )
-                          }
-                        >
-                          Next ›
-                        </button>
-                      </div>
-                    )}
-                  </section>
-                )}
-
-                {activeTab === "jobs" && (
-                  <section style={styles.section}>
-                    {loadingJobs ? (
-                      <p style={styles.info}>Loading jobs...</p>
-                    ) : jobs.length > 0 ? (
-                      jobs.map(renderJobCard)
-                    ) : (
-                      <p style={styles.info}>No jobs found.</p>
-                    )}
-
-                    <div style={styles.pagination}>
-                      <button
-                        type="button"
-                        style={{
-                          ...styles.pageButton,
-                          ...(jobsPage === 1 ? styles.disabledPageButton : {}),
-                        }}
-                        disabled={jobsPage === 1}
-                        onClick={() =>
-                          setJobsPage((prev) => Math.max(1, prev - 1))
-                        }
-                      >
-                        ‹ Back
-                      </button>
-
-                      <span style={styles.pageText}>Page {jobsPage}</span>
-
-                      <button
-                        type="button"
-                        style={{
-                          ...styles.pageButton,
-                          ...(jobs.length < JOBS_PAGE_SIZE
-                            ? styles.disabledPageButton
-                            : {}),
-                        }}
-                        disabled={jobs.length < JOBS_PAGE_SIZE}
-                        onClick={() => setJobsPage((prev) => prev + 1)}
-                      >
-                        Next ›
-                      </button>
-                    </div>
-                  </section>
-                )}
-              </div>
-            )}
-          </main>
-        </div>
+        <aside className="search-tools-column">
+          <section className="search-hashtag-card">
+            <div className="search-section-title"><h2>Popular hashtags</h2></div>
+            {hashtags.length ? hashtags.slice(0, 5).map((tag) => (
+              <button type="button" key={tag.name || tag.Name || tag} onClick={() => {
+                const name = tag.name || tag.Name || tag;
+                setQuery(`#${name}`);
+                setSearchParams({ query: `#${name}`, type: "posts" });
+              }}>
+                <span>#{tag.name || tag.Name || tag}</span>
+                <small>{tag.postCount ?? tag.PostCount ?? 0} posts</small>
+              </button>
+            )) : <p>No hashtags yet.</p>}
+          </section>
+        </aside>
       </div>
     </>
   );
 }
-
-const styles = {
-  page: {
-    minHeight: "100vh",
-    backgroundColor: "#f3f2ef",
-    padding: "24px 0 60px",
-  },
-
-  layout: {
-    width: "1120px",
-    maxWidth: "1120px",
-    margin: "0 auto",
-    display: "grid",
-    gridTemplateColumns: "240px 1fr",
-    gap: 18,
-  },
-
-  sidebar: {
-    backgroundColor: "#fff",
-    border: "1px solid #ddd",
-    borderRadius: 12,
-    padding: 14,
-    height: "fit-content",
-    position: "sticky",
-    top: 84,
-  },
-
-  sidebarTitle: {
-    margin: "0 0 14px",
-    fontSize: 24,
-    fontWeight: 700,
-    color: "#111",
-  },
-
-  tabButton: {
-    width: "100%",
-    textAlign: "left",
-    border: "none",
-    backgroundColor: "transparent",
-    padding: "11px 12px",
-    borderRadius: 8,
-    cursor: "pointer",
-    color: "#222",
-    fontWeight: 700,
-    fontSize: 14,
-  },
-
-  activeTab: {
-    backgroundColor: "#eef3f8",
-    color: "#0a66c2",
-  },
-
-  main: {
-    minWidth: 0,
-  },
-
-  searchBox: {
-    backgroundColor: "#fff",
-    border: "1px solid #ddd",
-    borderRadius: 12,
-    padding: 14,
-    display: "flex",
-    gap: 10,
-    marginBottom: 12,
-  },
-
-  searchInput: {
-    flex: 1,
-    border: "1px solid #ccc",
-    borderRadius: 22,
-    padding: "11px 14px",
-    fontSize: 14,
-    outline: "none",
-  },
-
-  searchButton: {
-    border: "1px solid #0a66c2",
-    backgroundColor: "#0a66c2",
-    color: "#fff",
-    borderRadius: 22,
-    padding: "10px 18px",
-    fontWeight: 700,
-    cursor: "pointer",
-  },
-
-  resultsCard: {
-    backgroundColor: "#fff",
-    border: "1px solid #ddd",
-    borderRadius: 12,
-    overflow: "hidden",
-  },
-
-  resultsHeader: {
-    padding: "16px 18px",
-    borderBottom: "1px solid #eee",
-  },
-
-  resultsTitle: {
-    margin: 0,
-    fontSize: 20,
-    fontWeight: 700,
-    color: "#111",
-  },
-
-  section: {
-    padding: "8px 0",
-    borderBottom: "1px solid #eee",
-  },
-
-  sectionHeader: {
-    padding: "8px 18px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-
-  sectionTitle: {
-    margin: 0,
-    fontSize: 17,
-    fontWeight: 700,
-    color: "#222",
-  },
-
-  linkButton: {
-    border: "none",
-    backgroundColor: "transparent",
-    color: "#0a66c2",
-    fontWeight: 700,
-    cursor: "pointer",
-  },
-
-  personCard: {
-    display: "flex",
-    alignItems: "center",
-    gap: 12,
-    padding: "14px 18px",
-    borderTop: "1px solid #f1f1f1",
-  },
-
-  personAvatar: {
-    width: 58,
-    height: 58,
-    objectFit: "cover",
-    backgroundColor: "#eef3f8",
-  },
-
-  personInfo: {
-    flex: 1,
-    minWidth: 0,
-    cursor: "pointer",
-  },
-
-  personName: {
-    margin: "0 0 4px",
-    fontSize: 17,
-    fontWeight: 700,
-    color: "#111",
-  },
-
-  personHeadline: {
-    margin: "0 0 4px",
-    fontSize: 14,
-    color: "#444",
-  },
-
-  personMeta: {
-    margin: 0,
-    fontSize: 13,
-    color: "#777",
-  },
-
-  viewButton: {
-    border: "1px solid #0a66c2",
-    backgroundColor: "#fff",
-    color: "#0a66c2",
-    borderRadius: 999,
-    padding: "7px 16px",
-    fontWeight: 700,
-    cursor: "pointer",
-  },
-
-  jobCard: {
-    display: "flex",
-    alignItems: "center",
-    gap: 12,
-    padding: "14px 18px",
-    borderTop: "1px solid #f1f1f1",
-    cursor: "pointer",
-  },
-
-  companyLogo: {
-    width: 58,
-    height: 58,
-    borderRadius: 10,
-    objectFit: "cover",
-    backgroundColor: "#eef3f8",
-  },
-
-  jobInfo: {
-    flex: 1,
-    minWidth: 0,
-  },
-
-  jobTitle: {
-    margin: "0 0 4px",
-    fontSize: 17,
-    fontWeight: 700,
-    color: "#0a66c2",
-  },
-
-  companyName: {
-    margin: "0 0 4px",
-    fontSize: 14,
-    color: "#222",
-  },
-
-  jobMeta: {
-    margin: 0,
-    fontSize: 13,
-    color: "#666",
-  },
-
-  closedText: {
-    margin: "5px 0 0",
-    color: "#b24020",
-    fontSize: 13,
-    fontWeight: 700,
-  },
-
-  openJobButton: {
-    border: "1px solid #0a66c2",
-    backgroundColor: "#fff",
-    color: "#0a66c2",
-    borderRadius: 999,
-    padding: "7px 16px",
-    fontWeight: 700,
-    cursor: "pointer",
-  },
-
-  info: {
-    padding: "12px 18px",
-    color: "#666",
-    fontSize: 14,
-  },
-
-  pagination: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 14,
-    borderTop: "1px solid #eee",
-  },
-
-  pageButton: {
-    border: "none",
-    backgroundColor: "transparent",
-    color: "#0a66c2",
-    fontWeight: 700,
-    cursor: "pointer",
-  },
-
-  disabledPageButton: {
-    color: "#aaa",
-    cursor: "not-allowed",
-  },
-
-  pageText: {
-    color: "#666",
-    fontSize: 13,
-  },
-
-  emptyState: {
-    backgroundColor: "#fff",
-    border: "1px solid #ddd",
-    borderRadius: 12,
-    padding: 28,
-    textAlign: "center",
-  },
-
-  emptyTitle: {
-    margin: "0 0 8px",
-    fontSize: 22,
-    color: "#111",
-  },
-
-  emptyText: {
-    margin: 0,
-    color: "#666",
-  },
-};

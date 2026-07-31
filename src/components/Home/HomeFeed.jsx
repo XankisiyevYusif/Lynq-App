@@ -27,6 +27,27 @@ const HomeFeed = ({ likeConnection, showToast }) => {
     return [];
   };
 
+  const mixFollowedRecommendedJob = (items, recommendations) => {
+    const matchedJob = recommendations.find(
+      (job) => job.isFromFollowedCompany && job.hasProfileMatch,
+    );
+    if (!matchedJob) return items;
+
+    const alreadyIncluded = items.some(
+      (item) =>
+        item.itemType === "job" &&
+        Number(item.jobPost?.id) === Number(matchedJob.id),
+    );
+    if (alreadyIncluded) return items;
+
+    const mixed = [...items];
+    mixed.splice(Math.min(3, mixed.length), 0, {
+      itemType: "job",
+      jobPost: matchedJob,
+    });
+    return mixed;
+  };
+
   const loadFeed = async (pageToLoad = 1, append = false) => {
     try {
       if (append) {
@@ -35,11 +56,37 @@ const HomeFeed = ({ likeConnection, showToast }) => {
         setLoading(true);
       }
 
-      const res = await api.get(`/Post/feed?page=${pageToLoad}&pageSize=10`);
-      const list = getResponseData(res);
+      const [res, savedResponse, recommendedJobsResponse] = await Promise.all([
+        api.get(`/Post/feed?page=${pageToLoad}&pageSize=10`),
+        api.get("/SavedPost").catch(() => ({ data: [] })),
+        pageToLoad === 1
+          ? api
+              .get("/JobPreferences/recommended?take=20")
+              .catch(() => ({ data: [] }))
+          : Promise.resolve({ data: [] }),
+      ]);
+      const savedIds = new Set(
+        getResponseData(savedResponse).map((post) => Number(post.id)),
+      );
+      const contentList = getResponseData(res).map((item) =>
+        item.itemType === "post" && item.post
+          ? {
+              ...item,
+              post: {
+                ...item.post,
+                isSaved: savedIds.has(Number(item.post.id)),
+              },
+            }
+          : item,
+      );
+      const listWithFollowedJob = mixFollowedRecommendedJob(
+        contentList,
+        getResponseData(recommendedJobsResponse),
+      );
+      const list = listWithFollowedJob;
 
       setFeedItems((prev) => (append ? [...prev, ...list] : list));
-      setHasMore(list.length === 10);
+      setHasMore(contentList.length === 10);
       setPage(pageToLoad);
     } catch (err) {
       console.error("Failed to load home feed:", err);
@@ -77,7 +124,7 @@ const HomeFeed = ({ likeConnection, showToast }) => {
             ...updatedPost,
           },
         };
-      })
+      }),
     );
   };
 
@@ -86,7 +133,7 @@ const HomeFeed = ({ likeConnection, showToast }) => {
       prev.filter((item) => {
         if (item.itemType !== "post" || !item.post) return true;
         return Number(item.post.id) !== Number(postId);
-      })
+      }),
     );
   };
 
@@ -104,16 +151,13 @@ const HomeFeed = ({ likeConnection, showToast }) => {
             ...updatedJob,
           },
         };
-      })
+      }),
     );
   };
 
   const isMyPost = (post) => {
     const ownerId =
-      post?.postOwnerId ||
-      post?.userId ||
-      post?.ownerId ||
-      post?.authorId;
+      post?.postOwnerId || post?.userId || post?.ownerId || post?.authorId;
 
     return String(ownerId) === String(currentUserId);
   };
@@ -188,12 +232,12 @@ const styles = {
   },
 
   messageCard: {
-    backgroundColor: "#fff",
-    border: "1px solid #e0e0e0",
+    backgroundColor: "var(--app-surface)",
+    border: "1px solid var(--app-border)",
     borderRadius: "12px",
     padding: "20px",
     textAlign: "center",
-    color: "#666",
+    color: "var(--app-muted)",
     fontSize: "14px",
     fontFamily:
       "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
@@ -202,7 +246,7 @@ const styles = {
   loadMoreButton: {
     width: "100%",
     border: "1px solid #0a66c2",
-    backgroundColor: "#fff",
+    backgroundColor: "var(--app-surface)",
     color: "#0a66c2",
     borderRadius: "999px",
     padding: "10px 16px",

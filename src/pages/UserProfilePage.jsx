@@ -26,8 +26,7 @@ const UserProfilePage = ({ likeConnection }) => {
     }
   }, [token]);
 
-  const isOwner =
-    currentUsername?.toLowerCase() === username?.toLowerCase();
+  const isOwner = currentUsername?.toLowerCase() === username?.toLowerCase();
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -62,27 +61,29 @@ const UserProfilePage = ({ likeConnection }) => {
 
   if (!user) {
     return (
-      <div style={{ textAlign: "center", marginTop: 50 }}>
-        User not found.
-      </div>
+      <div style={{ textAlign: "center", marginTop: 50 }}>User not found.</div>
     );
   }
 
-const isEmployer =
-  user?.userType === "Employer" ||
-  user?.role === "Employer";
+  const isEmployer =
+    user?.userType === "Employer" ||
+    user?.UserType === "Employer" ||
+    Number(user?.userType ?? user?.UserType) === 2 ||
+    user?.role === "Employer" ||
+    user?.Role === "Employer" ||
+    !!(user?.companyInfo || user?.CompanyInfo);
 
-if (isEmployer) {
-  return (
-    <EmployerProfileView
-      user={user}
-      setUser={setUser}
-      isOwner={isOwner}
-      readOnly={!isOwner}
-      likeConnection={likeConnection}
-    />
-  );
-}
+  if (isEmployer) {
+    return (
+      <EmployerProfileView
+        user={user}
+        setUser={setUser}
+        isOwner={isOwner}
+        readOnly={!isOwner}
+        likeConnection={likeConnection}
+      />
+    );
+  }
 
   return (
     <ProfileView

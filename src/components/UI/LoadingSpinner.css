@@ -48,7 +48,7 @@
 .spinner-ring {
   width: 44px;
   height: 44px;
-  border: 3.5px solid #e2e8f0;
+  border: 3.5px solid var(--app-border);
   border-radius: 50%;
   border-top-color: #4f46e5;
   border-right-color: #4f46e5;

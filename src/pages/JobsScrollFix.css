@@ -1,0 +1,11 @@
+/* The viewport owns no vertical job content. Each pane is a real, independent
+   scroll container, so scrolling the description never moves the result list. */
+.jobs-page{height:calc(100dvh - 64px)!important;min-height:0!important;max-height:calc(100dvh - 64px)!important;overflow:hidden!important}
+.jobs-page>main{height:100%!important;min-height:0!important;overflow:hidden!important}
+.jobs-layout{height:100%!important;min-height:0!important;max-height:100%!important;overflow:hidden!important}
+.jobs-layout>.jobs-list-panel,.jobs-layout>.jobs-detail-panel{display:block!important;min-height:0!important;height:100%!important;max-height:100%!important;overflow-x:hidden!important;overflow-y:scroll!important;overscroll-behavior:contain;scrollbar-gutter:stable}
+.jobs-layout>.jobs-list-panel::-webkit-scrollbar,.jobs-layout>.jobs-detail-panel::-webkit-scrollbar{width:10px}
+.jobs-layout>.jobs-list-panel::-webkit-scrollbar-track,.jobs-layout>.jobs-detail-panel::-webkit-scrollbar-track{background:var(--app-surface-2,#f8fafc)}
+.jobs-layout>.jobs-list-panel::-webkit-scrollbar-thumb,.jobs-layout>.jobs-detail-panel::-webkit-scrollbar-thumb{border:2px solid var(--app-surface-2,#f8fafc);border-radius:999px;background:#a8b2c1}
+.jobs-layout>.jobs-list-panel::-webkit-scrollbar-thumb:hover,.jobs-layout>.jobs-detail-panel::-webkit-scrollbar-thumb:hover{background:#7c8898}
+@media(max-width:700px){.jobs-page{height:auto!important;max-height:none!important;overflow:visible!important}.jobs-page>main,.jobs-layout{height:auto!important;max-height:none!important;overflow:visible!important}.jobs-layout>.jobs-list-panel{height:auto!important;max-height:none!important;overflow:visible!important}}

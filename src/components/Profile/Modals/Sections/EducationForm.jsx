@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import api from "../../../../services/api";
 import Toast from "../../../UI/Toast";
+import OrganizationLookupInput from "../../../UI/OrganizationLookupInput";
 
 export default function EducationForm({ user, setUser, onClose }) {
   const months = useMemo(
@@ -19,7 +20,7 @@ export default function EducationForm({ user, setUser, onClose }) {
       { value: "11", label: "November" },
       { value: "12", label: "December" },
     ],
-    []
+    [],
   );
 
   const years = useMemo(() => {
@@ -34,6 +35,7 @@ export default function EducationForm({ user, setUser, onClose }) {
   }, []);
 
   const [school, setSchool] = useState("");
+  const [institutionCompanyId, setInstitutionCompanyId] = useState(null);
   const [degree, setDegree] = useState("");
   const [field, setField] = useState("");
   const [startMonth, setStartMonth] = useState("");
@@ -79,6 +81,7 @@ export default function EducationForm({ user, setUser, onClose }) {
 
   const resetForm = () => {
     setSchool("");
+    setInstitutionCompanyId(null);
     setDegree("");
     setField("");
     setStartMonth("");
@@ -143,6 +146,7 @@ export default function EducationForm({ user, setUser, onClose }) {
 
     const payload = {
       school: school.trim(),
+      institutionCompanyId,
       degree: degree.trim(),
       field: field.trim(),
       startMonth: startMonth ? Number(startMonth) : null,
@@ -201,19 +205,21 @@ export default function EducationForm({ user, setUser, onClose }) {
 
       <div style={styles.field}>
         <label style={styles.label}>School*</label>
-        <input
-          style={{
-            ...styles.input,
-            ...(errors.school ? styles.inputError : null),
-          }}
+        <OrganizationLookupInput
+          purpose="education"
+          inputStyle={styles.input}
+          errorStyle={errors.school ? styles.inputError : null}
           placeholder="Example: Harvard University"
           value={school}
-          onChange={(e) => {
-            setSchool(e.target.value);
+          onChange={(value) => {
+            setSchool(value);
             if (errors.school) {
               setErrors((prev) => ({ ...prev, school: "" }));
             }
           }}
+          onSelect={(organization) =>
+            setInstitutionCompanyId(organization?.id || null)
+          }
         />
         {errors.school && <div style={styles.errorText}>{errors.school}</div>}
       </div>
@@ -433,12 +439,12 @@ const styles = {
   title: {
     fontSize: 22,
     fontWeight: 700,
-    color: "#191919",
+    color: "var(--app-text)",
   },
 
   helper: {
     fontSize: 13,
-    color: "rgba(0,0,0,0.6)",
+    color: "var(--app-muted)",
     marginTop: -6,
   },
 
@@ -451,46 +457,46 @@ const styles = {
   label: {
     fontSize: 14,
     fontWeight: 600,
-    color: "#191919",
+    color: "var(--app-text)",
   },
 
   subLabel: {
     fontSize: 13,
     fontWeight: 500,
-    color: "rgba(0,0,0,0.7)",
+    color: "var(--app-text-soft)",
     marginBottom: 6,
   },
 
   input: {
     height: 44,
     borderRadius: 10,
-    border: "1px solid #cfd8dc",
+    border: "1px solid var(--app-border)",
     padding: "0 14px",
     fontSize: 14,
     outline: "none",
-    background: "#fff",
+    background: "var(--app-surface)",
   },
 
   select: {
     width: "100%",
     height: 44,
     borderRadius: 10,
-    border: "1px solid #cfd8dc",
+    border: "1px solid var(--app-border)",
     padding: "0 14px",
     fontSize: 14,
     outline: "none",
-    background: "#fff",
+    background: "var(--app-surface)",
   },
 
   textarea: {
     borderRadius: 10,
-    border: "1px solid #cfd8dc",
+    border: "1px solid var(--app-border)",
     padding: "12px 14px",
     fontSize: 14,
     outline: "none",
     resize: "vertical",
     minHeight: 110,
-    background: "#fff",
+    background: "var(--app-surface)",
     fontFamily: "inherit",
   },
 
@@ -508,9 +514,9 @@ const styles = {
   },
 
   cancelBtn: {
-    border: "1px solid #cfd8dc",
-    background: "#fff",
-    color: "#191919",
+    border: "1px solid var(--app-border)",
+    background: "var(--app-surface)",
+    color: "var(--app-text)",
     borderRadius: 999,
     padding: "10px 18px",
     fontSize: 14,

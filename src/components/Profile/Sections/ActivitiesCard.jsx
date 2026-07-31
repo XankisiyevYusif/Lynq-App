@@ -1,3 +1,5 @@
+import ProfileIcon from "../ProfileIcon";
+
 export default function ActivitiesCard({ posts }) {
   return (
     <div style={styles.card}>
@@ -6,9 +8,7 @@ export default function ActivitiesCard({ posts }) {
       <div style={styles.list}>
         {posts.map((post) => (
           <div key={post.id} style={styles.post}>
-            <div style={styles.postText}>
-              {post.content}
-            </div>
+            <div style={styles.postText}>{post.content}</div>
 
             <div style={styles.postMeta}>
               {new Date(post.createdAt).toLocaleDateString()}
@@ -18,7 +18,8 @@ export default function ActivitiesCard({ posts }) {
       </div>
 
       <div style={styles.footer}>
-        Show all posts →
+        <span>Show all posts</span>
+        <ProfileIcon name="arrowRight" size={17} />
       </div>
     </div>
   );
@@ -26,7 +27,7 @@ export default function ActivitiesCard({ posts }) {
 
 const styles = {
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: "var(--app-surface)",
     borderRadius: 16,
     boxShadow: "0 1px 6px rgba(0,0,0,0.08)",
     padding: "16px 20px",
@@ -51,17 +52,20 @@ const styles = {
 
   postText: {
     fontSize: 14,
-    color: "rgba(0,0,0,0.85)",
+    color: "var(--app-text)",
     lineHeight: "20px",
   },
 
   postMeta: {
     marginTop: 6,
     fontSize: 12,
-    color: "#6b6f73",
+    color: "var(--app-muted)",
   },
 
   footer: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 6,
     marginTop: 12,
     fontSize: 14,
     color: "#0073b1",

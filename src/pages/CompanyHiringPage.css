@@ -1,0 +1,47 @@
+.company-hiring-page { min-height:100vh; padding:34px max(18px,calc((100vw - 1160px)/2)) 70px; background:radial-gradient(circle at 10% 0,rgba(124,58,237,.08),transparent 28rem),var(--app-bg); color:var(--app-text); }
+.company-hiring-page * { box-sizing:border-box; }
+.hiring-hero { display:flex; align-items:center; justify-content:space-between; gap:24px; margin-bottom:20px; }
+.hiring-hero > div > span, .hiring-overview-grid article > span, .hiring-jobs-panel header span, .hiring-insights header span { color:var(--app-accent); font-size:.7rem; font-weight:800; letter-spacing:.1em; text-transform:uppercase; }
+.hiring-hero h1 { margin:6px 0; font-size:clamp(1.8rem,4vw,2.5rem); letter-spacing:-.045em; }
+.hiring-hero p { max-width:690px; margin:0; color:var(--app-muted); line-height:1.55; }
+.hiring-tabs { display:flex; gap:5px; padding:5px; border:1px solid var(--app-border); border-radius:14px; background:var(--app-surface); }
+.hiring-tabs button { min-height:40px; padding:0 18px; border:0; border-radius:10px; background:transparent; color:var(--app-muted); font:inherit; font-size:.82rem; font-weight:750; cursor:pointer; }
+.hiring-tabs button.is-active,.hiring-tabs button:hover { background:var(--app-accent-soft); color:var(--app-accent); }
+.hiring-metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:13px; margin-top:15px; }
+.hiring-metrics article { display:grid; min-height:150px; padding:18px; border:1px solid var(--app-border); border-radius:17px; background:var(--app-surface); box-shadow:var(--app-shadow); }
+.hiring-metrics span { color:var(--app-muted); font-size:.76rem; font-weight:700; }
+.hiring-metrics strong { margin:8px 0; font-size:1.8rem; letter-spacing:-.04em; }
+.hiring-metrics small { align-self:end; color:var(--app-muted); font-size:.68rem; line-height:1.4; }
+.hiring-overview-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:13px; margin-top:13px; }
+.hiring-overview-grid article,.hiring-jobs-panel,.hiring-insights { padding:22px; border:1px solid var(--app-border); border-radius:18px; background:var(--app-surface); box-shadow:var(--app-shadow); }
+.hiring-overview-grid h2 { margin:7px 0; font-size:1.12rem; }
+.hiring-overview-grid p { margin:0 0 18px; color:var(--app-muted); font-size:.83rem; line-height:1.55; }
+.hiring-overview-grid button,.hiring-job-actions button { min-height:40px; padding:0 14px; border:1px solid var(--app-border); border-radius:10px; background:var(--app-surface-2); color:var(--app-text-soft); font:inherit; font-size:.76rem; font-weight:750; cursor:pointer; }
+.hiring-overview-grid button:hover,.hiring-job-actions button:hover { border-color:var(--app-accent); color:var(--app-accent); }
+.hiring-jobs-panel,.hiring-insights { margin-top:15px; }
+.hiring-jobs-panel > header,.hiring-insights > header { display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:15px; }
+.hiring-jobs-panel h2,.hiring-insights h2 { margin:4px 0 0; font-size:1.15rem; }
+.hiring-jobs-panel select { min-height:40px; padding:0 12px; border:1px solid var(--app-border); border-radius:10px; background:var(--app-surface-2); color:var(--app-text); }
+.hiring-job-list { display:grid; gap:10px; }
+.hiring-job-list > article { display:grid; grid-template-columns:minmax(220px,1.3fr) minmax(260px,1fr); gap:15px; padding:17px; border:1px solid var(--app-border); border-radius:15px; background:var(--app-surface-2); }
+.hiring-job-title > span { display:inline-block; padding:4px 8px; border-radius:999px; font-size:.65rem; font-weight:800; }
+.hiring-job-title > span.is-active { background:rgba(5,150,105,.1); color:#059669; }
+.hiring-job-title > span.is-closed { background:rgba(220,38,38,.1); color:#dc2626; }
+.hiring-job-title h3 { margin:8px 0 4px; font-size:1rem; }
+.hiring-job-title p,.hiring-job-title small { margin:0; color:var(--app-muted); font-size:.72rem; }
+.hiring-job-signals { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; }
+.hiring-job-signals span { padding:9px; border:1px solid var(--app-border); border-radius:10px; background:var(--app-surface); color:var(--app-muted); font-size:.67rem; }
+.hiring-job-signals strong { display:block; margin-bottom:2px; color:var(--app-text); font-size:1rem; }
+.hiring-job-actions { grid-column:1/-1; display:flex; flex-wrap:wrap; gap:7px; padding-top:12px; border-top:1px solid var(--app-border); }
+.hiring-job-actions button.is-primary { border-color:var(--app-accent); background:var(--app-accent); color:#fff; }
+.hiring-job-actions button.is-danger { color:#dc2626; }
+.hiring-insight-summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
+.hiring-insight-summary article { padding:15px; border:1px solid var(--app-border); border-radius:13px; background:var(--app-surface-2); }
+.hiring-insight-summary span { display:block; color:var(--app-muted); font-size:.72rem; }
+.hiring-insight-summary strong { display:block; margin-top:5px; font-size:1.35rem; }
+.hiring-mini-chart { display:flex; align-items:flex-end; gap:4px; height:180px; margin-top:18px; padding:18px 12px 0; border-bottom:1px solid var(--app-border); background:linear-gradient(180deg,var(--app-surface-2),transparent); }
+.hiring-mini-chart i { flex:1; min-height:5px; border-radius:4px 4px 0 0; background:linear-gradient(180deg,var(--app-accent),#22d3ee); opacity:.82; }
+.hiring-state { display:grid; place-items:center; min-height:250px; margin-top:15px; padding:30px; border:1px dashed var(--app-border); border-radius:17px; background:var(--app-surface); color:var(--app-muted); text-align:center; }
+.hiring-state.is-error { color:#dc2626; }
+@media (max-width:900px) { .hiring-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); } .hiring-job-list > article { grid-template-columns:1fr; } .hiring-job-actions { grid-column:auto; } }
+@media (max-width:650px) { .company-hiring-page { padding-top:22px; } .hiring-hero { align-items:flex-start; flex-direction:column; } .hiring-overview-grid,.hiring-metrics,.hiring-insight-summary { grid-template-columns:1fr; } .hiring-tabs { overflow:auto; } }

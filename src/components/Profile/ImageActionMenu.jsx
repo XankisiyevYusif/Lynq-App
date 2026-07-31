@@ -47,7 +47,7 @@ const styles = {
   menu: {
     position: "absolute",
     minWidth: 170,
-    background: "#fff",
+    background: "var(--app-surface)",
     borderRadius: 12,
     boxShadow: "0 8px 30px rgba(0,0,0,0.14)",
     border: "1px solid rgba(0,0,0,0.08)",

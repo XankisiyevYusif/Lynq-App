@@ -1,0 +1,507 @@
+.company-dashboard-page {
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding: 34px max(18px, calc((100vw - 1160px) / 2)) 64px;
+  background:
+    radial-gradient(circle at 14% 0%, rgba(79, 70, 229, 0.07), transparent 28rem),
+    var(--app-bg);
+  color: var(--app-text);
+}
+
+.company-dashboard-page * {
+  box-sizing: border-box;
+}
+
+.company-dashboard-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  margin-bottom: 22px;
+}
+
+.company-dashboard-eyebrow {
+  color: var(--app-accent);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.company-dashboard-hero h1 {
+  margin: 7px 0 5px;
+  color: var(--app-text);
+  font-size: clamp(1.75rem, 3vw, 2.35rem);
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+}
+
+.company-dashboard-hero p,
+.company-dashboard-actions-card p {
+  max-width: 650px;
+  margin: 0;
+  color: var(--app-muted);
+  font-size: 0.94rem;
+  line-height: 1.55;
+}
+
+.company-dashboard-profile-button {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 7px;
+  padding: 11px 16px;
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  background: var(--app-surface);
+  box-shadow: 0 4px 13px rgba(15, 23, 42, 0.04);
+  color: var(--app-text-soft);
+  font: inherit;
+  font-size: 0.83rem;
+  font-weight: 750;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.company-dashboard-profile-button:hover:not(:disabled) {
+  border-color: var(--app-accent);
+  box-shadow: 0 8px 20px rgba(79, 70, 229, 0.1);
+  color: var(--app-accent);
+  transform: translateY(-1px);
+}
+
+.company-dashboard-profile-button:disabled,
+.company-dashboard-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.company-dashboard-icon {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+}
+
+.company-dashboard-profile-button .company-dashboard-icon,
+.company-dashboard-row > .company-dashboard-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.company-dashboard-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 13px;
+}
+
+.company-dashboard-metric {
+  position: relative;
+  display: grid;
+  min-height: 154px;
+  overflow: hidden;
+  padding: 17px;
+  border: 1px solid var(--app-border);
+  border-radius: 16px;
+  background: var(--app-surface);
+  box-shadow: var(--app-shadow);
+  transition:
+    border-color 180ms ease,
+    transform 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.company-dashboard-metric::after {
+  position: absolute;
+  top: -38px;
+  right: -38px;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: var(--metric-soft);
+  content: "";
+}
+
+.company-dashboard-metric:hover {
+  border-color: color-mix(in srgb, var(--metric-color) 35%, var(--app-border));
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.07);
+  transform: translateY(-2px);
+}
+
+.company-dashboard-metric-icon {
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  margin-bottom: 14px;
+  border-radius: 11px;
+  background: var(--metric-soft);
+  color: var(--metric-color);
+}
+
+.company-dashboard-metric-label {
+  color: var(--app-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.company-dashboard-metric strong {
+  margin: 4px 0 2px;
+  color: var(--app-text);
+  font-size: 1.75rem;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.company-dashboard-metric small {
+  align-self: end;
+  margin-top: 10px;
+  color: var(--app-muted);
+  font-size: 0.69rem;
+}
+
+.company-dashboard-metric.tone-indigo {
+  --metric-color: #4f46e5;
+  --metric-soft: rgba(79, 70, 229, 0.1);
+}
+
+.company-dashboard-metric.tone-cyan {
+  --metric-color: #0891b2;
+  --metric-soft: rgba(8, 145, 178, 0.1);
+}
+
+.company-dashboard-metric.tone-violet {
+  --metric-color: #7c3aed;
+  --metric-soft: rgba(124, 58, 237, 0.1);
+}
+
+.company-dashboard-metric.tone-amber {
+  --metric-color: #d97706;
+  --metric-soft: rgba(217, 119, 6, 0.1);
+}
+
+.company-dashboard-metric.tone-rose {
+  --metric-color: #e11d48;
+  --metric-soft: rgba(225, 29, 72, 0.1);
+}
+
+.company-dashboard-metric.tone-emerald {
+  --metric-color: #059669;
+  --metric-soft: rgba(5, 150, 105, 0.1);
+}
+
+.company-dashboard-metric.tone-blue {
+  --metric-color: #2563eb;
+  --metric-soft: rgba(37, 99, 235, 0.1);
+}
+
+.company-dashboard-actions-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  margin-top: 15px;
+  padding: 22px;
+  border: 1px solid var(--app-border);
+  border-radius: 16px;
+  background:
+    linear-gradient(110deg, var(--app-surface), var(--app-surface-2));
+  box-shadow: var(--app-shadow);
+}
+
+.company-dashboard-actions-card h2,
+.company-dashboard-list-card h2 {
+  margin: 5px 0 4px;
+  color: var(--app-text);
+  font-size: 1.08rem;
+  letter-spacing: -0.02em;
+}
+
+.company-dashboard-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 9px;
+}
+
+.company-dashboard-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 42px;
+  padding: 9px 13px;
+  border: 1px solid var(--app-border);
+  border-radius: 11px;
+  background: var(--app-surface);
+  color: var(--app-text-soft);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 750;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease,
+    background-color 160ms ease;
+}
+
+.company-dashboard-actions button:hover:not(:disabled) {
+  border-color: var(--app-accent);
+  color: var(--app-accent);
+  transform: translateY(-1px);
+}
+
+.company-dashboard-actions button.is-primary {
+  border-color: var(--app-accent);
+  background: var(--app-accent);
+  color: #fff;
+}
+
+.company-dashboard-actions button.is-primary:hover {
+  filter: brightness(0.95);
+  color: #fff;
+}
+
+.company-dashboard-actions .company-dashboard-icon {
+  width: 17px;
+  height: 17px;
+}
+
+.company-dashboard-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.company-dashboard-list-card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--app-border);
+  border-radius: 16px;
+  background: var(--app-surface);
+  box-shadow: var(--app-shadow);
+}
+
+.company-dashboard-list-card > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 18px 19px 15px;
+  border-bottom: 1px solid var(--app-border);
+}
+
+.company-dashboard-list-card > header span {
+  color: var(--app-accent);
+  font-size: 0.67rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.company-dashboard-list-card > header h2 {
+  margin-bottom: 0;
+}
+
+.company-dashboard-list-card > header button {
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--app-accent-soft);
+  color: var(--app-accent);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.company-dashboard-row {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 18px;
+  border: 0;
+  border-bottom: 1px solid var(--app-border);
+  background: transparent;
+  color: var(--app-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    padding-left 180ms ease;
+}
+
+.company-dashboard-row:last-child {
+  border-bottom: 0;
+}
+
+.company-dashboard-row:hover {
+  padding-left: 21px;
+  background: var(--app-surface-2);
+}
+
+.company-dashboard-row-date {
+  display: inline-flex;
+  width: 47px;
+  height: 43px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: var(--app-accent-soft);
+  color: var(--app-accent);
+  font-size: 0.67rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.company-dashboard-job-status {
+  width: 10px;
+  height: 10px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #94a3b8;
+  box-shadow: 0 0 0 4px rgba(148, 163, 184, 0.13);
+}
+
+.company-dashboard-job-status.is-active {
+  background: #10b981;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.13);
+}
+
+.company-dashboard-row-copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.company-dashboard-row-copy strong {
+  overflow: hidden;
+  color: var(--app-text);
+  font-size: 0.82rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.company-dashboard-row-copy small {
+  color: var(--app-muted);
+  font-size: 0.69rem;
+}
+
+.company-dashboard-row > .company-dashboard-icon {
+  color: var(--app-muted);
+}
+
+.company-dashboard-empty,
+.company-dashboard-state {
+  display: flex;
+  min-height: 180px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 28px;
+  color: var(--app-muted);
+  text-align: center;
+}
+
+.company-dashboard-empty .company-dashboard-icon {
+  width: 28px;
+  height: 28px;
+  margin-bottom: 10px;
+  color: var(--app-accent);
+}
+
+.company-dashboard-empty strong,
+.company-dashboard-state strong {
+  margin-bottom: 5px;
+  color: var(--app-text);
+  font-size: 0.88rem;
+}
+
+.company-dashboard-empty span,
+.company-dashboard-state span {
+  font-size: 0.76rem;
+}
+
+.company-dashboard-state {
+  min-height: 210px;
+  border: 1px solid rgba(225, 29, 72, 0.2);
+  border-radius: 16px;
+  background: var(--app-surface);
+}
+
+.company-dashboard-state strong {
+  color: #e11d48;
+}
+
+@media (max-width: 1040px) {
+  .company-dashboard-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .company-dashboard-actions-card {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .company-dashboard-actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 760px) {
+  .company-dashboard-page {
+    padding-top: 24px;
+  }
+
+  .company-dashboard-hero {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .company-dashboard-metrics,
+  .company-dashboard-columns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .company-dashboard-profile-button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 520px) {
+  .company-dashboard-metrics,
+  .company-dashboard-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .company-dashboard-actions {
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .company-dashboard-actions button {
+    justify-content: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .company-dashboard-profile-button,
+  .company-dashboard-metric,
+  .company-dashboard-actions button,
+  .company-dashboard-row {
+    transition: none;
+  }
+}

@@ -3,10 +3,14 @@ import * as signalR from "@microsoft/signalr";
 
 import api, { API_ROOT } from "../../services/api";
 import EditPostModal from "./EditPostModal";
-import pencil from "../../assets/pencil.png";
 import CommentWindow from "../comment/commentWindow";
 import defaultAvatar from "../../assets/default-avatar.png";
 import "./Post.css";
+import { resolveMediaUrl } from "../../utils/mediaUrl";
+import ProfileIcon from "../Profile/ProfileIcon";
+import RichPostContent from "./RichPostContent";
+import ReportPostModal from "./ReportPostModal";
+import { useNavigate } from "react-router-dom";
 
 const API_BASE_URL = API_ROOT;
 
@@ -20,9 +24,30 @@ const PostItem = ({
   likeConnection,
   defaultCommentsOpen = false,
   highlighted = false,
+  onSavedChange,
 }) => {
+  const navigate = useNavigate();
   const commentCountConnectionRef = useRef(null);
   const postRef = useRef(null);
+  const postMenuRef = useRef(null);
+  const latestPostRef = useRef(post);
+  const onPostUpdatedRef = useRef(onPostUpdated);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [postMenuOpen, setPostMenuOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [localLikeCount, setLocalLikeCount] = useState(post.likeCount || 0);
+  const [isLiked, setIsLiked] = useState(!!post.isLikedByCurrentUser);
+  const [isCommentsOpen, setIsCommentsOpen] = useState(defaultCommentsOpen);
+  const [localCommentCount, setLocalCommentCount] = useState(
+    post.commentCount || 0,
+  );
+  const [isSaved, setIsSaved] = useState(!!post.isSaved);
+  const [localSaveCount, setLocalSaveCount] = useState(
+    Number(post.saveCount ?? post.savedCount ?? post.SaveCount ?? post.SavedCount ?? 0),
+  );
+
+  latestPostRef.current = post;
+  onPostUpdatedRef.current = onPostUpdated;
 
   useEffect(() => {
     if (highlighted && postRef.current) {
@@ -33,13 +58,18 @@ const PostItem = ({
     }
   }, [highlighted]);
 
-  const [isEditOpen, setIsEditOpen] = useState(false);
-  const [localLikeCount, setLocalLikeCount] = useState(post.likeCount || 0);
-  const [isLiked, setIsLiked] = useState(!!post.isLikedByCurrentUser);
-  const [isCommentsOpen, setIsCommentsOpen] = useState(defaultCommentsOpen);  
-  const [localCommentCount, setLocalCommentCount] = useState(
-    post.commentCount || 0
-  );
+  useEffect(() => {
+    if (!postMenuOpen) return;
+
+    const closeOnOutsideClick = (event) => {
+      if (postMenuRef.current && !postMenuRef.current.contains(event.target)) {
+        setPostMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", closeOnOutsideClick);
+    return () => document.removeEventListener("mousedown", closeOnOutsideClick);
+  }, [postMenuOpen]);
 
   const {
     id,
@@ -53,6 +83,39 @@ const PostItem = ({
   } = post;
 
   useEffect(() => {
+    if (!id || !postRef.current || typeof IntersectionObserver === "undefined") {
+      return undefined;
+    }
+
+    const storageKey = `nexora-post-view-${id}`;
+    if (sessionStorage.getItem(storageKey)) return undefined;
+
+    let visibleTimer;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        window.clearTimeout(visibleTimer);
+        if (!entry?.isIntersecting || entry.intersectionRatio < 0.6) return;
+
+        visibleTimer = window.setTimeout(() => {
+          sessionStorage.setItem(storageKey, "1");
+          api.post(`/Analytics/track/post-view/${id}`).catch((error) => {
+            sessionStorage.removeItem(storageKey);
+            console.error("Post analytics tracking failed:", error);
+          });
+          observer.disconnect();
+        }, 1000);
+      },
+      { threshold: [0.6] },
+    );
+
+    observer.observe(postRef.current);
+    return () => {
+      window.clearTimeout(visibleTimer);
+      observer.disconnect();
+    };
+  }, [id]);
+
+  useEffect(() => {
     setLocalLikeCount(post.likeCount || 0);
     setIsLiked(!!post.isLikedByCurrentUser);
   }, [post.likeCount, post.isLikedByCurrentUser]);
@@ -60,7 +123,17 @@ const PostItem = ({
   useEffect(() => {
     setLocalCommentCount(post.commentCount || 0);
   }, [post.commentCount]);
-  
+
+  useEffect(() => {
+    setIsSaved(!!post.isSaved);
+  }, [post.isSaved]);
+
+  useEffect(() => {
+    setLocalSaveCount(
+      Number(post.saveCount ?? post.savedCount ?? post.SaveCount ?? post.SavedCount ?? 0),
+    );
+  }, [post.saveCount, post.savedCount, post.SaveCount, post.SavedCount]);
+
   useEffect(() => {
     if (defaultCommentsOpen) {
       setIsCommentsOpen(true);
@@ -88,8 +161,8 @@ const PostItem = ({
 
           setLocalCommentCount(count);
 
-          onPostUpdated?.({
-            ...post,
+          onPostUpdatedRef.current?.({
+            ...latestPostRef.current,
             commentCount: count,
           });
         });
@@ -98,7 +171,7 @@ const PostItem = ({
           connection
             .invoke("JoinPostCounter", id)
             .catch((err) =>
-              console.error("JoinPostCounter after reconnect failed:", err)
+              console.error("JoinPostCounter after reconnect failed:", err),
             );
         });
 
@@ -131,7 +204,7 @@ const PostItem = ({
 
       commentCountConnectionRef.current = null;
     };
-  }, [id, onPostUpdated, post]);
+  }, [id]);
 
   const handleLike = async () => {
     const previousLiked = isLiked;
@@ -160,8 +233,11 @@ const PostItem = ({
         isLikedByCurrentUser: nextLiked,
       });
     } catch (error) {
-      console.warn("HTTP Like action failed, attempting SignalR fallback:", error);
-      
+      console.warn(
+        "HTTP Like action failed, attempting SignalR fallback:",
+        error,
+      );
+
       if (likeConnection) {
         try {
           await likeConnection.invoke("ToggleLike", id);
@@ -197,13 +273,13 @@ const PostItem = ({
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `${username || 'User'}'s Post`,
-          text: content || 'Check out this post on Lynq!',
-          url: shareUrl
+          title: `${username || "User"}'s Post`,
+          text: content || "Check out this post on Nexora!",
+          url: shareUrl,
         });
         showToast?.("Shared successfully!", "success");
       } catch (err) {
-        if (err.name !== 'AbortError') {
+        if (err.name !== "AbortError") {
           console.error("Native share failed, falling back to copy:", err);
           try {
             await navigator.clipboard.writeText(shareUrl);
@@ -223,6 +299,43 @@ const PostItem = ({
     }
   };
 
+  const handleSave = async () => {
+    const previous = isSaved;
+    const nextSaved = !previous;
+    const previousCount = localSaveCount;
+    const nextCount = Math.max(0, previousCount + (nextSaved ? 1 : -1));
+    setIsSaved(nextSaved);
+    setLocalSaveCount(nextCount);
+
+    try {
+      if (previous) {
+        await api.delete(`/SavedPost/${id}`);
+      } else {
+        await api.post(`/SavedPost/${id}`);
+      }
+      onSavedChange?.(id, nextSaved, nextCount);
+      onPostUpdated?.({
+        ...post,
+        isSaved: nextSaved,
+        saveCount: nextCount,
+        savedCount: nextCount,
+      });
+      window.dispatchEvent(
+        new CustomEvent("nexora:saved-post-changed", {
+          detail: { postId: id, isSaved: nextSaved, saveCount: nextCount },
+        }),
+      );
+    } catch (error) {
+      setIsSaved(previous);
+      setLocalSaveCount(previousCount);
+      showToast?.("Saved post action failed.", "error");
+    }
+  };
+
+  const openAuthorProfile = () => {
+    if (username) navigate(`/profile/${username}`);
+  };
+
   const formattedDate = createdAt
     ? new Date(createdAt).toLocaleDateString("en-GB", {
         day: "numeric",
@@ -231,16 +344,16 @@ const PostItem = ({
       })
     : "";
 
-  const profileImageSrc = userPhoto
-    ? `${API_BASE_URL}${userPhoto}`
-    : defaultAvatar;
-
-  const postImageSrc = imageUrl ? `${API_BASE_URL}${imageUrl}` : null;
-  const postVideoSrc = videoUrl ? `${API_BASE_URL}${videoUrl}` : null;
+  const profileImageSrc = resolveMediaUrl(userPhoto, defaultAvatar);
+  const postImageSrc = resolveMediaUrl(imageUrl) || null;
+  const postVideoSrc = resolveMediaUrl(videoUrl) || null;
 
   return (
     <>
-      <div className={`post-card ${highlighted ? "highlighted-post" : ""}`} ref={postRef}>
+      <div
+        className={`post-card ${highlighted ? "highlighted-post" : ""}`}
+        ref={postRef}
+      >
         <div className="post-header">
           <div className="post-author-section">
             <img
@@ -253,10 +366,25 @@ const PostItem = ({
               onError={(e) => {
                 e.currentTarget.src = defaultAvatar;
               }}
+              onClick={openAuthorProfile}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  openAuthorProfile();
+                }
+              }}
+              role="button"
+              tabIndex={0}
             />
 
             <div>
-              <div className="post-author-name">{username || "Unknown User"}</div>
+              <button
+                type="button"
+                className="post-author-name post-author-link"
+                onClick={openAuthorProfile}
+              >
+                {username || "Unknown User"}
+              </button>
               <div className="post-author-meta">
                 {role || "Member"}
                 {formattedDate ? ` • ${formattedDate}` : ""}
@@ -264,18 +392,51 @@ const PostItem = ({
             </div>
           </div>
 
-          {showActions && (
+          {showActions ? (
             <button
               type="button"
-              className="post-pencil-btn"
+              className="post-pencil-btn profile-icon-button"
               onClick={() => setIsEditOpen(true)}
+              aria-label="Edit post"
             >
-              <img src={pencil} alt="Edit post" className="post-pencil-icon" />
+              <ProfileIcon name="edit" size={18} />
             </button>
+          ) : (
+            <div className="post-more-wrap" ref={postMenuRef}>
+              <button
+                type="button"
+                className="post-more-button"
+                aria-label="Post actions"
+                aria-expanded={postMenuOpen}
+                onClick={() => setPostMenuOpen((current) => !current)}
+              >
+                •••
+              </button>
+
+              {postMenuOpen && (
+                <div className="post-action-menu">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPostMenuOpen(false);
+                      setReportOpen(true);
+                    }}
+                  >
+                    <span aria-hidden="true">!</span>
+                    <div>
+                      <strong>Report post</strong>
+                      <small>Send a private report to moderation</small>
+                    </div>
+                  </button>
+                </div>
+              )}
+            </div>
           )}
         </div>
 
-        {content && <div className="post-content">{content}</div>}
+        {content && (
+          <RichPostContent content={content} className="post-content" />
+        )}
 
         {postImageSrc && (
           <img src={postImageSrc} alt="Post" className="post-image" />
@@ -306,15 +467,7 @@ const PostItem = ({
             className={`post-footer-btn ${isLiked ? "liked" : ""}`}
             onClick={handleLike}
           >
-            {isLiked ? (
-              <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" width="18" height="18">
-                <path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.579 5.579 0 0112 5.052 5.579 5.579 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z" />
-              </svg>
-            ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" width="18" height="18">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
-              </svg>
-            )}
+            <ProfileIcon name="heart" size={18} filled={isLiked} />
             <span>Like</span>
           </button>
 
@@ -323,17 +476,26 @@ const PostItem = ({
             className="post-footer-btn"
             onClick={() => setIsCommentsOpen((prev) => !prev)}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" width="18" height="18">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48.432.447.74 1.04.586 1.641l-.318 1.235c-.149.578.43 1.09 1.01.916l1.3-.393a2.077 2.077 0 0 1 1.621.13c1.119.589 2.394.887 3.728.887Z" />
-            </svg>
+            <ProfileIcon name="comment" size={18} />
             <span>Comment</span>
           </button>
 
-          <button type="button" className="post-footer-btn" onClick={handleShare}>
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" width="18" height="18">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" />
-            </svg>
+          <button
+            type="button"
+            className="post-footer-btn"
+            onClick={handleShare}
+          >
+            <ProfileIcon name="share" size={18} />
             <span>Share</span>
+          </button>
+
+          <button
+            type="button"
+            className={`post-footer-btn ${isSaved ? "saved" : ""}`}
+            onClick={handleSave}
+          >
+            <ProfileIcon name="bookmark" size={18} filled={isSaved} />
+            <span>{isSaved ? "Saved" : "Save"}</span>
           </button>
         </div>
 
@@ -369,6 +531,14 @@ const PostItem = ({
             onPostDeleted?.(deletedPostId);
             setIsEditOpen(false);
           }}
+        />
+      )}
+
+      {reportOpen && (
+        <ReportPostModal
+          postId={id}
+          onClose={() => setReportOpen(false)}
+          showToast={showToast}
         />
       )}
     </>

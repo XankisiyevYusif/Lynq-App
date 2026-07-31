@@ -4,11 +4,9 @@ import useEmblaCarousel from "embla-carousel-react";
 
 import api from "../../../services/api";
 import defaultAvatar from "../../../assets/default-avatar.png";
-import saveIcon from "../../../assets/save.png";
-import saveActiveIcon from "../../../assets/saveactive.png";
 import CreateJobPostBox from "./CreateJobPostBox";
-
-const API_ROOT = (api.defaults.baseURL || "").replace(/\/api\/?$/, "");
+import { resolveMediaUrl } from "../../../utils/mediaUrl";
+import ProfileIcon from "../../Profile/ProfileIcon";
 
 export default function JobPostFeed({ username, isOwner, onJobCreated }) {
   const navigate = useNavigate();
@@ -31,11 +29,7 @@ export default function JobPostFeed({ username, isOwner, onJobCreated }) {
     return [];
   };
 
-  const getImageUrl = (path) => {
-    if (!path) return defaultAvatar;
-    if (path.startsWith("http://") || path.startsWith("https://")) return path;
-    return `${API_ROOT}/${path.replace(/^\/+/, "")}`;
-  };
+  const getImageUrl = (path) => resolveMediaUrl(path, defaultAvatar);
 
   const formatDate = (dateValue) => {
     if (!dateValue) return "";
@@ -59,7 +53,9 @@ export default function JobPostFeed({ username, isOwner, onJobCreated }) {
     try {
       setLoading(true);
 
-      const res = await api.get(`/JobPost/employer/${username}?page=1&pageSize=12`);
+      const res = await api.get(
+        `/JobPost/employer/${username}?page=1&pageSize=12`,
+      );
       const list = getResponseData(res);
 
       setJobs(list);
@@ -111,11 +107,15 @@ export default function JobPostFeed({ username, isOwner, onJobCreated }) {
     emblaApi?.scrollTo(index);
   };
 
+  const openJobInsideSearch = (job) => {
+    navigate(`/jobs/${encodeURIComponent(job.id)}`, {
+      state: { jobPreview: job },
+    });
+  };
+
   const goToAllJobs = () => {
     navigate("/jobs", {
-      state: {
-        companyUsername: username,
-      },
+      state: { companyUsername: username },
     });
   };
 
@@ -132,8 +132,8 @@ export default function JobPostFeed({ username, isOwner, onJobCreated }) {
           prev.map((item) =>
             Number(item.id) === Number(job.id)
               ? { ...item, isSaved: false }
-              : item
-          )
+              : item,
+          ),
         );
       } else {
         await api.post(`/JobPost/save/${job.id}`);
@@ -142,8 +142,8 @@ export default function JobPostFeed({ username, isOwner, onJobCreated }) {
           prev.map((item) =>
             Number(item.id) === Number(job.id)
               ? { ...item, isSaved: true }
-              : item
-          )
+              : item,
+          ),
         );
       }
     } catch (err) {
@@ -169,7 +169,7 @@ export default function JobPostFeed({ username, isOwner, onJobCreated }) {
 
   if (loading) {
     return (
-      <div style={styles.wrapper}>
+      <div className="company-jobs-feed" style={styles.wrapper}>
         <p style={styles.empty}>Loading job openings...</p>
       </div>
     );
@@ -177,8 +177,8 @@ export default function JobPostFeed({ username, isOwner, onJobCreated }) {
 
   if (!jobs.length) {
     return (
-      <div style={styles.wrapper}>
-        <div style={styles.header}>
+      <div className="company-jobs-feed" style={styles.wrapper}>
+        <div className="company-jobs-feed-header" style={styles.header}>
           <h2 style={styles.title}>Newly posted jobs</h2>
 
           {isOwner && (
@@ -198,8 +198,8 @@ export default function JobPostFeed({ username, isOwner, onJobCreated }) {
   }
 
   return (
-    <div style={styles.wrapper}>
-      <div style={styles.header}>
+    <div className="company-jobs-feed" style={styles.wrapper}>
+      <div className="company-jobs-feed-header" style={styles.header}>
         <h2 style={styles.title}>Newly posted jobs</h2>
 
         <div style={styles.headerActions}>
@@ -207,11 +207,19 @@ export default function JobPostFeed({ username, isOwner, onJobCreated }) {
 
           {jobs.length > 3 && (
             <div style={styles.navActions}>
-              <button type="button" style={styles.navButton} onClick={scrollPrev}>
+              <button
+                type="button"
+                style={styles.navButton}
+                onClick={scrollPrev}
+              >
                 ‹ Back
               </button>
 
-              <button type="button" style={styles.navButton} onClick={scrollNext}>
+              <button
+                type="button"
+                style={styles.navButton}
+                onClick={scrollNext}
+              >
                 Next ›
               </button>
             </div>
@@ -219,11 +227,15 @@ export default function JobPostFeed({ username, isOwner, onJobCreated }) {
         </div>
       </div>
 
-      <div style={styles.viewport} ref={emblaRef}>
-        <div style={styles.container}>
+      <div className="company-jobs-feed-viewport" style={styles.viewport} ref={emblaRef}>
+        <div className="company-jobs-feed-track" style={styles.container}>
           {jobs.map((job) => (
-            <div key={job.id} style={styles.slide}>
-              <div style={styles.card} onClick={goToAllJobs}>
+            <div className="company-jobs-feed-slide" key={job.id} style={styles.slide}>
+              <div
+                className="company-jobs-feed-card"
+                style={styles.card}
+                onClick={() => openJobInsideSearch(job)}
+              >
                 <div style={styles.cardTop}>
                   <img
                     src={getImageUrl(job.companyLogo)}
@@ -238,10 +250,11 @@ export default function JobPostFeed({ username, isOwner, onJobCreated }) {
                     onClick={(e) => handleSave(e, job)}
                     title={job.isSaved ? "Saved" : "Save"}
                   >
-                    <img
-                      src={job.isSaved ? saveActiveIcon : saveIcon}
-                      alt={job.isSaved ? "Saved" : "Save"}
-                      style={styles.saveIcon}
+                    <ProfileIcon
+                      name="bookmark"
+                      size={24}
+                      filled={job.isSaved}
+                      className="jobs-save-icon"
                     />
                   </button>
                 </div>
@@ -293,8 +306,8 @@ export default function JobPostFeed({ username, isOwner, onJobCreated }) {
 
 const styles = {
   wrapper: {
-    backgroundColor: "#fff",
-    border: "1px solid #ddd",
+    backgroundColor: "var(--app-surface)",
+    border: "1px solid var(--app-border)",
     borderRadius: 12,
     overflow: "hidden",
     boxShadow: "0 4px 16px rgba(0,0,0,0.04)",
@@ -312,7 +325,7 @@ const styles = {
     margin: 0,
     fontSize: 18,
     fontWeight: 500,
-    color: "#222",
+    color: "var(--app-text)",
   },
 
   headerActions: {
@@ -330,7 +343,7 @@ const styles = {
   navButton: {
     border: "none",
     backgroundColor: "transparent",
-    color: "#555",
+    color: "var(--app-text-soft)",
     fontSize: 14,
     fontWeight: 700,
     cursor: "pointer",
@@ -354,9 +367,9 @@ const styles = {
 
   card: {
     minHeight: 210,
-    border: "1px solid #e1e1e1",
+    border: "1px solid var(--app-border)",
     borderRadius: 8,
-    backgroundColor: "#fff",
+    backgroundColor: "var(--app-surface)",
     padding: 18,
     cursor: "pointer",
     display: "flex",
@@ -400,25 +413,25 @@ const styles = {
     fontSize: 16,
     lineHeight: 1.35,
     fontWeight: 700,
-    color: "#222",
+    color: "var(--app-text)",
   },
 
   company: {
     margin: 0,
     fontSize: 14,
-    color: "#333",
+    color: "var(--app-text-soft)",
   },
 
   location: {
     margin: "4px 0 0",
     fontSize: 14,
-    color: "#666",
+    color: "var(--app-muted)",
   },
 
   date: {
     margin: "26px 0 0",
     fontSize: 13,
-    color: "#777",
+    color: "var(--app-muted)",
   },
 
   closedText: {
@@ -439,8 +452,8 @@ const styles = {
     width: 8,
     height: 8,
     borderRadius: "50%",
-    border: "1px solid #333",
-    backgroundColor: "#fff",
+    border: "1px solid var(--app-text-soft)",
+    backgroundColor: "var(--app-surface)",
     padding: 0,
     cursor: "pointer",
   },
@@ -452,10 +465,10 @@ const styles = {
   viewAllButton: {
     width: "100%",
     border: "none",
-    borderTop: "1px solid #e5e5e5",
-    backgroundColor: "#fff",
+    borderTop: "1px solid var(--app-border)",
+    backgroundColor: "var(--app-surface)",
     padding: "17px 16px",
-    color: "#666",
+    color: "var(--app-muted)",
     fontSize: 15,
     fontWeight: 700,
     cursor: "pointer",
@@ -464,7 +477,7 @@ const styles = {
   empty: {
     margin: 0,
     padding: 22,
-    color: "#666",
+    color: "var(--app-muted)",
     fontSize: 14,
   },
 };
