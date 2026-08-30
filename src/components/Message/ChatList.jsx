@@ -9,6 +9,9 @@ const ChatList = () => {
   const [conversations, setConversations] = useState([]);
   const [searchUsers, setSearchUsers] = useState([]);
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   const navigate = useNavigate();
   const { username: selectedUsername } = useParams();
@@ -49,6 +52,10 @@ const ChatList = () => {
     });
 
     connection.on("MessageDeleted", () => {
+      fetchChats();
+    });
+
+    connection.on("ChatDeleted", () => {
       fetchChats();
     });
 
@@ -124,6 +131,19 @@ const ChatList = () => {
     navigate(`/messages/${targetUsername}`);
   };
 
+  const deleteConversation = async () => {
+    if (!deleteTarget?.chatId) return;
+    setDeleting(true); setDeleteError("");
+    try {
+      await api.delete(`/chat/chats/${deleteTarget.chatId}`);
+      setConversations((current)=>current.filter((item)=>item.chatId!==deleteTarget.chatId));
+      if (selectedUsername?.toLowerCase()===deleteTarget.username?.toLowerCase()) navigate("/messages");
+      setDeleteTarget(null);
+    } catch (error) {
+      setDeleteError(error.response?.data?.message || "Conversation could not be deleted.");
+    } finally { setDeleting(false); }
+  };
+
   return (
     <div className="chat-list" style={styles.container}>
       <div className="chat-list-search" style={styles.searchWrapper}>
@@ -152,6 +172,7 @@ const ChatList = () => {
                   targetUsername?.toLowerCase()
                 }
                 onSelect={() => handleSelect(item)}
+                onDelete={!isSearching ? ()=>{setDeleteError("");setDeleteTarget(item)} : undefined}
               />
             );
           })
@@ -161,6 +182,7 @@ const ChatList = () => {
           </p>
         )}
       </div>
+      {deleteTarget && <div className="chat-delete-overlay" onMouseDown={(event)=>event.target===event.currentTarget&&!deleting&&setDeleteTarget(null)}><section className="chat-delete-dialog"><button type="button" className="chat-delete-close" onClick={()=>setDeleteTarget(null)}>×</button><span aria-hidden="true">!</span><h2>Delete conversation?</h2><p>This conversation will be removed only from your message history. It will remain visible to the other person.</p>{deleteError&&<div className="chat-delete-error">{deleteError}</div>}<footer><button type="button" onClick={()=>setDeleteTarget(null)} disabled={deleting}>Cancel</button><button type="button" className="danger" onClick={deleteConversation} disabled={deleting}>{deleting?"Deleting…":"Delete chat"}</button></footer></section></div>}
     </div>
   );
 };

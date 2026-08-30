@@ -5,10 +5,16 @@ import defaultAvatar from "../assets/default-avatar.png";
 import api from "../services/api";
 import { resolveMediaUrl } from "../utils/mediaUrl";
 import "./CompanyTalentPage.css";
+import useUrlFilters from "../hooks/useUrlFilters";
+
+const TALENT_QUERY_DEFAULTS = {
+  tab: "discover", job: "", search: "", skills: "", location: "", workplaceType: "",
+};
 
 const tabs = [
   ["discover", "Recommended"],
   ["saved", "Saved"],
+  ["following", "Following"],
   ["followers", "Company followers"],
   ["employees", "Employees"],
   ["invitations", "Invitations"],
@@ -50,6 +56,8 @@ const CandidateCard = ({
   );
   const matchScore = read(candidate, "matchScore", "MatchScore");
   const canOpenAvailability = isOpenToWork && Boolean(onOpen);
+  const targetType = read(candidate, "targetType", "TargetType", "member");
+  const canInvite = read(candidate, "canInvite", "CanInvite", true);
 
   const stop = (handler) => (event) => {
     event.stopPropagation();
@@ -99,6 +107,7 @@ const CandidateCard = ({
         </span>
         <span className="talent-card-badges">
           {isOpenToWork && <b className="talent-open-badge">Open to work</b>}
+          {targetType === "company" && <b className="talent-company-badge">Company</b>}
           {Number.isFinite(Number(matchScore)) && (
             <b className="talent-match">{matchScore}% match</b>
           )}
@@ -134,7 +143,7 @@ const CandidateCard = ({
         >
           View profile
         </button>
-        {onInvite && (
+        {onInvite && canInvite && targetType !== "company" && (
           <button
             type="button"
             className="is-primary"
@@ -321,19 +330,21 @@ const AvailabilityModal = ({ candidate, onClose, navigate }) => {
 
 export default function CompanyTalentPage() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("discover");
+  const [urlFilters, setUrlFilters] = useUrlFilters(TALENT_QUERY_DEFAULTS);
+  const activeTab = tabs.some(([key]) => key === urlFilters.tab) ? urlFilters.tab : "discover";
+  const setActiveTab = (value) => setUrlFilters({ tab: value });
   const [items, setItems] = useState([]);
   const [jobs, setJobs] = useState([]);
-  const [selectedJob, setSelectedJob] = useState(
-    () => new URLSearchParams(window.location.search).get("job") || "",
-  );
-  const [filters, setFilters] = useState({
-    search: "",
-    skills: "",
-    location: "",
-    workplaceType: "",
-  });
-  const [appliedFilters, setAppliedFilters] = useState(filters);
+  const selectedJob = urlFilters.job;
+  const setSelectedJob = (value) => setUrlFilters({ job: value });
+  const appliedFilters = {
+    search: urlFilters.search,
+    skills: urlFilters.skills,
+    location: urlFilters.location,
+    workplaceType: urlFilters.workplaceType,
+  };
+  const [filters, setFilters] = useState(appliedFilters);
+  const setAppliedFilters = (value) => setUrlFilters(value);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -354,6 +365,10 @@ export default function CompanyTalentPage() {
     });
     return params.toString();
   }, [appliedFilters]);
+
+  useEffect(() => {
+    setFilters(appliedFilters);
+  }, [queryString]);
 
   const loadJobs = async () => {
     const response = await api.get("/company/talent/active-jobs");
@@ -646,10 +661,11 @@ export default function CompanyTalentPage() {
             <div className="talent-state is-error">{error}</div>
           ) : items.length === 0 ? (
             <div className="talent-state">
-              <strong>No open candidates found</strong>
+              <strong>{activeTab === "following" ? "No followed accounts yet" : "No open candidates found"}</strong>
               <span>
-                Try broader filters or check again when more members enable
-                Open to work.
+                {activeTab === "following"
+                  ? "People and companies followed by this company will appear here."
+                  : "Try broader filters or check again when more members enable Open to work."}
               </span>
             </div>
           ) : (
@@ -662,7 +678,7 @@ export default function CompanyTalentPage() {
                 onOpen={activeTab === "discover" ? openAvailability : null}
                 onSave={activeTab === "discover" ? saveCandidate : null}
                 onInvite={
-                  ["discover", "saved", "followers"].includes(activeTab)
+                  ["discover", "saved", "followers", "following"].includes(activeTab)
                     ? openInvite
                     : null
                 }

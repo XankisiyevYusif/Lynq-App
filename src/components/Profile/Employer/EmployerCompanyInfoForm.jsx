@@ -25,7 +25,32 @@ export default function EmployerCompanyInfoForm({
   );
 
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isImproving, setIsImproving] = useState(false);
+  const [originalBio, setOriginalBio] = useState(null);
+
+  const improveBio = async () => {
+    const text = bio.trim();
+    if (!text || loading || isImproving) return;
+    try {
+      setError("");
+      setMessage("");
+      setIsImproving(true);
+      const response = await api.post("/Ai/improve-bio", { text });
+      const result = response?.data;
+      if (result?.success === false) throw new Error(result?.message || "AI improvement failed.");
+      const improved = result?.data?.improvedText || result?.improvedText || "";
+      if (!improved.trim()) throw new Error("AI returned an empty overview.");
+      if (originalBio === null) setOriginalBio(bio);
+      setBio(improved.trim().slice(0, 1000));
+      setMessage("Company overview was improved. Review it before saving.");
+    } catch (err) {
+      setError(err?.response?.data?.message || err?.message || "Company overview could not be improved.");
+    } finally {
+      setIsImproving(false);
+    }
+  };
 
   const save = async () => {
     try {
@@ -182,6 +207,7 @@ export default function EmployerCompanyInfoForm({
       <div style={styles.title}>Company information</div>
 
       {error && <div style={styles.error}>{error}</div>}
+      {message && <div style={styles.success}>{message}</div>}
 
       <Field label="Company name*" value={name} setValue={setName} max={150} />
       <Field
@@ -246,6 +272,16 @@ export default function EmployerCompanyInfoForm({
           placeholder="Write a short overview about your company..."
         />
         <div style={styles.textareaCounter}>{bio.length}/1000</div>
+        <div style={styles.aiActions}>
+          <button type="button" style={styles.aiButton} onClick={improveBio} disabled={!bio.trim() || loading || isImproving}>
+            {isImproving ? "Improving…" : "✦ Improve with AI"}
+          </button>
+          {originalBio !== null && (
+            <button type="button" style={styles.restoreButton} onClick={() => { setBio(originalBio); setOriginalBio(null); setMessage("Original overview restored."); }} disabled={loading || isImproving}>
+              Restore original
+            </button>
+          )}
+        </div>
       </div>
 
       <div style={styles.actions}>
@@ -344,6 +380,10 @@ const styles = {
     color: "var(--app-muted)",
     marginTop: 4,
   },
+  aiActions: { display: "flex", gap: 8, alignItems: "center", marginTop: 8 },
+  aiButton: { border: "1px solid #7c3aed", background: "#f5f3ff", color: "#6d28d9", borderRadius: 999, padding: "7px 12px", fontWeight: 700, cursor: "pointer" },
+  restoreButton: { border: "none", background: "transparent", color: "var(--app-muted)", padding: "7px 8px", fontWeight: 600, cursor: "pointer" },
+  success: { backgroundColor: "#ecfdf5", color: "#047857", padding: "9px 12px", borderRadius: 8, marginBottom: 14, fontSize: 13 },
   actions: {
     display: "flex",
     justifyContent: "flex-end",

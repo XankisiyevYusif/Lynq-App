@@ -1,7 +1,9 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 
-const TOKEN_PATTERN = /([@#][\p{L}\p{N}._-]+)/gu;
+const TOKEN_PATTERN = /(https?:\/\/[^\s<>"']+|[@#][\p{L}\p{N}._-]+)/giu;
+const URL_PATTERN = /^https?:\/\//i;
+const URL_TRAILING_PUNCTUATION = /[.,!?;:)\]}]+$/;
 
 export default function RichPostContent({ content, className, style }) {
   const navigate = useNavigate();
@@ -22,6 +24,26 @@ export default function RichPostContent({ content, className, style }) {
   return (
     <div className={className} style={style}>
       {parts.map((part, index) => {
+        if (URL_PATTERN.test(part)) {
+          const trailing = part.match(URL_TRAILING_PUNCTUATION)?.[0] || "";
+          const href = trailing ? part.slice(0, -trailing.length) : part;
+
+          return (
+            <React.Fragment key={`${part}-${index}`}>
+              <a
+                className="post-content-link"
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer nofollow"
+                onClick={(event) => event.stopPropagation()}
+              >
+                {href}
+              </a>
+              {trailing}
+            </React.Fragment>
+          );
+        }
+
         const isToken = /^[@#][\p{L}\p{N}._-]+$/u.test(part);
 
         if (!isToken) {

@@ -7,6 +7,9 @@ import ProfileIcon from "../components/Profile/ProfileIcon";
 import Toast from "../components/UI/Toast";
 import api from "../services/api";
 import "./EventsPage.css";
+import useUrlFilters from "../hooks/useUrlFilters";
+
+const EVENT_QUERY_DEFAULTS = { tab: "discover" };
 
 const unwrap = (response) => {
   const payload = response?.data?.data ?? response?.data?.Data ?? response?.data;
@@ -15,7 +18,9 @@ const unwrap = (response) => {
 };
 
 export default function EventsPage() {
-  const [activeTab, setActiveTab] = useState("discover");
+  const [urlFilters, setUrlFilters] = useUrlFilters(EVENT_QUERY_DEFAULTS);
+  const activeTab = ["discover", "mine"].includes(urlFilters.tab) ? urlFilters.tab : "discover";
+  const setActiveTab = (value) => setUrlFilters({ tab: value }, { replace: false });
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");

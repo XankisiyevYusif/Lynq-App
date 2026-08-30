@@ -4,6 +4,9 @@ import Navbar from "../components/Layout/Navbar";
 import CreateJobPostBox from "../components/Post/JobPosts/CreateJobPostBox";
 import api from "../services/api";
 import "./CompanyHiringPage.css";
+import useUrlFilters from "../hooks/useUrlFilters";
+
+const HIRING_QUERY_DEFAULTS = { tab: "overview", status: "all" };
 
 const unwrap = (response) =>
   response?.data?.data ?? response?.data?.Data ?? response?.data;
@@ -18,10 +21,13 @@ const formatDate = (value) => {
 
 export default function CompanyHiringPage() {
   const navigate = useNavigate();
-  const [tab, setTab] = useState("overview");
+  const [urlFilters, setUrlFilters] = useUrlFilters(HIRING_QUERY_DEFAULTS);
+  const tab = ["overview", "jobs", "insights"].includes(urlFilters.tab) ? urlFilters.tab : "overview";
+  const setTab = (value) => setUrlFilters({ tab: value }, { replace: false });
   const [overview, setOverview] = useState(null);
   const [jobs, setJobs] = useState([]);
-  const [status, setStatus] = useState("all");
+  const status = ["all", "active", "closed"].includes(urlFilters.status) ? urlFilters.status : "all";
+  const setStatus = (value) => setUrlFilters({ status: value });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [insights, setInsights] = useState(null);

@@ -13,6 +13,7 @@ import {
   clearVisibleSearchHistory,
 } from "../../services/searchApi";
 import { resolveMediaUrl } from "../../utils/mediaUrl";
+import api from "../../services/api";
 
 export default function SearchModal() {
   const navigate = useNavigate();
@@ -132,6 +133,17 @@ export default function SearchModal() {
             : await searchUsers(cleanQuery);
         setResultType(isHashtag ? "hashtags" : "people");
         setResults(res);
+        if (!isHashtag && cleanQuery.replace(/^@/, "").length >= 2) {
+          const usernames = (Array.isArray(res) ? res : res?.items || [])
+            .map((item) => item?.username || item?.userName || item?.UserName)
+            .filter(Boolean);
+          if (usernames.length) {
+            api.post("/Analytics/track/search-appearances", {
+              query: cleanQuery.replace(/^@/, ""),
+              usernames,
+            }).catch((error) => console.error("Search preview analytics failed:", error));
+          }
+        }
       } catch (err) {
         console.error("Search preview error:", err);
         setResults([]);

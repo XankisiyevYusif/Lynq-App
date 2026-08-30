@@ -18,6 +18,8 @@ api.interceptors.request.use((config) => {
   const isPublicAuthRequest = [
     "/auth/login",
     "/auth/verify-two-factor",
+    "/auth/staff-login",
+    "/auth/staff-verify-two-factor",
     "/auth/google-login",
     "/auth/refresh",
     "/auth/forgot-password",
@@ -57,6 +59,8 @@ api.interceptors.response.use(
     const isAuthenticationRequest = [
       "/auth/login",
       "/auth/verify-two-factor",
+      "/auth/staff-login",
+      "/auth/staff-verify-two-factor",
       "/auth/google-login",
       "/auth/refresh",
     ].some((path) => requestUrl.includes(path));
@@ -111,8 +115,9 @@ api.interceptors.response.use(
 );
 
 function logout() {
+  const staffPortal = window.location.pathname.startsWith("/admin");
   localStorage.clear();
-  window.location.href = "/";
+  window.location.href = staffPortal ? "/admin/login" : "/";
 }
 
 export default api;

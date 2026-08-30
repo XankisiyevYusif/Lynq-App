@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import api from "../../../services/api";
 import PostItem from "../../Post/PostItem";
 import CreatePostBox from "../../Post/CreatePostBox";
@@ -14,8 +15,20 @@ export default function EmployerCommunity({
   showToast,
   defaultType = "official",
 }) {
-  const [type, setType] = useState(defaultType);
-  const [sort, setSort] = useState("latest");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedView = searchParams.get("view");
+  const type = ["official", "mentions"].includes(requestedView) ? requestedView : defaultType;
+  const sort = searchParams.get("sort") === "popular" ? "popular" : "latest";
+  const updateQuery = (patch) => {
+    const next = new URLSearchParams(searchParams);
+    Object.entries(patch).forEach(([key, value]) => {
+      if (!value || value === "official" || value === "latest") next.delete(key);
+      else next.set(key, value);
+    });
+    setSearchParams(next, { replace: true });
+  };
+  const setType = (value) => updateQuery({ view: value, ...(value === "official" ? { sort: "latest" } : {}) });
+  const setSort = (value) => updateQuery({ sort: value });
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -91,6 +104,7 @@ export default function EmployerCommunity({
           {posts.map((post) => {
             const id = post.id || post.Id;
             const official = post.isOfficial || post.IsOfficial;
+            const canManage = post.canManage ?? post.CanManage ?? false;
             return (
               <div
                 key={id}
@@ -101,7 +115,7 @@ export default function EmployerCommunity({
                 </div>
                 <PostItem
                   post={post}
-                  showActions={isOwner && official}
+                  showActions={Boolean(canManage)}
                   isEmployer={post.role === "Employer" || post.Role === "Employer"}
                   likeConnection={likeConnection}
                   showToast={showToast}

@@ -165,6 +165,19 @@
   text-decoration: underline;
 }
 
+.post-content-link {
+  color: #2563eb;
+  font-weight: 650;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  overflow-wrap: anywhere;
+}
+
+.post-content-link:hover {
+  color: #1d4ed8;
+}
+
 .mention-textarea-wrap {
   position: relative;
   width: 100%;

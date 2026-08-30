@@ -36,6 +36,12 @@ const GoogleLoginButton = ({ accountType = "personal", companyName = "" }) => {
   const navigate = useNavigate();
   const [error, setError] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [twoFactor, setTwoFactor] = useState({
+    required: false,
+    email: "",
+    identifier: "",
+    code: "",
+  });
   const buttonRef = useRef(null);
   const isProcessingRef = useRef(false);
   const accountTypeRef = useRef(accountType);
@@ -123,6 +129,32 @@ const GoogleLoginButton = ({ accountType = "personal", companyName = "" }) => {
     };
   };
 
+  const completeGoogleLogin = (data) => {
+    const accessToken = getTokenFromResponse(data);
+    const refreshToken = getRefreshTokenFromResponse(data);
+
+    if (!accessToken) {
+      dispatch(loginFailure("Token was not returned from server"));
+      setError("Authentication failed: No token returned from server.");
+      return false;
+    }
+
+    localStorage.setItem("token", accessToken);
+    if (refreshToken) localStorage.setItem("refreshToken", refreshToken);
+    dispatch(loginSuccess(getUserFromResponse(data) || getFallbackUser(accessToken)));
+
+    navigate(isAdminToken(accessToken) ? "/admin" : "/home", { replace: true });
+    api.get("/User/me")
+      .then((meResponse) => {
+        const currentUser = meResponse.data?.data || meResponse.data;
+        if (currentUser) dispatch(loginSuccess(currentUser));
+      })
+      .catch((meError) => {
+        console.warn("Current user profile hydration was delayed:", meError);
+      });
+    return true;
+  };
+
   const handleCredentialResponse = async (googleResponse) => {
     if (isProcessingRef.current) return;
 
@@ -146,42 +178,19 @@ const GoogleLoginButton = ({ accountType = "personal", companyName = "" }) => {
         companyName: companyNameRef.current.trim() || null,
       });
 
-      const accessToken = getTokenFromResponse(response.data);
-      const refreshToken = getRefreshTokenFromResponse(response.data);
-
-      if (!accessToken) {
-        dispatch(loginFailure("Token was not returned from server"));
-        setError("Authentication failed: No token returned from server.");
+      const payload = response.data?.data ?? response.data?.Data ?? response.data;
+      if (payload?.requiresTwoFactor || payload?.RequiresTwoFactor) {
+        setTwoFactor({
+          required: true,
+          email: payload?.email || payload?.Email || "",
+          identifier:
+            payload?.identifier || payload?.Identifier || payload?.email || payload?.Email || "",
+          code: "",
+        });
+        dispatch(loginFailure(null));
         return;
       }
-
-      localStorage.setItem("token", accessToken);
-      if (refreshToken) {
-        localStorage.setItem("refreshToken", refreshToken);
-      }
-
-      // The Google auth response is enough to enter immediately. A slower
-      // profile request must not make the user click the button repeatedly.
-      dispatch(
-        loginSuccess(
-          getUserFromResponse(response.data) || getFallbackUser(accessToken),
-        ),
-      );
-
-      if (isAdminToken(accessToken)) {
-        navigate("/admin", { replace: true });
-      } else {
-        navigate("/home", { replace: true });
-      }
-
-      api.get("/User/me")
-        .then((meResponse) => {
-          const currentUser = meResponse.data?.data || meResponse.data;
-          if (currentUser) dispatch(loginSuccess(currentUser));
-        })
-        .catch((meError) => {
-          console.warn("Current user profile hydration was delayed:", meError);
-        });
+      completeGoogleLogin(response.data);
     } catch (err) {
       console.error("Google login failed:", err);
       const msg =
@@ -196,6 +205,32 @@ const GoogleLoginButton = ({ accountType = "personal", companyName = "" }) => {
       );
     } finally {
       isProcessingRef.current = false;
+      setIsProcessing(false);
+    }
+  };
+
+  const verifyGoogleTwoFactor = async (event) => {
+    event.preventDefault();
+    const code = twoFactor.code.replace(/\s/g, "");
+    if (code.length < 4) {
+      setError("Enter the verification code from your email.");
+      return;
+    }
+
+    try {
+      setIsProcessing(true);
+      setError(null);
+      const response = await api.post("/Auth/verify-two-factor", {
+        username: twoFactor.identifier,
+        code,
+      });
+      completeGoogleLogin(response.data);
+    } catch (verifyError) {
+      setError(
+        verifyError?.response?.data?.message ||
+          "The verification code is invalid or has expired.",
+      );
+    } finally {
       setIsProcessing(false);
     }
   };
@@ -238,7 +273,7 @@ const GoogleLoginButton = ({ accountType = "personal", companyName = "" }) => {
     return () => {
       active = false;
     };
-  }, []);
+  }, [twoFactor.required]);
 
   const companyNameRequired =
     accountType === "company" && !companyName.trim();
@@ -250,7 +285,21 @@ const GoogleLoginButton = ({ accountType = "personal", companyName = "" }) => {
       }`}
       style={{ width: "100%" }}
     >
-      <div ref={buttonRef} className="auth-google-btn"></div>
+      {!twoFactor.required && <div ref={buttonRef} className="auth-google-btn"></div>}
+      {twoFactor.required && (
+        <form className="auth-two-factor-form" onSubmit={verifyGoogleTwoFactor}>
+          <div className="auth-two-factor-icon" aria-hidden="true">✓</div>
+          <p className="auth-google-hint">Google account verified. Enter the code sent to {twoFactor.email || "your email"}.</p>
+          <label className="auth-label" htmlFor="google-two-factor-code">Verification code</label>
+          <input id="google-two-factor-code" className="auth-input auth-code-input" value={twoFactor.code}
+            onChange={(event) => setTwoFactor((current) => ({ ...current, code: event.target.value.replace(/[^\d\s]/g, "") }))}
+            type="text" inputMode="numeric" autoComplete="one-time-code" placeholder="Enter your code" maxLength={8} autoFocus required />
+          <button className="auth-btn" type="submit" disabled={isProcessing}>
+            {isProcessing ? "Verifying…" : "Verify and sign in"}
+          </button>
+          <div className="auth-two-factor-actions"><button type="button" disabled={isProcessing} onClick={() => { setTwoFactor({ required: false, email: "", identifier: "", code: "" }); setError(null); }}>Use another Google account</button></div>
+        </form>
+      )}
       {companyNameRequired && (
         <p className="auth-google-hint">
           Enter the company name to create a company account with Google.

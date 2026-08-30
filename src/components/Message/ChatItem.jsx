@@ -142,6 +142,7 @@ const ChatItem = ({
   onSelect,
   isSelected = false,
   isSearchResult = false,
+  onDelete,
 }) => {
   const username = getUsername(item);
 
@@ -187,10 +188,12 @@ const ChatItem = ({
   const hasUnread = unreadCount > 0;
 
   return (
-    <button
+    <div
       className={`chat-list-item ${hasUnread ? "has-unread" : ""} ${isSelected ? "is-selected" : ""}`}
-      type="button"
+      role="button"
+      tabIndex={0}
       onClick={onSelect}
+      onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") onSelect?.(); }}
       style={{
         ...styles.item,
 
@@ -264,7 +267,8 @@ const ChatItem = ({
           )}
         </div>
       </div>
-    </button>
+      {!isSearchResult && onDelete && <button type="button" className="chat-list-delete" title="Delete conversation" aria-label={`Delete conversation with ${displayName}`} onClick={(event)=>{event.stopPropagation();onDelete();}}>•••</button>}
+    </div>
   );
 };
 

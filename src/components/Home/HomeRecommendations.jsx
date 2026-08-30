@@ -114,6 +114,7 @@ export default function HomeRecommendations({ showToast }) {
         sentRequestsRes,
         receivedRequestsRes,
         followedCompaniesRes,
+        blockedUsersRes,
         recommendedRes,
       ] = await Promise.all([
         api.get("/Connection/my-connections").catch(() => ({ data: [] })),
@@ -122,6 +123,7 @@ export default function HomeRecommendations({ showToast }) {
         api
           .get("/CompanyFollow/my-followed-companies")
           .catch(() => ({ data: [] })),
+        api.get("/privacy/blocked-users").catch(() => ({ data: [] })),
         getRecommendedUsers().catch(() => []),
       ]);
 
@@ -129,6 +131,7 @@ export default function HomeRecommendations({ showToast }) {
       const sentRequestsList = getResponseList(sentRequestsRes);
       const receivedRequestsList = getResponseList(receivedRequestsRes);
       const followedCompaniesList = getResponseList(followedCompaniesRes);
+      const blockedUsersList = getResponseList(blockedUsersRes);
 
       const excludedUsernames = new Set();
 
@@ -185,6 +188,11 @@ export default function HomeRecommendations({ showToast }) {
         if (username) {
           excludedUsernames.add(username.toLowerCase());
         }
+      });
+
+      blockedUsersList.forEach((user) => {
+        const username = getUsername(user);
+        if (username) excludedUsernames.add(username.toLowerCase());
       });
 
       // Yalnız backend-in qaytardığı real recommendation-lar.

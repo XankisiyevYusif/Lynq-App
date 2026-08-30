@@ -24,6 +24,8 @@ const ChatWindow = ({ receiver }) => {
   const [openMessageMenuId, setOpenMessageMenuId] = useState(null);
   const [messagePendingDelete, setMessagePendingDelete] = useState(null);
   const [isDeletingMessage, setIsDeletingMessage] = useState(false);
+  const [invitation, setInvitation] = useState(null);
+  const [respondingInvitation, setRespondingInvitation] = useState(false);
 
   const messagesEndRef = useRef(null);
   const receivedIdsRef = useRef(new Set());
@@ -244,6 +246,32 @@ const ChatWindow = ({ receiver }) => {
     }
   };
 
+  const refreshInvitation = async () => {
+    if (!receiver) return;
+    try {
+      const response = await api.get(`/chat/invitation/${encodeURIComponent(receiver)}`);
+      setInvitation(response?.data?.data ?? response?.data ?? null);
+    } catch (error) {
+      setInvitation({ canSend: false, status: "unavailable", message: getApiErrorMessage(error) });
+    }
+  };
+
+  const respondToInvitation = async (accept) => {
+    try {
+      setRespondingInvitation(true);
+      setErrorMessage("");
+      const response = await api.post(
+        `/chat/invitation/${encodeURIComponent(receiver)}/respond`,
+        { accept },
+      );
+      setInvitation(response?.data?.data ?? response?.data ?? null);
+    } catch (error) {
+      setErrorMessage(getApiErrorMessage(error));
+    } finally {
+      setRespondingInvitation(false);
+    }
+  };
+
   const formatTime = (dateString) => {
     if (!dateString) return "";
 
@@ -388,6 +416,7 @@ const ChatWindow = ({ receiver }) => {
     };
 
     fetchMessages();
+    refreshInvitation();
   }, [receiver]);
 
   useEffect(() => {
@@ -416,6 +445,7 @@ const ChatWindow = ({ receiver }) => {
         if (senderMatches && receiverMatches) {
           addMessageSafely(normalized);
           await markChatAsSeen();
+          await refreshInvitation();
         }
       });
 
@@ -450,6 +480,8 @@ const ChatWindow = ({ receiver }) => {
           removeMessageLocally(deletedMessageId);
         }
       });
+
+      connection.on("ChatInvitationUpdated", refreshInvitation);
 
       try {
         await connection.start();
@@ -510,6 +542,8 @@ const ChatWindow = ({ receiver }) => {
       if (savedMessage && typeof savedMessage === "object") {
         addMessageSafely(savedMessage);
       }
+
+      await refreshInvitation();
 
       return true;
     } catch (error) {
@@ -610,6 +644,21 @@ const ChatWindow = ({ receiver }) => {
       </div>
 
       {errorMessage && <div style={styles.errorBox}>{errorMessage}</div>}
+
+      {invitation?.requiresAcceptance && invitation?.status !== "accepted" && (
+        <div style={styles.invitationBanner}>
+          <div>
+            <strong>{invitation?.status === "pending" ? "Messaging invitation" : "Invitation closed"}</strong>
+            <p>{invitation?.message}</p>
+          </div>
+          {invitation?.canRespond && (
+            <div style={styles.invitationActions}>
+              <button type="button" style={styles.declineInvitation} onClick={() => respondToInvitation(false)} disabled={respondingInvitation}>Decline</button>
+              <button type="button" style={styles.acceptInvitation} onClick={() => respondToInvitation(true)} disabled={respondingInvitation}>Accept</button>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="chat-messages" style={styles.messages}>
         {messages.length === 0 && (
@@ -751,11 +800,15 @@ const ChatWindow = ({ receiver }) => {
         </div>
       )}
 
-      <MessageInput
-        key={receiver}
-        onSend={handleSend}
-        uploadProgress={uploadProgress}
-      />
+      {invitation?.canSend ? (
+        <MessageInput
+          key={receiver}
+          onSend={handleSend}
+          uploadProgress={uploadProgress}
+        />
+      ) : invitation && !invitation?.canRespond ? (
+        <div style={styles.composerLocked}>{invitation?.message || "Messaging is not available."}</div>
+      ) : null}
     </div>
   );
 };
@@ -817,6 +870,11 @@ const styles = {
     fontSize: "13px",
     fontWeight: 500,
   },
+  invitationBanner: { margin: "10px 16px 0", padding: "12px 14px", borderRadius: 12, border: "1px solid #c7d2fe", background: "#eef2ff", color: "#312e81", display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" },
+  invitationActions: { display: "flex", gap: 8, flexShrink: 0 },
+  declineInvitation: { border: "1px solid #a5b4fc", background: "#fff", color: "#4338ca", borderRadius: 999, padding: "7px 12px", fontWeight: 700, cursor: "pointer" },
+  acceptInvitation: { border: "none", background: "#4f46e5", color: "#fff", borderRadius: 999, padding: "8px 14px", fontWeight: 700, cursor: "pointer" },
+  composerLocked: { borderTop: "1px solid var(--app-border)", padding: "14px 16px", color: "var(--app-muted)", background: "var(--app-surface-2)", textAlign: "center", fontSize: 13 },
 
   messages: {
     flex: 1,
