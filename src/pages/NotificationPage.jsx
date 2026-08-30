@@ -13,6 +13,9 @@ import {
 } from "../store/notificationSlice";
 import { resolveMediaUrl } from "../utils/mediaUrl";
 import "./NotificationPage.css";
+import useUrlFilters from "../hooks/useUrlFilters";
+
+const NOTIFICATION_QUERY_DEFAULTS = { filter: "all" };
 
 const memberFilters = [
   ["all", "All"],
@@ -59,7 +62,24 @@ const typeOf = (item) => {
     8: "companymention",
     9: "eventattendance",
     10: "jobinvitation",
+    11: "systempostrestricted",
+    12: "systemaccountrestricted",
   })[raw] || "";
+};
+
+const systemTypes = new Set([
+  "postmoderationwarning",
+  "systempostrestricted",
+  "systemaccountrestricted",
+]);
+
+const isSystemNotification = (item) => {
+  if (Boolean(get(item, "isSystem", "IsSystem"))) return true;
+  if (systemTypes.has(typeOf(item))) return true;
+  const sender = String(get(item, "senderUsername", "SenderUsername") || "")
+    .trim()
+    .toLowerCase();
+  return sender === "system" || sender === "nexora system";
 };
 
 const bucketOf = (item) => {
@@ -67,7 +87,7 @@ const bucketOf = (item) => {
   if (["event", "eventattendance"].includes(type)) return "events";
   if (type.includes("job")) return "jobs";
   if (type.includes("mention")) return "mentions";
-  if (["comment", "like", "follow", "postmoderationwarning"].includes(type)) {
+  if (["comment", "like", "follow", "postmoderationwarning", "systempostrestricted", "systemaccountrestricted"].includes(type)) {
     return "activity";
   }
   return "all";
@@ -90,6 +110,8 @@ const messageOf = (item) => {
   if (type === "followrequest") return "sent you a connection request";
   if (type === "followaccepted") return "accepted your connection request";
   if (type === "postmoderationwarning") return preview || "Your post needs attention";
+  if (type === "systempostrestricted") return preview || "Your post was restricted by Nexora moderation";
+  if (type === "systemaccountrestricted") return preview || "Your account was restricted by Nexora moderation";
   return preview || "sent you a notification";
 };
 
@@ -98,10 +120,12 @@ export default function NotificationPage() {
   const navigate = useNavigate();
   const notifications = useSelector((state) => state.notifications.items);
   const user = useSelector((state) => state.user.user);
-  const [activeFilter, setActiveFilter] = useState("all");
+  const [urlFilters, setUrlFilters] = useUrlFilters(NOTIFICATION_QUERY_DEFAULTS);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [openMenuId, setOpenMenuId] = useState(null);
+  const [systemDetail, setSystemDetail] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
   const openMenuRef = useRef(null);
   const isEmployer =
     user?.userType === "Employer" ||
@@ -111,6 +135,9 @@ export default function NotificationPage() {
     !!user?.companyInfo ||
     !!user?.company;
   const filters = isEmployer ? companyFilters : memberFilters;
+  const activeFilter = filters.some(([key]) => key === urlFilters.filter)
+    ? urlFilters.filter
+    : "all";
 
   useEffect(() => {
     const load = async () => {
@@ -177,6 +204,19 @@ export default function NotificationPage() {
     const jobPostId = get(item, "jobPostId", "JobPostId");
     const username = get(item, "senderUsername", "SenderUsername");
 
+    if (isSystemNotification(item)) {
+      setDetailLoading(true);
+      try {
+        const response = await api.get(`/Notifications/${notificationId(item)}/details`);
+        setSystemDetail(response.data?.data ?? response.data?.Data ?? response.data);
+      } catch {
+        setSystemDetail({ title: "System notification", message: messageOf(item) });
+      } finally {
+        setDetailLoading(false);
+      }
+      return;
+    }
+
     if (["event", "eventattendance"].includes(type) && eventId) {
       return navigate(`/events/${eventId}`, {
         state: { notificationPreview: item },
@@ -223,7 +263,7 @@ export default function NotificationPage() {
                 type="button"
                 key={key}
                 className={activeFilter === key ? "is-active" : ""}
-                onClick={() => setActiveFilter(key)}
+                onClick={() => setUrlFilters({ filter: key })}
               >
                 {label}
               </button>
@@ -250,7 +290,10 @@ export default function NotificationPage() {
                   get(item, "createdAt", "CreatedAt"),
                 );
                 const photo = get(item, "senderProfilePhoto", "SenderProfilePhoto");
-                const username = get(item, "senderUsername", "SenderUsername") || "Nexora";
+                const isSystem = isSystemNotification(item);
+                const username = isSystem
+                  ? "Nexora System"
+                  : get(item, "senderUsername", "SenderUsername") || "Nexora";
                 const type = typeOf(item);
                 const senderIsCompany =
                   Boolean(get(item, "senderIsCompany", "SenderIsCompany")) ||
@@ -264,14 +307,14 @@ export default function NotificationPage() {
                   >
                     <div
                       className={`notification-type-icon is-${type} ${
-                        senderIsCompany ? "is-company" : "is-member"
+                        isSystem ? "is-system" : senderIsCompany ? "is-company" : "is-member"
                       }`}
                     >
-                      <img
+                      {isSystem ? <span className="notification-system-badge" aria-hidden="true">!</span> : <img
                         src={resolveMediaUrl(photo, defaultAvatar)}
                         alt=""
                         onError={(event) => { event.currentTarget.src = defaultAvatar; }}
-                      />
+                      />}
                       {["event", "eventattendance"].includes(type) && (
                         <span><ProfileIcon name="calendar" size={13} /></span>
                       )}
@@ -312,6 +355,7 @@ export default function NotificationPage() {
           )}
         </section>
       </main>
+      {(detailLoading || systemDetail) && <div className="notification-detail-backdrop" onMouseDown={(event)=>event.target===event.currentTarget&&!detailLoading&&setSystemDetail(null)}><section className="notification-detail-modal"><header><span aria-hidden="true">!</span><div><small>Nexora system notice</small><h2>{systemDetail?.title || "Loading details…"}</h2></div><button type="button" onClick={()=>setSystemDetail(null)} disabled={detailLoading} aria-label="Close">×</button></header>{detailLoading?<div className="notification-detail-loading">Loading complete information…</div>:<div className="notification-detail-body"><p>{systemDetail?.message}</p><dl><div><dt>Sent</dt><dd>{safeDate(systemDetail?.createdAt)?.toLocaleString() || "—"}</dd></div>{systemDetail?.post&&<><div><dt>Shared</dt><dd>{safeDate(systemDetail.post.createdAt)?.toLocaleString() || "—"}</dd></div><div><dt>Reason</dt><dd>{systemDetail.post.reason || "No reason provided"}</dd></div></>}</dl>{systemDetail?.post&&<article><strong>Full post content</strong><p>{systemDetail.post.content || "No text content"}</p>{systemDetail.post.imageUrl&&<img src={resolveMediaUrl(systemDetail.post.imageUrl)} alt="Restricted post"/>}</article>}</div>}</section></div>}
     </>
   );
 }

@@ -4,6 +4,7 @@ import {
   Routes,
   Route,
   Navigate,
+  useLocation,
 } from "react-router-dom";
 import { useSelector } from "react-redux";
 import LoginForm from "./components/Auth/LoginForm";
@@ -36,6 +37,9 @@ import ActivityListPage from "./pages/ActivityListPage";
 import NetworkPage from "./pages/NetworkPage";
 import JobsPage from "./pages/JobsPage";
 import AdminPage from "./pages/AdminPage";
+import AdminLoginPage from "./pages/AdminLoginPage";
+import AdminUserDetailPage from "./pages/AdminUserDetailPage";
+import AdminStaffPage from "./pages/AdminStaffPage";
 import LoadingSpinner from "./components/UI/LoadingSpinner";
 import SavedPostsPage from "./pages/SavedPostsPage";
 import SettingsPage from "./pages/SettingsPage";
@@ -49,11 +53,36 @@ import CompanyTalentPage from "./pages/CompanyTalentPage";
 import CompanyHiringPage from "./pages/CompanyHiringPage";
 import { isEmployerAccount as checkEmployerAccount } from "./utils/accountType";
 import {
+  createUserFromToken,
+  getTokenRole,
+  isStaffRole,
+} from "./utils/auth";
+import {
   ConfirmEmailPage,
   ForgotPasswordPage,
   ResetPasswordPage,
   VerifyEmailPage,
 } from "./components/Auth/AccountEmailPages";
+
+const AccessBoundary = ({ token, user, children }) => {
+  const location = useLocation();
+  const role = getTokenRole(token) || user?.role || user?.Role;
+  const isStaff = isStaffRole(role);
+  const isAdminPath = location.pathname.startsWith("/admin");
+
+  if (token && user && isStaff && !isAdminPath) {
+    return <Navigate to="/admin" replace />;
+  }
+
+  if (token && user && !isStaff && isAdminPath) {
+    const destination = checkEmployerAccount(user)
+      ? "/company/dashboard"
+      : "/home";
+    return <Navigate to={destination} replace />;
+  }
+
+  return children;
+};
 
 function App() {
   const dispatch = useDispatch();
@@ -63,17 +92,25 @@ function App() {
     (state) => state.messages.acknowledgedUnread,
   );
   const [likeConnection, setLikeConnection] = useState(null);
+  const currentRole = getTokenRole(token) || user?.role || user?.Role;
+  const isStaffAccount = isStaffRole(currentRole);
   const isEmployerAccount = checkEmployerAccount(user);
-  const authenticatedHome = isEmployerAccount
-    ? "/company/dashboard"
-    : "/home";
+  const authenticatedHome = isStaffAccount
+    ? "/admin"
+    : isEmployerAccount
+      ? "/company/dashboard"
+      : "/home";
 
   useEffect(() => {
     const fetchUser = async () => {
       try {
         if (token) {
-          const res = await api.get("/user/me");
-          dispatch(loginSuccess(res.data));
+          if (isStaffRole(getTokenRole(token))) {
+            dispatch(loginSuccess(createUserFromToken(token)));
+          } else {
+            const res = await api.get("/user/me");
+            dispatch(loginSuccess(res.data));
+          }
         }
       } catch (err) {
         localStorage.removeItem("token");
@@ -102,7 +139,7 @@ function App() {
 
     const connectSignalR = async () => {
       try {
-        if (!token) return;
+        if (!token || isStaffAccount) return;
 
         try {
           const res = await api.get("/Notifications/notifications");
@@ -142,7 +179,7 @@ function App() {
     return () => {
       connection?.stop();
     };
-  }, [token, dispatch]);
+  }, [token, dispatch, isStaffAccount]);
 
   useEffect(() => {
     let connection;
@@ -177,7 +214,7 @@ function App() {
 
     const connectChatHub = async () => {
       try {
-        if (!token) return;
+        if (!token || isStaffAccount) return;
 
         connection = new signalR.HubConnectionBuilder()
           .withUrl(`${API_ROOT}/chathub`, {
@@ -221,13 +258,13 @@ function App() {
     return () => {
       connection?.stop();
     };
-  }, [token, dispatch]);
+  }, [token, dispatch, isStaffAccount]);
 
   useEffect(() => {
     let conn;
 
     const connectLikeHub = async () => {
-      if (!token) return;
+      if (!token || isStaffAccount) return;
 
       conn = new signalR.HubConnectionBuilder()
         .withUrl(`${API_ROOT}/likehub`, {
@@ -250,7 +287,7 @@ function App() {
       setLikeConnection(null);
       conn?.stop().catch(() => {});
     };
-  }, [token]);
+  }, [token, isStaffAccount]);
 
   if (authLoading) {
     return <LoadingSpinner text="Checking authentication..." />;
@@ -260,6 +297,7 @@ function App() {
     <Router>
       <RefreshProvider>
         <SearchProvider>
+          <AccessBoundary token={token} user={user}>
           <Routes>
             <Route
               path="/"
@@ -299,11 +337,7 @@ function App() {
               path="/home"
               element={
                 token && user ? (
-                  !isEmployerAccount ? (
-                    <HomePage likeConnection={likeConnection} />
-                  ) : (
-                    <Navigate to="/company/dashboard" replace />
-                  )
+                  <HomePage likeConnection={likeConnection} />
                 ) : (
                   <Navigate to="/" />
                 )
@@ -483,10 +517,47 @@ function App() {
             />
 
             <Route
+              path="/admin/login"
+              element={
+                token && user ? (
+                  <Navigate to={authenticatedHome} replace />
+                ) : (
+                  <AdminLoginPage />
+                )
+              }
+            />
+            <Route
               path="/admin"
-              element={token && user ? <AdminPage /> : <Navigate to="/" />}
+              element={
+                token && user && isStaffAccount ? (
+                  <AdminPage />
+                ) : (
+                  <Navigate to="/admin/login" replace />
+                )
+              }
+            />
+            <Route
+              path="/admin/users/:userId"
+              element={
+                token && user && isStaffAccount ? (
+                  <AdminUserDetailPage />
+                ) : (
+                  <Navigate to="/admin/login" replace />
+                )
+              }
+            />
+            <Route
+              path="/admin/staff"
+              element={
+                token && user && currentRole === "Admin" ? (
+                  <AdminStaffPage />
+                ) : (
+                  <Navigate to="/admin" replace />
+                )
+              }
             />
           </Routes>
+          </AccessBoundary>
         </SearchProvider>
       </RefreshProvider>
     </Router>

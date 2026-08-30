@@ -46,6 +46,10 @@ export default function ProfileCard({
   const [isContactInfoOpen, setIsContactInfoOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [blockModalOpen, setBlockModalOpen] = useState(false);
+  const [blockLoading, setBlockLoading] = useState(false);
+  const [companyFollowing, setCompanyFollowing] = useState(false);
+  const [companyFollowLoading, setCompanyFollowLoading] = useState(false);
   const profileMenuRef = useRef(null);
 
   const [connectionStatus, setConnectionStatus] = useState("none");
@@ -60,6 +64,7 @@ export default function ProfileCard({
   const hasBackgroundImage = !!user?.basicInfo?.backgroundImage;
 
   const canShowConnectionActions = !isOwner && !currentUserIsEmployer;
+  const canShowCompanyActions = !isOwner && currentUserIsEmployer;
   const canReportProfile = !isOwner && Boolean(profileUsername);
 
   const getImageUrl = (path) => resolveMediaUrl(path, "");
@@ -90,6 +95,16 @@ export default function ProfileCard({
   useEffect(() => {
     fetchConnectionStatus();
   }, [profileUsername, isOwner, currentUserIsEmployer]);
+
+  useEffect(() => {
+    if (!canShowCompanyActions || !profileUsername) return;
+    api.get(`/CompanyFollow/user-status/${profileUsername}`)
+      .then((response) => {
+        const data = response?.data?.data ?? response?.data?.Data ?? response?.data;
+        setCompanyFollowing(Boolean(data?.isFollowing ?? data?.IsFollowing));
+      })
+      .catch(() => setCompanyFollowing(false));
+  }, [canShowCompanyActions, profileUsername]);
 
   useEffect(() => {
     if (!profileMenuOpen) return;
@@ -361,6 +376,41 @@ export default function ProfileCard({
     navigate(`/messages/${profileUsername}`);
   };
 
+  const handleCompanyFollow = async () => {
+    if (!profileUsername || companyFollowLoading) return;
+    try {
+      setCompanyFollowLoading(true);
+      if (companyFollowing) {
+        await api.delete(`/CompanyFollow/unfollow-user/${profileUsername}`);
+        setCompanyFollowing(false);
+        showToast?.("Member unfollowed.", "success");
+      } else {
+        await api.post(`/CompanyFollow/follow-user/${profileUsername}`);
+        setCompanyFollowing(true);
+        showToast?.("Member followed.", "success");
+      }
+    } catch (error) {
+      showToast?.(error?.response?.data?.message || "Follow action failed.", "error");
+    } finally {
+      setCompanyFollowLoading(false);
+    }
+  };
+
+  const confirmBlockProfile = async () => {
+    if (!profileUsername || blockLoading) return;
+    try {
+      setBlockLoading(true);
+      await api.post(`/privacy/block/${profileUsername}`);
+      showToast?.("User blocked.", "success");
+      navigate("/home", { replace: true });
+    } catch (error) {
+      showToast?.(error?.response?.data?.message || "User could not be blocked.", "error");
+    } finally {
+      setBlockLoading(false);
+      setBlockModalOpen(false);
+    }
+  };
+
   const coverStyle = hasBackgroundImage
     ? {
         ...styles.cover,
@@ -557,6 +607,21 @@ export default function ProfileCard({
                     <small>Send a private report to moderation</small>
                   </span>
                 </button>
+                <button
+                  type="button"
+                  className="profile-report-menu-item"
+                  style={styles.profileMenuItem}
+                  onClick={() => {
+                    setProfileMenuOpen(false);
+                    setBlockModalOpen(true);
+                  }}
+                >
+                  <span style={styles.blockMenuIcon} aria-hidden="true">⊘</span>
+                  <span>
+                    <strong>Block user</strong>
+                    <small>Disconnect and prevent profile or messaging access</small>
+                  </span>
+                </button>
               </div>
             )}
           </div>
@@ -661,6 +726,16 @@ export default function ProfileCard({
               </div>
             </div>
           )}
+          {canShowCompanyActions && (
+            <div style={styles.actionsRow}>
+              <button type="button" style={styles.companyFollowButton} onClick={handleCompanyFollow} disabled={companyFollowLoading}>
+                {companyFollowLoading ? "Loading…" : companyFollowing ? "Following" : "Follow"}
+              </button>
+              <button type="button" style={styles.companyInviteButton} onClick={() => navigate(`/messages/${profileUsername}`)}>
+                Invite to chat
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -712,6 +787,23 @@ export default function ProfileCard({
           onClose={() => setReportModalOpen(false)}
           showToast={showToast}
         />
+      )}
+
+      {blockModalOpen && canReportProfile && (
+        <div style={styles.removeModalOverlay} onClick={() => !blockLoading && setBlockModalOpen(false)}>
+          <div style={styles.removeModal} onClick={(event) => event.stopPropagation()}>
+            <h3 style={styles.removeModalTitle}>Block this user?</h3>
+            <p style={styles.removeModalText}>
+              Your connection and follow relationship will be removed. You will no longer see each other's profile, feed posts or messages.
+            </p>
+            <div style={styles.removeModalActions}>
+              <button type="button" style={styles.cancelButton} onClick={() => setBlockModalOpen(false)} disabled={blockLoading}>Cancel</button>
+              <button type="button" style={styles.blockConfirmButton} onClick={confirmBlockProfile} disabled={blockLoading}>
+                {blockLoading ? "Blocking…" : "Block user"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );
@@ -935,6 +1027,7 @@ const styles = {
     color: "#be123c",
     fontWeight: 900,
   },
+  blockMenuIcon: { display: "grid", width: 32, height: 32, flex: "0 0 32px", placeItems: "center", borderRadius: 9, background: "#fff1f2", color: "#b91c1c", fontWeight: 900 },
 
   info: {
     paddingTop: 70,
@@ -995,6 +1088,8 @@ const styles = {
     gap: 10,
     marginTop: 14,
   },
+  companyFollowButton: { border: "1px solid #0a66c2", background: "#0a66c2", color: "#fff", borderRadius: 999, padding: "8px 18px", fontWeight: 700, cursor: "pointer" },
+  companyInviteButton: { border: "1px solid #0a66c2", background: "var(--app-surface)", color: "#0a66c2", borderRadius: 999, padding: "8px 18px", fontWeight: 700, cursor: "pointer" },
 
   connectionButton: {
     display: "inline-flex",
@@ -1109,4 +1204,6 @@ const styles = {
     fontWeight: 600,
     fontFamily: font,
   },
+  cancelButton: { border: "1px solid var(--app-border)", background: "var(--app-surface)", color: "var(--app-text)", padding: "8px 14px", borderRadius: 18, cursor: "pointer", fontWeight: 600 },
+  blockConfirmButton: { border: "none", backgroundColor: "#b91c1c", color: "#fff", padding: "8px 14px", borderRadius: 18, cursor: "pointer", fontWeight: 700 },
 };

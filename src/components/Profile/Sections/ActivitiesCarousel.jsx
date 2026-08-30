@@ -22,8 +22,6 @@ const ActivitiesCarousel = ({
   const navigate = useNavigate();
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [activeFilter, setActiveFilter] = useState("posts");
-
   const [emblaRef, emblaApi] = useEmblaCarousel({
     align: "start",
     dragFree: false,
@@ -42,19 +40,7 @@ const ActivitiesCarousel = ({
     };
   }, [isCreateOpen]);
 
-  const filteredPosts = posts.filter((post) => {
-    if (activeFilter === "comments") {
-      return Number(post.commentCount || 0) > 0;
-    }
-
-    if (activeFilter === "images") {
-      return !!post.imageUrl;
-    }
-
-    return true;
-  });
-
-  const previewPosts = filteredPosts.slice(0, 5);
+  const previewPosts = posts.slice(0, 5);
   const totalPosts = Number.isFinite(Number(postsCount))
     ? Number(postsCount)
     : posts.length;
@@ -62,7 +48,7 @@ const ActivitiesCarousel = ({
   useEffect(() => {
     emblaApi?.reInit();
     emblaApi?.scrollTo(0, true);
-  }, [activeFilter, previewPosts.length, emblaApi]);
+  }, [previewPosts.length, emblaApi]);
 
   const scrollPrev = () => {
     if (emblaApi) emblaApi.scrollPrev();
@@ -154,27 +140,8 @@ const ActivitiesCarousel = ({
         </div>
       </div>
 
-      <div className="activity-filter-tabs" role="tablist" aria-label="Activity filters">
-        {[
-          ["posts", "Posts"],
-          ["comments", "Comments"],
-          ["images", "Images"],
-        ].map(([value, label]) => (
-          <button
-            key={value}
-            type="button"
-            role="tab"
-            aria-selected={activeFilter === value}
-            className={activeFilter === value ? "is-active" : ""}
-            onClick={() => setActiveFilter(value)}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
       {previewPosts.length === 0 ? (
-        <div style={styles.empty}>No {activeFilter} activity yet.</div>
+        <div style={styles.empty}>No post activity yet.</div>
       ) : (
         <div className="activity-carousel-viewport" style={styles.viewport} ref={emblaRef}>
           <div className="activity-carousel-track" style={styles.container}>

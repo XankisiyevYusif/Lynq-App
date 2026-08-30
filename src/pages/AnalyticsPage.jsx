@@ -6,6 +6,9 @@ import api from "../services/api";
 import { resolveMediaUrl } from "../utils/mediaUrl";
 import defaultAvatar from "../assets/default-avatar.png";
 import "./AnalyticsPage.css";
+import useUrlFilters from "../hooks/useUrlFilters";
+
+const ANALYTICS_QUERY_DEFAULTS = { tab: "overview", days: "30" };
 
 const TABS = [
   { key: "overview", label: "Overview", icon: "chart" },
@@ -176,8 +179,11 @@ function Breakdown({ title, items = [] }) {
 }
 
 export default function AnalyticsPage() {
-  const [activeTab, setActiveTab] = useState("overview");
-  const [days, setDays] = useState(30);
+  const [urlFilters, setUrlFilters] = useUrlFilters(ANALYTICS_QUERY_DEFAULTS);
+  const activeTab = TABS.some((item) => item.key === urlFilters.tab) ? urlFilters.tab : "overview";
+  const setActiveTab = (value) => setUrlFilters({ tab: value }, { replace: false });
+  const days = [7, 30, 90].includes(Number(urlFilters.days)) ? Number(urlFilters.days) : 30;
+  const setDays = (value) => setUrlFilters({ days: value });
   const [overview, setOverview] = useState(null);
   const [content, setContent] = useState(null);
   const [audience, setAudience] = useState(null);

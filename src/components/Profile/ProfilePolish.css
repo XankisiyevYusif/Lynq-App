@@ -527,40 +527,6 @@
   overflow: hidden;
 }
 
-.activity-filter-tabs {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0 0 16px;
-}
-
-.activity-filter-tabs > button {
-  min-height: 34px;
-  padding: 6px 14px;
-  border: 1px solid var(--app-border);
-  border-radius: 999px;
-  background: var(--app-surface);
-  color: var(--app-text-soft);
-  font: inherit;
-  font-size: 13px;
-  font-weight: 650;
-  cursor: pointer;
-  transition: background-color 160ms ease, border-color 160ms ease,
-    color 160ms ease, transform 160ms ease;
-}
-
-.activity-filter-tabs > button:hover {
-  border-color: #a5b4fc;
-  color: var(--app-accent);
-  transform: translateY(-1px);
-}
-
-.activity-filter-tabs > button.is-active {
-  border-color: var(--app-accent);
-  background: var(--app-accent);
-  color: #fff;
-}
-
 .activity-carousel-track {
   align-items: stretch;
 }
@@ -579,11 +545,6 @@
   .activity-carousel-slide {
     flex-basis: 100%;
     width: 100%;
-  }
-
-  .activity-filter-tabs {
-    overflow-x: auto;
-    padding-bottom: 2px;
   }
 }
 

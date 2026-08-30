@@ -7,6 +7,10 @@ import HomeJobFeedItem from "./HomeJobFeedItem";
 
 const HomeFeed = ({ likeConnection, showToast }) => {
   const currentUser = useSelector((state) => state.user.user);
+  const viewerIsEmployer =
+    currentUser?.userType === "Employer" ||
+    currentUser?.role === "Employer" ||
+    Boolean(currentUser?.companyInfo || currentUser?.company);
 
   const currentUserId =
     currentUser?.id ||
@@ -192,6 +196,7 @@ const HomeFeed = ({ likeConnection, showToast }) => {
               onPostDeleted={handlePostDeleted}
               likeConnection={likeConnection}
               showToast={showToast}
+              viewSource="feed"
             />
           );
         }
@@ -203,6 +208,7 @@ const HomeFeed = ({ likeConnection, showToast }) => {
               job={item.jobPost}
               onJobChanged={handleJobChanged}
               showToast={showToast}
+              viewerIsEmployer={viewerIsEmployer}
             />
           );
         }

@@ -142,8 +142,9 @@ const Navbar = () => {
   const networkBadgeCount = pendingReceivedCount + connectionUpdateCount;
 
   const isHome = isEmployer
-    ? location.pathname === "/company/dashboard"
+    ? location.pathname === "/home"
     : location.pathname === "/home";
+  const isDashboard = isEmployer && location.pathname === "/company/dashboard";
 
   const isNetwork = isEmployer
     ? location.pathname.startsWith("/company/talent")
@@ -289,11 +290,23 @@ const Navbar = () => {
         </div>
 
         <div className="navbar-menu">
+          {isEmployer && (
+            <div className="navbar-item">
+              <Link
+                to="/home"
+                className={`navbar-link ${isHome ? "active" : ""}`}
+                aria-current={isHome ? "page" : undefined}
+              >
+                <NavIcon name="home" />
+                <span>Feed</span>
+              </Link>
+            </div>
+          )}
           <div className="navbar-item">
             <Link
               to={homePath}
-              className={`navbar-link ${isHome ? "active" : ""}`}
-              aria-current={isHome ? "page" : undefined}
+              className={`navbar-link ${(isEmployer ? isDashboard : isHome) ? "active" : ""}`}
+              aria-current={(isEmployer ? isDashboard : isHome) ? "page" : undefined}
             >
               <NavIcon name={isEmployer ? "dashboard" : "home"} />
 

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import defaultAvatar from "../../../assets/default-avatar.png";
 import { resolveMediaUrl } from "../../../utils/mediaUrl";
+import api from "../../../services/api";
 import ProfileIcon from "../ProfileIcon";
 import { ReportProfileModal } from "../ProfileSafetyModals";
 
@@ -26,6 +27,8 @@ export default function EmployerHeader({
   const navigate = useNavigate();
   const [companyMenuOpen, setCompanyMenuOpen] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [blockModalOpen, setBlockModalOpen] = useState(false);
+  const [blockLoading, setBlockLoading] = useState(false);
   const companyMenuRef = useRef(null);
 
   const basic = user?.basicInfo || {};
@@ -63,6 +66,24 @@ export default function EmployerHeader({
     document.addEventListener("mousedown", closeOnOutsideClick);
     return () => document.removeEventListener("mousedown", closeOnOutsideClick);
   }, [companyMenuOpen]);
+
+  const blockCompany = async () => {
+    if (!username || blockLoading) return;
+    try {
+      setBlockLoading(true);
+      await api.post(`/privacy/block/${username}`);
+      showToast?.("Company blocked.", "success");
+      navigate("/home", { replace: true });
+    } catch (error) {
+      showToast?.(
+        error?.response?.data?.message || "Company could not be blocked.",
+        "error",
+      );
+    } finally {
+      setBlockLoading(false);
+      setBlockModalOpen(false);
+    }
+  };
 
   return (
     <>
@@ -264,6 +285,21 @@ export default function EmployerHeader({
                           <small>Send a private report to moderation</small>
                         </span>
                       </button>
+                      <button
+                        type="button"
+                        className="employer-header-report-action"
+                        style={styles.reportAction}
+                        onClick={() => {
+                          setCompanyMenuOpen(false);
+                          setBlockModalOpen(true);
+                        }}
+                      >
+                        <span style={styles.blockIcon} aria-hidden="true">⊘</span>
+                        <span>
+                          <strong>Block company</strong>
+                          <small>Hide this page and prevent messaging</small>
+                        </span>
+                      </button>
                     </div>
                   )}
                 </div>
@@ -282,6 +318,30 @@ export default function EmployerHeader({
           onClose={() => setReportModalOpen(false)}
           showToast={showToast}
         />
+      )}
+      {blockModalOpen && username && !isOwner && (
+        <div
+          style={styles.modalOverlay}
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !blockLoading) {
+              setBlockModalOpen(false);
+            }
+          }}
+        >
+          <section style={styles.modal} role="dialog" aria-modal="true">
+            <h2 style={styles.modalTitle}>Block {companyName}?</h2>
+            <p style={styles.modalText}>
+              You will no longer see this company profile, its feed posts or messages.
+              Existing follow and connection relationships will be removed.
+            </p>
+            <div style={styles.modalActions}>
+              <button type="button" style={styles.cancelButton} onClick={() => setBlockModalOpen(false)} disabled={blockLoading}>Cancel</button>
+              <button type="button" style={styles.blockButton} onClick={blockCompany} disabled={blockLoading}>
+                {blockLoading ? "Blocking…" : "Block company"}
+              </button>
+            </div>
+          </section>
+        </div>
       )}
     </>
   );
@@ -449,6 +509,44 @@ const styles = {
     color: "#be123c",
     fontWeight: 900,
   },
+
+  blockIcon: {
+    display: "grid",
+    width: 32,
+    height: 32,
+    flex: "0 0 32px",
+    placeItems: "center",
+    borderRadius: 9,
+    background: "#fef2f2",
+    color: "#b91c1c",
+    fontWeight: 900,
+  },
+
+  modalOverlay: {
+    position: "fixed",
+    zIndex: 16000,
+    inset: 0,
+    display: "grid",
+    placeItems: "center",
+    padding: 18,
+    background: "rgba(15,23,42,.62)",
+  },
+
+  modal: {
+    width: "min(440px, 100%)",
+    padding: 22,
+    border: "1px solid var(--app-border)",
+    borderRadius: 16,
+    background: "var(--app-surface)",
+    color: "var(--app-text)",
+    boxShadow: "0 24px 70px rgba(15,23,42,.3)",
+  },
+
+  modalTitle: { margin: 0, fontSize: 20 },
+  modalText: { margin: "10px 0 20px", color: "var(--app-text-soft)", lineHeight: 1.55 },
+  modalActions: { display: "flex", justifyContent: "flex-end", gap: 9 },
+  cancelButton: { border: "1px solid var(--app-border)", borderRadius: 999, background: "var(--app-surface)", color: "var(--app-text)", padding: "8px 14px", fontWeight: 700, cursor: "pointer" },
+  blockButton: { border: 0, borderRadius: 999, background: "#b91c1c", color: "#fff", padding: "9px 15px", fontWeight: 750, cursor: "pointer" },
 
   logoMenu: {
     position: "absolute",

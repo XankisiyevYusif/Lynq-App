@@ -55,10 +55,19 @@ export default function SearchPage() {
   const query = searchParams.get("query") || "";
   const requestedType = searchParams.get("type") || "all";
   const requestedJobId = searchParams.get("jobId");
+  const requestedPage = Math.max(1, Number.parseInt(searchParams.get("page"), 10) || 1);
   const initialTab = TABS.some(([key]) => key === requestedType) ? requestedType : "all";
 
   const [activeTab, setActiveTab] = useState(initialTab);
-  const [page, setPage] = useState(1);
+  const [page, setPageState] = useState(requestedPage);
+  const setPage = (value) => {
+    const nextPage = Math.max(1, typeof value === "function" ? value(page) : value);
+    setPageState(nextPage);
+    const next = new URLSearchParams(searchParams);
+    if (nextPage === 1) next.delete("page");
+    else next.set("page", String(nextPage));
+    setSearchParams(next, { replace: true });
+  };
   const [results, setResults] = useState({
     posts: EMPTY_PAGE,
     people: EMPTY_PAGE,
@@ -76,9 +85,9 @@ export default function SearchPage() {
 
   useEffect(() => {
     setQuery(query);
-    setPage(1);
+    setPageState(requestedPage);
     setActiveTab(TABS.some(([key]) => key === requestedType) ? requestedType : "all");
-  }, [query, requestedType, setQuery]);
+  }, [query, requestedType, requestedPage, setQuery]);
 
   const updateResult = (key, value) =>
     setResults((current) => ({ ...current, [key]: normalisePage(value, page) }));
@@ -313,7 +322,7 @@ export default function SearchPage() {
   const renderItems = (key, items) => {
     if (loading[key]) return <div className="search-state">Loading {key}...</div>;
     if (!items.length) return <div className="search-state">No {key} found.</div>;
-    if (key === "posts") return <div className="search-post-list">{items.map((item) => <PostItem key={item.id} post={item} />)}</div>;
+    if (key === "posts") return <div className="search-post-list">{items.map((item) => <PostItem key={item.id} post={item} viewSource="search" searchQuery={query.trim()} />)}</div>;
     if (key === "people") return items.map((item) => <PersonCard key={item.id || item.username} person={item} />);
     if (key === "companies") return items.map((item) => <CompanyCard key={item.id || item.username} company={item} />);
     if (key === "jobs") return items.map((item) => <JobCard key={item.id} job={item} />);

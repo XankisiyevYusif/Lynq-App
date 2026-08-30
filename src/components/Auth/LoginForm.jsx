@@ -199,7 +199,7 @@ const LoginForm = () => {
           data?.message ||
           (typeof data === "string" ? data : null) ||
           "The username/email or password is incorrect.";
-        dispatch(loginFailure(message));
+        dispatch(loginFailure(data?.reason ? `${message} Reason: ${data.reason}` : message));
       }
     }
   };

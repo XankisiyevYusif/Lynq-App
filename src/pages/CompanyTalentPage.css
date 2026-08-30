@@ -318,11 +318,17 @@ button.is-danger-solid:hover {
 }
 
 .talent-match,
+.talent-company-badge,
 .talent-open-badge {
   padding: 4px 7px;
   border-radius: 999px;
   font-size: 0.62rem;
   white-space: nowrap;
+}
+
+.talent-company-badge {
+  background: var(--app-accent-soft);
+  color: var(--app-accent);
 }
 
 .talent-match {

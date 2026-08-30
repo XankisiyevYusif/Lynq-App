@@ -7,6 +7,12 @@ import api from "../services/api";
 import JobPostItem from "../components/Post/JobPosts/JobPostItem";
 import CreateJobPostBox from "../components/Post/JobPosts/CreateJobPostBox";
 import "./JobsPage.css";
+import useUrlFilters from "../hooks/useUrlFilters";
+
+const JOB_QUERY_DEFAULTS = {
+  tab: "all", search: "", page: "1", workplace: "all",
+  employment: "all", status: "all", sort: "newest",
+};
 
 const Icon = ({ name, size = 19 }) => {
   const paths = {
@@ -28,6 +34,7 @@ const Icon = ({ name, size = 19 }) => {
 export default function JobsPage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [urlFilters, setUrlFilters] = useUrlFilters(JOB_QUERY_DEFAULTS);
   const user = useSelector((state) => state.user.user);
 
   const isEmployer =
@@ -37,14 +44,22 @@ export default function JobsPage() {
     user?.Role === "Employer";
 
   const companyUsernameFromProfile = location.state?.companyUsername;
-  const queryFromSearch = location.state?.query || "";
+  const queryFromSearch = urlFilters.search || location.state?.query || "";
   const selectedJobIdFromSearch = location.state?.selectedJobId;
 
-  const [activeTab, setActiveTab] = useState("all");
+  const activeTab = ["all", "saved", "applied", "my"].includes(urlFilters.tab)
+    ? urlFilters.tab
+    : "all";
+  const setActiveTab = (value) => setUrlFilters({ tab: value });
   const [jobs, setJobs] = useState([]);
   const [selectedJob, setSelectedJob] = useState(null);
-  const [query, setQuery] = useState(queryFromSearch);
-  const [page, setPage] = useState(1);
+  const query = queryFromSearch;
+  const setQuery = (value) => setUrlFilters({ search: value });
+  const page = Math.max(1, Number.parseInt(urlFilters.page, 10) || 1);
+  const setPage = (value) => {
+    const next = typeof value === "function" ? value(page) : value;
+    setUrlFilters({ page: Math.max(1, next) });
+  };
   const [loading, setLoading] = useState(false);
   const [preferencesOpen, setPreferencesOpen] = useState(false);
   const [preferencesLoading, setPreferencesLoading] = useState(false);
@@ -69,12 +84,16 @@ export default function JobsPage() {
     remoteLocations: [],
     startAvailability: "Immediately",
   });
-  const [filters, setFilters] = useState({
-    workplace: "all",
-    employment: "all",
-    status: "all",
-    sort: "newest",
-  });
+  const filters = {
+    workplace: urlFilters.workplace,
+    employment: urlFilters.employment,
+    status: urlFilters.status,
+    sort: urlFilters.sort,
+  };
+  const setFilters = (value) => {
+    const next = typeof value === "function" ? value(filters) : value;
+    setUrlFilters(next);
+  };
 
   const getResponseData = (res) => {
     if (Array.isArray(res.data)) return res.data;

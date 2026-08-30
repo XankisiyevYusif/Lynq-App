@@ -25,6 +25,8 @@ const PostItem = ({
   defaultCommentsOpen = false,
   highlighted = false,
   onSavedChange,
+  viewSource = "feed",
+  searchQuery = "",
 }) => {
   const navigate = useNavigate();
   const commentCountConnectionRef = useRef(null);
@@ -98,7 +100,12 @@ const PostItem = ({
 
         visibleTimer = window.setTimeout(() => {
           sessionStorage.setItem(storageKey, "1");
-          api.post(`/Analytics/track/post-view/${id}`).catch((error) => {
+          api.post(`/Analytics/track/post-view/${id}`, null, {
+            params: {
+              source: viewSource,
+              ...(searchQuery ? { query: searchQuery } : {}),
+            },
+          }).catch((error) => {
             sessionStorage.removeItem(storageKey);
             console.error("Post analytics tracking failed:", error);
           });
@@ -113,7 +120,7 @@ const PostItem = ({
       window.clearTimeout(visibleTimer);
       observer.disconnect();
     };
-  }, [id]);
+  }, [id, searchQuery, viewSource]);
 
   useEffect(() => {
     setLocalLikeCount(post.likeCount || 0);

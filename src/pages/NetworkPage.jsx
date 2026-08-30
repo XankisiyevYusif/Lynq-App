@@ -8,11 +8,15 @@ import api, { API_ROOT } from "../services/api";
 import defaultAvatar from "../assets/default-avatar.png";
 import { resolveMediaUrl } from "../utils/mediaUrl";
 import "./NetworkPage.css";
+import useUrlFilters from "../hooks/useUrlFilters";
+
+const NETWORK_QUERY_DEFAULTS = { tab: "received" };
 
 // API_ROOT is imported from api.js
 
 export default function NetworkPage() {
   const navigate = useNavigate();
+  const [urlFilters, setUrlFilters] = useUrlFilters(NETWORK_QUERY_DEFAULTS);
   const currentUser = useSelector((state) => state.user.user);
 
   const currentUserIsEmployer =
@@ -21,13 +25,15 @@ export default function NetworkPage() {
     currentUser?.role === "Employer" ||
     currentUser?.Role === "Employer";
 
-  const [activeTab, setActiveTab] = useState("received");
+  const activeTab = urlFilters.tab;
+  const setActiveTab = (value) => setUrlFilters({ tab: value }, { replace: false });
 
   const [receivedRequests, setReceivedRequests] = useState([]);
   const [sentRequests, setSentRequests] = useState([]);
   const [connections, setConnections] = useState([]);
 
   const [followers, setFollowers] = useState([]);
+  const [following, setFollowing] = useState([]);
 
   const [jobseekers, setJobseekers] = useState([]);
   const [employers, setEmployers] = useState([]);
@@ -37,6 +43,7 @@ export default function NetworkPage() {
 
   const [loading, setLoading] = useState(false);
   const [followersLoading, setFollowersLoading] = useState(false);
+  const [followingLoading, setFollowingLoading] = useState(false);
   const [jobseekersLoading, setJobseekersLoading] = useState(false);
   const [employersLoading, setEmployersLoading] = useState(false);
   const [followedCompaniesLoading, setFollowedCompaniesLoading] =
@@ -242,6 +249,27 @@ export default function NetworkPage() {
     }
   };
 
+  const fetchPersonalFollows = async () => {
+    if (currentUserIsEmployer) return;
+    try {
+      setFollowersLoading(true);
+      setFollowingLoading(true);
+      const [followersRes, followingRes] = await Promise.all([
+        api.get("/CompanyFollow/my-followers"),
+        api.get("/CompanyFollow/my-following"),
+      ]);
+      setFollowers(getResponseArray(followersRes));
+      setFollowing(getResponseArray(followingRes));
+    } catch (error) {
+      console.error("Fetch personal follows failed:", error);
+      setFollowers([]);
+      setFollowing([]);
+    } finally {
+      setFollowersLoading(false);
+      setFollowingLoading(false);
+    }
+  };
+
   const fetchNetworkData = async () => {
     if (currentUserIsEmployer) return;
 
@@ -311,21 +339,25 @@ export default function NetworkPage() {
     if (currentUserIsEmployer) return;
     try {
       setRecommendationsLoading(true);
-      const [recommendedResponse, fallbackResponse, receivedResponse, sentResponse, connectionsResponse] = await Promise.all([
+      const [recommendedResponse, fallbackResponse, receivedResponse, sentResponse, connectionsResponse, blockedResponse] = await Promise.all([
         api.get("/User/recommended", { params: { pageNumber: 1, pageSize: 12 } }).catch(() => null),
         api.get("/User/jobseekers").catch(() => null),
         api.get("/Connection/received").catch(() => null),
         api.get("/Connection/sent").catch(() => null),
         api.get("/Connection/my-connections").catch(() => null),
+        api.get("/privacy/blocked-users").catch(() => null),
       ]);
       const received = getResponseArray(receivedResponse);
       const sent = getResponseArray(sentResponse);
       const connected = getResponseArray(connectionsResponse);
+      const blockedUsers = getResponseArray(blockedResponse);
       const isExcluded = (candidate) =>
         sameUser(candidate, currentUser) ||
         connected.some((item) => sameUser(item, candidate)) ||
         sent.some((item) => sameUser(getReceiver(item), candidate)) ||
-        received.some((item) => sameUser(getSender(item), candidate));
+        received.some((item) => sameUser(getSender(item), candidate));        
+      const isBlocked = (candidate) =>
+        blockedUsers.some((item) => sameUser(item, candidate));
 
       const ranked = getResponseArray(recommendedResponse);
       const fallback = getResponseArray(fallbackResponse);
@@ -336,7 +368,7 @@ export default function NetworkPage() {
         const type = candidate?.userType || candidate?.UserType || "";
         const status = candidate?.connectionStatus || candidate?.ConnectionStatus || "none";
         const connected = candidate?.isConnected || candidate?.IsConnected;
-        return type !== "Employer" && !connected && status === "none" && !isExcluded(candidate);
+        return type !== "Employer" && !connected && status === "none" && !isExcluded(candidate) && !isBlocked(candidate);
       });
       setRecommendedConnections(list.slice(0, 6));
     } catch (error) {
@@ -438,7 +470,10 @@ export default function NetworkPage() {
       setActiveTab("followers");
     } else {
       fetchNetworkData();
-      setActiveTab("received");
+      fetchPersonalFollows();
+      if (!["received", "sent", "connections", "followers", "following"].includes(activeTab)) {
+        setActiveTab("received");
+      }
     }
   }, [currentUserIsEmployer]);
 
@@ -730,6 +765,16 @@ export default function NetworkPage() {
             label: "Connections",
             count: connections.length,
           },
+          {
+            key: "followers",
+            label: "Followers",
+            count: followers.length,
+          },
+          {
+            key: "following",
+            label: "Following",
+            count: following.length,
+          },
         ]),
   ];
 
@@ -949,6 +994,7 @@ export default function NetworkPage() {
                 {activeTab === "sent" && "Sent requests"}
                 {activeTab === "connections" && "Connections"}
                 {activeTab === "followers" && "Followers"}
+                {activeTab === "following" && "Following"}
               </h2>
 
               <p style={styles.subtitle}>
@@ -958,7 +1004,10 @@ export default function NetworkPage() {
                 {activeTab === "connections" &&
                   "People you are connected with."}
                 {activeTab === "followers" &&
-                  "People who follow your company page."}
+                  (currentUserIsEmployer
+                    ? "People who follow your company page."
+                    : "Accounts that follow you.")}
+                {activeTab === "following" && "People and companies you follow."}
               </p>
             </div>
 
@@ -995,6 +1044,27 @@ export default function NetworkPage() {
                               `/profile/${follower.username || follower.Username}`,
                             )
                           }
+                        >
+                          View
+                        </button>
+                      ),
+                    }),
+                  )
+                ))}
+              {activeTab === "following" &&
+                (followingLoading ? (
+                  <p style={styles.emptyText}>Loading following...</p>
+                ) : !following.length ? (
+                  <p style={styles.emptyText}>You are not following anyone yet.</p>
+                ) : (
+                  following.map((target) =>
+                    renderPersonRow({
+                      user: target,
+                      meta: formatTimeAgo(target.followedAt || target.FollowedAt),
+                      actions: (
+                        <button
+                          style={styles.viewButton}
+                          onClick={() => navigate(`/profile/${getUsername(target)}`)}
                         >
                           View
                         </button>

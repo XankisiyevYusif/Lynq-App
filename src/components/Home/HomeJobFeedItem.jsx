@@ -6,7 +6,7 @@ import defaultAvatar from "../../assets/default-avatar.png";
 import { resolveMediaUrl } from "../../utils/mediaUrl";
 import ProfileIcon from "../Profile/ProfileIcon";
 
-const HomeJobFeedItem = ({ job, onJobChanged, showToast }) => {
+const HomeJobFeedItem = ({ job, onJobChanged, showToast, viewerIsEmployer = false }) => {
   const navigate = useNavigate();
 
   const [saving, setSaving] = useState(false);
@@ -79,7 +79,7 @@ const HomeJobFeedItem = ({ job, onJobChanged, showToast }) => {
   const handleApply = async (e) => {
     e.stopPropagation();
 
-    if (!job.canApply) return;
+    if (!job.canApply || viewerIsEmployer) return;
 
     try {
       setApplying(true);
@@ -164,7 +164,9 @@ const HomeJobFeedItem = ({ job, onJobChanged, showToast }) => {
         <span style={styles.badge}>{job.workplaceType || "On-site"}</span>
         <span style={styles.badge}>{job.employmentType || "Full-time"}</span>
 
-        {!job.canApply && <span style={styles.closedBadge}>Closed</span>}
+        {!job.canApply && !viewerIsEmployer && (
+          <span style={styles.closedBadge}>Closed</span>
+        )}
       </div>
 
       {job.description && (
@@ -175,7 +177,7 @@ const HomeJobFeedItem = ({ job, onJobChanged, showToast }) => {
         </p>
       )}
 
-      {!job.canApply && (
+      {!job.canApply && !viewerIsEmployer && (
         <p style={styles.closedText}>
           Applications are no longer accepted for this job.
         </p>
@@ -193,9 +195,13 @@ const HomeJobFeedItem = ({ job, onJobChanged, showToast }) => {
             ...(!job.canApply ? styles.disabledButton : {}),
           }}
           onClick={handleApply}
-          disabled={!job.canApply || applying}
+          disabled={!job.canApply || applying || viewerIsEmployer}
         >
-          {job.canApply ? (applying ? "Opening..." : "Apply ↗") : "Closed"}
+          {viewerIsEmployer
+            ? "Company accounts cannot apply"
+            : job.canApply
+              ? (applying ? "Opening..." : "Apply ↗")
+              : "Closed"}
         </button>
 
         <button type="button" style={styles.viewButton} onClick={handleOpenJob}>

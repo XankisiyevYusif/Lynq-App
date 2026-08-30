@@ -117,8 +117,94 @@ html[data-theme="dark"] .settings-message.is-error {
   color: #fca5a5;
 }
 
+.blocked-users-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.blocked-users-heading h2 { margin-bottom: 5px; }
+.blocked-users-heading p { margin: 0; color: var(--app-muted); font-size: 13px; }
+.blocked-users-heading > strong {
+  min-width: 32px;
+  padding: 6px 9px;
+  border-radius: 999px;
+  background: var(--app-surface-2);
+  color: var(--app-text-soft);
+  text-align: center;
+}
+
+.blocked-users-list { display: grid; gap: 9px; margin-top: 18px; }
+.blocked-users-list article {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  padding: 11px;
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  background: var(--app-surface-2);
+}
+.blocked-users-list img { width: 46px; height: 46px; border-radius: 12px; object-fit: cover; }
+.blocked-users-list article > span { display: grid; gap: 2px; min-width: 0; }
+.blocked-users-list small { color: var(--app-muted); }
+.blocked-users-list button {
+  padding: 8px 12px;
+  border: 1px solid var(--app-accent);
+  border-radius: 9px;
+  background: transparent;
+  color: var(--app-accent);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+}
+.blocked-users-list button:disabled { opacity: .6; cursor: wait; }
+.blocked-users-state {
+  display: grid;
+  min-height: 180px;
+  margin-top: 18px;
+  place-content: center;
+  gap: 6px;
+  color: var(--app-muted);
+  text-align: center;
+}
+.blocked-users-state strong { color: var(--app-text); }
+
+.settings-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1400;
+  display: grid;
+  padding: 20px;
+  place-items: center;
+  background: rgba(15, 23, 42, .58);
+  backdrop-filter: blur(4px);
+}
+.settings-confirm-dialog {
+  position: relative;
+  width: min(100%, 430px);
+  padding: 28px;
+  border: 1px solid var(--app-border);
+  border-radius: 18px;
+  background: var(--app-surface);
+  color: var(--app-text);
+  box-shadow: 0 24px 70px rgba(15, 23, 42, .28);
+  text-align: center;
+}
+.settings-confirm-dialog h2 { margin: 12px 0 7px; font-size: 20px; }
+.settings-confirm-dialog p { margin: 0; color: var(--app-muted); font-size: 13px; line-height: 1.65; }
+.settings-confirm-icon { display: grid; width: 48px; height: 48px; margin: auto; place-items: center; border-radius: 14px; background: var(--app-accent-soft); color: var(--app-accent); font-size: 22px; font-weight: 850; }
+.settings-confirm-close { position: absolute; top: 12px; right: 14px; border: 0; background: transparent; color: var(--app-muted); font-size: 24px; cursor: pointer; }
+.settings-confirm-dialog footer { display: flex; justify-content: flex-end; gap: 9px; margin-top: 22px; }
+.settings-confirm-dialog footer button { min-width: 112px; min-height: 40px; padding: 0 14px; border: 1px solid var(--app-border); border-radius: 10px; background: var(--app-surface-2); color: var(--app-text); font: inherit; font-size: 12px; font-weight: 750; cursor: pointer; }
+.settings-confirm-dialog footer button.is-primary { border-color: var(--app-accent); background: var(--app-accent); color: #fff; }
+
 @media (max-width: 560px) {
   .security-status {
     flex-direction: column;
   }
+  .blocked-users-list article { grid-template-columns: 42px minmax(0, 1fr); }
+  .blocked-users-list article > button { grid-column: 1/-1; }
 }
