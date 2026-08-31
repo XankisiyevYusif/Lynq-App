@@ -85,7 +85,6 @@ export default function EditEducationForm({ education, setUser, onClose }) {
     const newErrors = {};
 
     if (!school.trim()) newErrors.school = "School is required.";
-    if (!degree.trim()) newErrors.degree = "Degree is required.";
     if (!field.trim()) newErrors.field = "Field of study is required.";
     if (!startMonth) newErrors.startMonth = "Start month is required.";
     if (!startYear) newErrors.startYear = "Start year is required.";
@@ -226,7 +225,7 @@ export default function EditEducationForm({ education, setUser, onClose }) {
       </div>
 
       <div style={styles.field}>
-        <label style={styles.label}>Degree*</label>
+        <label style={styles.label}>Degree</label>
         <input
           style={{
             ...styles.input,
@@ -235,7 +234,6 @@ export default function EditEducationForm({ education, setUser, onClose }) {
           value={degree}
           onChange={(e) => setDegree(e.target.value)}
         />
-        {errors.degree && <div style={styles.errorText}>{errors.degree}</div>}
       </div>
 
       <div style={styles.field}>
