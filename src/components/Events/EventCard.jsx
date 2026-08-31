@@ -29,6 +29,7 @@ export default function EventCard({ event, compact = false, onAttendanceChange, 
   const startsAt = event.startsAt || event.StartsAt;
   const isPast = new Date(startsAt) < new Date();
   const imageUrl = event.imageUrl || event.ImageUrl;
+  const eventUrl = event.eventUrl || event.EventUrl;
   const currentUsername = currentUser?.basicInfo?.username || currentUser?.username || currentUser?.Username;
   const isOwner = !!(event.isOwner || event.IsOwner || (username && currentUsername && username.toLowerCase() === currentUsername.toLowerCase()));
 
@@ -85,7 +86,7 @@ export default function EventCard({ event, compact = false, onAttendanceChange, 
     <article
       className={`event-card ${compact ? "is-compact" : ""}`}
       onClick={(clickEvent) => {
-        if (clickEvent.target.closest("button, input, textarea, form, label")) return;
+        if (clickEvent.target.closest("button, a, input, textarea, form, label")) return;
         if (id) navigate(`/events/${id}`, { state: { eventPreview: event } });
       }}
     >
@@ -117,6 +118,11 @@ export default function EventCard({ event, compact = false, onAttendanceChange, 
             <span><ProfileIcon name="mapPin" size={14} />{event.location || event.Location}</span>
           )}
           <span><ProfileIcon name="users" size={14} />{attendeeCount} attending</span>
+          {eventUrl && (
+            <a href={eventUrl} target="_blank" rel="noopener noreferrer" onClick={(clickEvent) => clickEvent.stopPropagation()}>
+              Open event link
+            </a>
+          )}
         </div>
         {username && (
           <button className="event-company" type="button" onClick={(clickEvent) => { clickEvent.stopPropagation(); navigate(`/profile/${username}`); }}>
