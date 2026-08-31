@@ -648,7 +648,13 @@ const ChatWindow = ({ receiver }) => {
       {invitation?.requiresAcceptance && invitation?.status !== "accepted" && (
         <div style={styles.invitationBanner}>
           <div>
-            <strong>{invitation?.status === "pending" ? "Messaging invitation" : "Invitation closed"}</strong>
+            <strong>
+              {invitation?.status === "pending"
+                ? "Messaging invitation"
+                : invitation?.status === "none"
+                  ? "Start with an invitation"
+                  : "Invitation closed"}
+            </strong>
             <p>{invitation?.message}</p>
           </div>
           {invitation?.canRespond && (
