@@ -12,7 +12,7 @@
 .event-detail-meta { display: flex; flex-wrap: wrap; gap: 20px; margin: 22px 0; color: var(--app-text-soft); }
 .event-detail-meta span { display: inline-flex; align-items: center; gap: 7px; }
 .event-detail-actions { display: flex; flex-wrap: wrap; gap: 9px; }
-.event-detail-actions button, .event-detail-state button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 42px; padding: 0 18px; border: 1px solid #cbd5e1; border-radius: 999px; background: var(--app-surface); color: var(--app-text); font: inherit; font-weight: 800; cursor: pointer; }
+.event-detail-actions button, .event-detail-actions a, .event-detail-state button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 42px; padding: 0 18px; border: 1px solid #cbd5e1; border-radius: 999px; background: var(--app-surface); color: var(--app-text); font: inherit; font-weight: 800; text-decoration: none; cursor: pointer; }
 .event-detail-actions .is-primary { border-color: #4f46e5; background: #4f46e5; color: #fff; }
 .event-detail-actions .is-danger { border-color: #fecaca; color: #dc2626; }
 .event-detail-actions button:disabled { cursor: default; opacity: .55; }

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { searchHashtags } from "../../../services/searchApi";
+import { getRelevantHashtags, searchHashtags } from "../../../services/searchApi";
 import ProfileIcon from "../ProfileIcon";
 import "./EmployerDiscovery.css";
 import "./EmployerTrends.css";
@@ -21,7 +21,18 @@ export default function EmployerDiscovery() {
   useEffect(() => {
     let active = true;
 
-    searchHashtags("", 6)
+    const loadTrends = async () => {
+      try {
+        const relevant = await getRelevantHashtags("", 6);
+        if (Array.isArray(relevant) && relevant.length) return relevant;
+      } catch (error) {
+        console.error("Relevant hashtags could not be loaded:", error);
+      }
+
+      return searchHashtags("", 6);
+    };
+
+    loadTrends()
       .then((items) => {
         if (!active) return;
         setTopics(
@@ -51,13 +62,13 @@ export default function EmployerDiscovery() {
         <header className="employer-trends-heading">
           <div>
             <span>Company discovery</span>
-            <h2>Trending topics</h2>
+            <h2>Trending hashtags</h2>
           </div>
           <ProfileIcon name="activity" size={20} />
         </header>
 
         {loading ? (
-          <div className="employer-trends-state">Loading trends...</div>
+          <div className="employer-trends-state">Loading hashtags...</div>
         ) : topics.length ? (
           <div className="employer-trends-list">
             {topics.map((topic, index) => (

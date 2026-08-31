@@ -229,13 +229,15 @@ export default function EmployerCompanyInfoForm({
           type="Industry"
           value={industry}
           onChange={setIndustry}
-          allowCustom={false}
+          allowCustom
+          customLabel="Use custom industry"
+          minSearchLength={0}
           maxLength={100}
           inputStyle={styles.input}
-          placeholder="Search and select an industry"
+          placeholder="Enter or select an industry"
         />
         <div style={styles.lookupHint}>
-          Select an industry from the official list.
+          Choose a suggestion or enter your own industry.
         </div>
       </div>
       <Field

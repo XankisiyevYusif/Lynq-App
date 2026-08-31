@@ -5,7 +5,7 @@ import { resolveMediaUrl } from "../../utils/mediaUrl";
 import "./Events.css";
 
 export default function CreateEventModal({ open, onClose, onCreated, onUpdated, showToast, event: existingEvent = null }) {
-  const [form, setForm] = useState({ title: "", description: "", topics: "", location: "", startsAt: "" });
+  const [form, setForm] = useState({ title: "", description: "", topics: "", location: "", eventUrl: "", startsAt: "" });
   const [image, setImage] = useState(null);
   const [loading, setLoading] = useState(false);
   const preview = useMemo(() => (image ? URL.createObjectURL(image) : ""), [image]);
@@ -15,7 +15,7 @@ export default function CreateEventModal({ open, onClose, onCreated, onUpdated, 
   useEffect(() => {
     if (!open) return;
     if (!existingEvent) {
-      setForm({ title: "", description: "", topics: "", location: "", startsAt: "" });
+      setForm({ title: "", description: "", topics: "", location: "", eventUrl: "", startsAt: "" });
       setImage(null);
       return;
     }
@@ -29,6 +29,7 @@ export default function CreateEventModal({ open, onClose, onCreated, onUpdated, 
       description: existingEvent.description || existingEvent.Description || "",
       topics: existingEvent.topics || existingEvent.Topics || "",
       location: existingEvent.location || existingEvent.Location || "",
+      eventUrl: existingEvent.eventUrl || existingEvent.EventUrl || "",
       startsAt: localDate,
     });
     setImage(null);
@@ -55,6 +56,17 @@ export default function CreateEventModal({ open, onClose, onCreated, onUpdated, 
       return;
     }
 
+    const eventUrl = form.eventUrl.trim();
+    if (eventUrl) {
+      try {
+        const parsedUrl = new URL(eventUrl);
+        if (!["http:", "https:"].includes(parsedUrl.protocol)) throw new Error();
+      } catch {
+        showToast?.("Enter a valid event link starting with http:// or https://.", "error");
+        return;
+      }
+    }
+
     try {
       setLoading(true);
       const payload = new FormData();
@@ -62,6 +74,7 @@ export default function CreateEventModal({ open, onClose, onCreated, onUpdated, 
       payload.append("description", form.description.trim());
       payload.append("topics", form.topics.trim());
       payload.append("location", form.location.trim());
+      payload.append("eventUrl", eventUrl);
       payload.append("startsAt", new Date(form.startsAt).toISOString());
       if (image) payload.append("image", image);
       if (isEditing) {
@@ -69,7 +82,7 @@ export default function CreateEventModal({ open, onClose, onCreated, onUpdated, 
       } else {
         await api.post("/Event", payload, { headers: { "Content-Type": "multipart/form-data" } });
       }
-      setForm({ title: "", description: "", topics: "", location: "", startsAt: "" });
+      setForm({ title: "", description: "", topics: "", location: "", eventUrl: "", startsAt: "" });
       setImage(null);
       showToast?.(isEditing ? "Event updated successfully." : "Event created successfully.", "success");
       if (isEditing) onUpdated?.();
@@ -98,6 +111,7 @@ export default function CreateEventModal({ open, onClose, onCreated, onUpdated, 
         <label>Event title<input required maxLength={120} value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} placeholder="Give your event a clear title" /></label>
         <label>Description<textarea maxLength={1000} rows={3} value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} placeholder="What should attendees expect?" /></label>
         <label>Topics<input maxLength={300} value={form.topics} onChange={(e) => setForm((p) => ({ ...p, topics: e.target.value }))} placeholder="React, .NET, design, career..." /></label>
+        <label>Event link<input type="url" maxLength={500} value={form.eventUrl} onChange={(e) => setForm((p) => ({ ...p, eventUrl: e.target.value }))} placeholder="https://teams.microsoft.com/..." /></label>
         <div className="event-form-row">
           <label>Location<input required maxLength={180} value={form.location} onChange={(e) => setForm((p) => ({ ...p, location: e.target.value }))} placeholder="Online or venue" /></label>
           <label>Date and time<input required type="datetime-local" min={new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)} value={form.startsAt} onChange={(e) => setForm((p) => ({ ...p, startsAt: e.target.value }))} /></label>

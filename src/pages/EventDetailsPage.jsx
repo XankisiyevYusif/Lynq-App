@@ -68,6 +68,7 @@ export default function EventDetailsPage() {
   const isOwner = !!value(event, "isOwner", "IsOwner");
   const isAttending = !!value(event, "isAttending", "IsAttending");
   const attendeeCount = Number(value(event, "attendeeCount", "AttendeeCount") || 0);
+  const eventUrl = value(event, "eventUrl", "EventUrl");
 
   const toggleAttendance = async () => {
     if (actionLoading || isPast) return;
@@ -151,6 +152,11 @@ export default function EventDetailsPage() {
               <button type="button" className="is-secondary" onClick={share}>
                 <ProfileIcon name="share" size={18} /> Share
               </button>
+              {eventUrl && (
+                <a className="is-primary" href={eventUrl} target="_blank" rel="noopener noreferrer">
+                  Open event link
+                </a>
+              )}
               {isOwner && (
                 <>
                   <button type="button" className="is-secondary" onClick={() => setEditOpen(true)}>Edit</button>
