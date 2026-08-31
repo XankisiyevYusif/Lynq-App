@@ -29,6 +29,7 @@ export default function EmployerHeader({
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [blockModalOpen, setBlockModalOpen] = useState(false);
   const [blockLoading, setBlockLoading] = useState(false);
+  const [chatInvitation, setChatInvitation] = useState(null);
   const companyMenuRef = useRef(null);
 
   const basic = user?.basicInfo || {};
@@ -66,6 +67,49 @@ export default function EmployerHeader({
     document.addEventListener("mousedown", closeOnOutsideClick);
     return () => document.removeEventListener("mousedown", closeOnOutsideClick);
   }, [companyMenuOpen]);
+
+  useEffect(() => {
+    if (!username || isOwner) {
+      setChatInvitation(null);
+      return;
+    }
+
+    api.get(`/chat/invitation/${encodeURIComponent(username)}`)
+      .then((response) => {
+        setChatInvitation(response?.data?.data ?? response?.data ?? null);
+      })
+      .catch(() => setChatInvitation(null));
+  }, [username, isOwner]);
+
+  const messagingBlocked = ["blocked", "unavailable"].includes(
+    chatInvitation?.status,
+  );
+
+  const getMessageButtonText = () => {
+    if (chatInvitation?.status === "accepted") return "Message";
+    if (chatInvitation?.status === "pending") {
+      return chatInvitation?.invitedByMe
+        ? "Invitation pending"
+        : "Review invitation";
+    }
+    if (chatInvitation?.status === "rejected") return "Invitation declined";
+    if (messagingBlocked) return "Messaging unavailable";
+    return chatInvitation?.requiresAcceptance ? "Invite to chat" : "Message";
+  };
+
+  const openCompanyChat = () => {
+    if (!username || messagingBlocked) {
+      if (messagingBlocked) {
+        showToast?.(
+          chatInvitation?.message || "Messaging is not available.",
+          "error",
+        );
+      }
+      return;
+    }
+
+    navigate(`/messages/${username}`);
+  };
 
   const blockCompany = async () => {
     if (!username || blockLoading) return;
@@ -245,6 +289,20 @@ export default function EmployerHeader({
             ) : (
               <>
               {followButton}
+
+                <button
+                  type="button"
+                  className="employer-header-primary-action"
+                  style={{
+                    ...styles.messageBtn,
+                    opacity: messagingBlocked ? 0.55 : 1,
+                    cursor: messagingBlocked ? "not-allowed" : "pointer",
+                  }}
+                  onClick={openCompanyChat}
+                  disabled={messagingBlocked}
+                >
+                  {getMessageButtonText()}
+                </button>
 
                 {company.website && (
                   <a
